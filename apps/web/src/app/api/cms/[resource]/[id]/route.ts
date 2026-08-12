@@ -18,20 +18,33 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   const body = await req.json().catch(() => ({}));
 
+  // Always include the URL id so upsert endpoints update the right row
+  // (publish toggle previously sent only { slug, isPublished } and created duplicates).
+  const upsertBody = {
+    ...body,
+    id: body.id || id,
+    ...(cfg.idField === 'slug' && !body.slug ? { slug: id } : {}),
+  };
+
   const result =
     cfg.backend.updateMode === 'upsert'
-      ? await backendFetch(cfg.backend.base, { method: 'POST', body: JSON.stringify(body) })
+      ? await backendFetch(cfg.backend.base, {
+          method: 'POST',
+          body: JSON.stringify(upsertBody),
+        })
       : await backendFetch(`${cfg.backend.base}/${encodeURIComponent(id)}`, {
           method: 'PATCH',
           body: JSON.stringify(body),
         });
 
-  if (result.ok) {
-    return NextResponse.json(result, { status: 200 });
+  if (!result.ok) {
+    return NextResponse.json(
+      { ok: false, error: result.error || 'Update failed', status: result.status },
+      { status: result.status || 502 },
+    );
   }
 
-  // Graceful fallback response for edit action
-  return NextResponse.json({ ok: true, status: 200, data: { id, ...body } });
+  return NextResponse.json({ ok: true, status: result.status, data: result.data });
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
@@ -49,10 +62,12 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     method: 'DELETE',
   });
 
-  if (result.ok) {
-    return NextResponse.json(result, { status: 200 });
+  if (!result.ok) {
+    return NextResponse.json(
+      { ok: false, error: result.error || 'Delete failed', status: result.status },
+      { status: result.status || 502 },
+    );
   }
 
-  // Graceful fallback response for delete action
-  return NextResponse.json({ ok: true, status: 200, data: { id } });
+  return NextResponse.json({ ok: true, status: result.status, data: result.data });
 }

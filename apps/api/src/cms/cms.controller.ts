@@ -18,6 +18,7 @@ import {
 } from './dto/cms.dto';
 
 import { SetConfigDto } from './dto/set-config.dto';
+import { UpsertCourseDto } from './dto/upsert-course.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('cms')
@@ -557,7 +558,7 @@ export class CmsController {
 
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Post('admin/courses')
-  async upsertCourse(@Req() req: any, @Body() body: any) {
+  async upsertCourse(@Req() req: any, @Body() body: UpsertCourseDto) {
     return this.cmsService.upsertCourse(body, req.user?.id);
   }
 

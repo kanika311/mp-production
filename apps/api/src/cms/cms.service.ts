@@ -1399,44 +1399,135 @@ export class CmsService {
   }
 
   async upsertCourse(data: any, actorId?: string) {
-    const id = data.id;
-    let result;
-    const payload: any = {
-      slug: data.slug || `course-${Date.now()}`,
-      title: data.title,
-      categoryLabel: data.categoryLabel || 'Masterclass',
-      duration: data.duration || '4 Hours',
-      lessonsCount: data.lessonsCount !== undefined ? parseInt(String(data.lessonsCount), 10) : 0,
-      price: data.price || '₹4,999',
-      numericPrice: data.numericPrice ? parseInt(String(data.numericPrice), 10) : 4999,
-      originalPrice: data.originalPrice || '₹12,999',
-      image: data.image || '/images/services-lighting.jpg',
-      instructorName: data.instructorName || 'Master Instructor',
-      description: data.description || null,
-      isPublished: data.isPublished !== undefined ? Boolean(data.isPublished) : true,
-      sortOrder: data.sortOrder !== undefined ? parseInt(String(data.sortOrder), 10) : 0,
+    const id = typeof data.id === 'string' && data.id.length > 0 ? data.id : undefined;
+    const slug =
+      typeof data.slug === 'string' && data.slug.length > 0
+        ? data.slug
+        : undefined;
 
-      // Rich storefront fields
-      category: data.category || 'CREATOR',
-      badgeColor: data.badgeColor || 'bg-brand text-white',
-      level: data.level || 'Creator',
-      rating: data.rating !== undefined ? Number(data.rating) : 5,
-      enrolledCount: data.enrolledCount !== undefined ? parseInt(String(data.enrolledCount), 10) : 0,
-      trailerVideoUrl: data.trailerVideoUrl || null,
-      topics: Array.isArray(data.topics) ? data.topics : [],
-      resources: Array.isArray(data.resources) ? data.resources : [],
-      modules: data.modules ?? undefined,
-      instructorRole: data.instructorRole || null,
-      instructorAvatar: data.instructorAvatar || null,
-      instructorBio: data.instructorBio || null,
-    };
-
+    let existing: { id: string } | null = null;
     if (id) {
-      result = await this.prisma.course.update({ where: { id }, data: payload });
-      await this.audit({ actorId: actorId || 'SYSTEM', action: 'UPDATE_COURSE', resource: 'Course', resourceId: id });
+      existing = await this.prisma.course.findFirst({
+        where: { id, deletedAt: null },
+        select: { id: true },
+      });
+    }
+    if (!existing && slug) {
+      existing = await this.prisma.course.findFirst({
+        where: { slug, deletedAt: null },
+        select: { id: true },
+      });
+    }
+
+    // Partial patch: only write fields that were actually sent (publish toggle, etc.)
+    const patch: Record<string, unknown> = {};
+    if (data.slug !== undefined) patch.slug = String(data.slug);
+    if (data.title !== undefined) patch.title = String(data.title);
+    if (data.categoryLabel !== undefined) patch.categoryLabel = String(data.categoryLabel);
+    if (data.duration !== undefined) patch.duration = String(data.duration);
+    if (data.lessonsCount !== undefined) {
+      patch.lessonsCount = parseInt(String(data.lessonsCount), 10) || 0;
+    }
+    if (data.price !== undefined) patch.price = String(data.price);
+    if (data.numericPrice !== undefined) {
+      patch.numericPrice = parseInt(String(data.numericPrice), 10) || 0;
+    }
+    if (data.originalPrice !== undefined) patch.originalPrice = String(data.originalPrice);
+    if (data.image !== undefined) patch.image = String(data.image);
+    if (data.instructorName !== undefined) patch.instructorName = String(data.instructorName);
+    if (data.description !== undefined) patch.description = data.description || null;
+    if (data.isPublished !== undefined) patch.isPublished = Boolean(data.isPublished);
+    if (data.sortOrder !== undefined) {
+      patch.sortOrder = parseInt(String(data.sortOrder), 10) || 0;
+    }
+    if (data.category !== undefined) patch.category = String(data.category);
+    if (data.badgeColor !== undefined) patch.badgeColor = String(data.badgeColor);
+    if (data.level !== undefined) patch.level = String(data.level);
+    if (data.rating !== undefined) patch.rating = Number(data.rating);
+    if (data.enrolledCount !== undefined) {
+      patch.enrolledCount = parseInt(String(data.enrolledCount), 10) || 0;
+    }
+    if (data.trailerVideoUrl !== undefined) {
+      patch.trailerVideoUrl = data.trailerVideoUrl || null;
+    }
+    if (data.topics !== undefined) {
+      patch.topics = Array.isArray(data.topics) ? data.topics : [];
+    }
+    if (data.resources !== undefined) {
+      patch.resources = Array.isArray(data.resources) ? data.resources : [];
+    }
+    if (data.modules !== undefined) patch.modules = data.modules;
+    if (data.instructorRole !== undefined) {
+      patch.instructorRole = data.instructorRole || null;
+    }
+    if (data.instructorAvatar !== undefined) {
+      patch.instructorAvatar = data.instructorAvatar || null;
+    }
+    if (data.instructorBio !== undefined) {
+      patch.instructorBio = data.instructorBio || null;
+    }
+
+    let result;
+    if (existing) {
+      result = await this.prisma.course.update({
+        where: { id: existing.id },
+        data: patch,
+      });
+      await this.audit({
+        actorId: actorId || 'SYSTEM',
+        action: 'UPDATE_COURSE',
+        resource: 'Course',
+        resourceId: existing.id,
+      });
     } else {
-      result = await this.prisma.course.create({ data: payload });
-      await this.audit({ actorId: actorId || 'SYSTEM', action: 'CREATE_COURSE', resource: 'Course', resourceId: result.id });
+      result = await this.prisma.course.create({
+        data: {
+          slug: slug || `course-${Date.now()}`,
+          title: (data.title as string) || 'Untitled Course',
+          categoryLabel: (data.categoryLabel as string) || 'Masterclass',
+          duration: (data.duration as string) || '4 Hours',
+          lessonsCount:
+            data.lessonsCount !== undefined
+              ? parseInt(String(data.lessonsCount), 10) || 0
+              : 0,
+          price: (data.price as string) || '₹4,999',
+          numericPrice:
+            data.numericPrice !== undefined
+              ? parseInt(String(data.numericPrice), 10) || 4999
+              : 4999,
+          originalPrice: (data.originalPrice as string) || '₹12,999',
+          image: (data.image as string) || '/images/services-lighting.jpg',
+          instructorName: (data.instructorName as string) || 'Master Instructor',
+          description: (data.description as string) || null,
+          isPublished:
+            data.isPublished !== undefined ? Boolean(data.isPublished) : true,
+          sortOrder:
+            data.sortOrder !== undefined
+              ? parseInt(String(data.sortOrder), 10) || 0
+              : 0,
+          category: (data.category as string) || 'CREATOR',
+          badgeColor: (data.badgeColor as string) || 'bg-brand text-white',
+          level: (data.level as string) || 'Creator',
+          rating: data.rating !== undefined ? Number(data.rating) : 5,
+          enrolledCount:
+            data.enrolledCount !== undefined
+              ? parseInt(String(data.enrolledCount), 10) || 0
+              : 0,
+          trailerVideoUrl: (data.trailerVideoUrl as string) || null,
+          topics: Array.isArray(data.topics) ? data.topics : [],
+          resources: Array.isArray(data.resources) ? data.resources : [],
+          modules: data.modules ?? undefined,
+          instructorRole: (data.instructorRole as string) || null,
+          instructorAvatar: (data.instructorAvatar as string) || null,
+          instructorBio: (data.instructorBio as string) || null,
+        },
+      });
+      await this.audit({
+        actorId: actorId || 'SYSTEM',
+        action: 'CREATE_COURSE',
+        resource: 'Course',
+        resourceId: result.id,
+      });
     }
     return result;
   }

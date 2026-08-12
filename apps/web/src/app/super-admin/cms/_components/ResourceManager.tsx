@@ -40,6 +40,7 @@ import {
 import type { ColumnDef, ResourceConfig } from '@/lib/cms/resources';
 import { cms } from '@/lib/cms/client';
 import { ResourceForm } from './ResourceForm';
+import { CourseEditorForm } from './CourseEditorForm';
 
 type Item = Record<string, unknown>;
 
@@ -66,7 +67,7 @@ export function ResourceManager({ config }: { config: ResourceConfig }) {
   const load = useCallback(async () => {
     setLoading(true);
     const res = await cms.list<Item[]>(config.key);
-    if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
+    if (res.ok && Array.isArray(res.data)) {
       setItems(res.data);
       setDemo(false);
     } else if (config.sample && config.sample.length > 0) {
@@ -75,6 +76,9 @@ export function ResourceManager({ config }: { config: ResourceConfig }) {
     } else {
       setItems([]);
       setDemo(false);
+      if (!res.ok && res.error) {
+        toast.error(res.error);
+      }
     }
     setLoading(false);
   }, [config]);
@@ -130,7 +134,7 @@ export function ResourceManager({ config }: { config: ResourceConfig }) {
 
     const payload: Item =
       config.backend.updateMode === 'upsert'
-        ? { [bodyKey]: item[bodyKey], [field]: next }
+        ? { id: idOf(item), [bodyKey]: item[bodyKey], [field]: next }
         : { [field]: next };
 
     const res = await cms.update(config.key, idOf(item), payload);
@@ -281,20 +285,32 @@ export function ResourceManager({ config }: { config: ResourceConfig }) {
 
       {/* Create / Edit dialog */}
       <Dialog open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) setEditing(null); }}>
-        <DialogContent data-lenis-prevent className="max-w-2xl">
+        <DialogContent
+          data-lenis-prevent
+          className={config.key === 'courses' ? 'max-w-5xl' : 'max-w-2xl'}
+        >
           <DialogHeader>
             <DialogTitle>
               {editing ? `Edit ${config.label}` : `New ${config.label}`}
             </DialogTitle>
             <DialogDescription>{config.description}</DialogDescription>
           </DialogHeader>
-          <ResourceForm
-            config={config}
-            initial={editing}
-            submitting={submitting}
-            onSubmit={handleSubmit}
-            onCancel={() => { setFormOpen(false); setEditing(null); }}
-          />
+          {config.key === 'courses' ? (
+            <CourseEditorForm
+              initial={editing}
+              submitting={submitting}
+              onSubmit={handleSubmit}
+              onCancel={() => { setFormOpen(false); setEditing(null); }}
+            />
+          ) : (
+            <ResourceForm
+              config={config}
+              initial={editing}
+              submitting={submitting}
+              onSubmit={handleSubmit}
+              onCancel={() => { setFormOpen(false); setEditing(null); }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

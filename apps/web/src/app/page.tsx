@@ -114,6 +114,7 @@ export default function Home() {
   const [talent, setTalent] = useState<any[]>([]);
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeModalProject, setActiveModalProject] = useState<ProjectSpec | null>(null);
   const [currentReelIndex, setCurrentReelIndex] = useState(1);
@@ -128,8 +129,9 @@ export default function Home() {
       fetchAPI("/talent/featured", { cache: "no-store" }).catch(() => null),
       fetchAPI("/cms/testimonials?published=true", { cache: "no-store" }).catch(() => null),
       fetchAPI("/cms/faq?limit=8", { cache: "no-store" }).catch(() => null),
+      fetchAPI("/cms/courses?limit=4", { cache: "no-store" }).catch(() => null),
     ])
-      .then(([heroRes, introRes, statsRes, servRes, portRes, talentRes, testRes, faqRes]) => {
+      .then(([heroRes, introRes, statsRes, servRes, portRes, talentRes, testRes, faqRes, courseRes]) => {
         if (heroRes) setHero(heroRes.data || heroRes);
         if (introRes) setIntro(introRes.data || introRes);
         if (statsRes) setStats(statsRes.data || statsRes);
@@ -138,6 +140,16 @@ export default function Home() {
         if (talentRes) setTalent(Array.isArray(talentRes) ? talentRes : (talentRes.data || []));
         if (testRes) setTestimonials(Array.isArray(testRes) ? testRes : (testRes.data || []));
         if (faqRes) setFaqs(Array.isArray(faqRes) ? faqRes : (faqRes.data || []));
+        if (courseRes) {
+          const rows = Array.isArray(courseRes)
+            ? courseRes
+            : Array.isArray(courseRes.data)
+              ? courseRes.data
+              : Array.isArray(courseRes.data?.data)
+                ? courseRes.data.data
+                : [];
+          setCourses(rows);
+        }
       })
       .catch(() => {
         toast.error("Failed to load page content");
@@ -158,7 +170,7 @@ export default function Home() {
       <CinematicProductScrollSection items={portfolio} />
       <Intro intro={intro} />
       <Services services={services} loading={loading} />
-      <BecomeAYouTuberSection />
+      <BecomeAYouTuberSection courses={courses} />
       <FeaturedProjects portfolio={portfolio} loading={loading} onOpenModal={setActiveModalProject} />
       <FeaturedTalent talent={talent} loading={loading} />
       <Stats stats={stats} />
@@ -1125,7 +1137,59 @@ function ContactCta() {
 /* ═══════════════════════════════════════════════════════════
    BECOME A YOUTUBER — GenZ Creator Lab Spotlight Section
    ═══════════════════════════════════════════════════════════ */
-function BecomeAYouTuberSection() {
+function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
+  const fallbackCards = [
+    {
+      title: '4K Cinematic Vlogging Masterclass',
+      category: 'CAMERA & LIGHTING',
+      duration: '4.5 Hours',
+      rating: '4.9 ★',
+      image: '/images/services-lighting.jpg',
+      bullets: ['3-Point Studio Lighting', 'Sony/Canon Log Setup'],
+      color: 'text-amber-500 dark:text-amber-400',
+    },
+    {
+      title: 'Viral Hooks & 100K Algorithm Hacking',
+      category: 'VIRAL GROWTH',
+      duration: '3.2 Hours',
+      rating: '5.0 ★',
+      image: '/assets/project-fashion.jpg',
+      bullets: ['3-Second Retention Hooks', 'High-CTR Thumbnails'],
+      color: 'text-rose-500 dark:text-rose-400',
+    },
+    {
+      title: 'DaVinci Resolve Hollywood Color Grading',
+      category: 'EDITING & VFX',
+      duration: '5.0 Hours',
+      rating: '4.9 ★',
+      image: '/images/about-bts.jpg',
+      bullets: ['Node Graph Architecture', 'Skin Tone Qualifiers'],
+      color: 'text-cyan-500 dark:text-cyan-400',
+    },
+    {
+      title: '6-Figure Brand Deals & Monetization',
+      category: 'MONETIZATION',
+      duration: '2.8 Hours',
+      rating: '4.8 ★',
+      image: '/assets/service_casting.png',
+      bullets: ['Media Kit Templates', 'Brand Pitch Scripts'],
+      color: 'text-emerald-500 dark:text-emerald-400',
+    },
+  ];
+
+  const cards =
+    courses.length > 0
+      ? courses.slice(0, 4).map((c: any) => ({
+          title: c.title,
+          category: String(c.categoryLabel || c.category || 'MASTERCLASS').toUpperCase(),
+          duration: c.duration || '',
+          rating: `${Number(c.rating) || 5} ★`,
+          image: c.image || '/images/services-lighting.jpg',
+          bullets: Array.isArray(c.topics) ? c.topics.slice(0, 2) : [],
+          color: 'text-amber-500 dark:text-amber-400',
+        }))
+      : fallbackCards;
+
   return (
     <section className="relative py-28 px-6 sm:px-10 overflow-hidden bg-background text-foreground isolate border-t border-b border-border/50">
       {/* Ambient Radial Lights — Hardware-accelerated GPU radial gradients */}
@@ -1165,46 +1229,9 @@ function BecomeAYouTuberSection() {
           </div>
         </Reveal>
 
-        {/* 4-Card Masterclass Showcase Grid */}
+        {/* 4-Card Masterclass Showcase Grid — CMS-driven when published courses exist */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            {
-              title: '4K Cinematic Vlogging Masterclass',
-              category: 'CAMERA & LIGHTING',
-              duration: '4.5 Hours',
-              rating: '4.9 ★',
-              image: '/images/services-lighting.jpg',
-              bullets: ['3-Point Studio Lighting', 'Sony/Canon Log Setup'],
-              color: 'text-amber-500 dark:text-amber-400',
-            },
-            {
-              title: 'Viral Hooks & 100K Algorithm Hacking',
-              category: 'VIRAL GROWTH',
-              duration: '3.2 Hours',
-              rating: '5.0 ★',
-              image: '/assets/project-fashion.jpg',
-              bullets: ['3-Second Retention Hooks', 'High-CTR Thumbnails'],
-              color: 'text-rose-500 dark:text-rose-400',
-            },
-            {
-              title: 'DaVinci Resolve Hollywood Color Grading',
-              category: 'EDITING & VFX',
-              duration: '5.0 Hours',
-              rating: '4.9 ★',
-              image: '/images/about-bts.jpg',
-              bullets: ['Node Graph Architecture', 'Skin Tone Qualifiers'],
-              color: 'text-cyan-500 dark:text-cyan-400',
-            },
-            {
-              title: '6-Figure Brand Deals & Monetization',
-              category: 'MONETIZATION',
-              duration: '2.8 Hours',
-              rating: '4.8 ★',
-              image: '/assets/service_casting.png',
-              bullets: ['Media Kit Templates', 'Brand Pitch Scripts'],
-              color: 'text-emerald-500 dark:text-emerald-400',
-            },
-          ].map((card, idx) => (
+          {cards.map((card, idx) => (
             <Reveal key={idx} direction="up" delay={idx * 0.1}>
               <Link
                 href="/become-a-youtuber"
@@ -1240,7 +1267,7 @@ function BecomeAYouTuberSection() {
                       {card.title}
                     </h3>
                     <div className="space-y-1.5 pt-1">
-                      {card.bullets.map((b, bIdx) => (
+                      {card.bullets.map((b: string, bIdx: number) => (
                         <div key={bIdx} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                           <span>{b}</span>

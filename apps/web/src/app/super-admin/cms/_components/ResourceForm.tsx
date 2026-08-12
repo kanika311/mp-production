@@ -207,19 +207,15 @@ export function ResourceForm({ config, initial, submitting, onSubmit, onCancel }
                             try {
                               const res = await fetch('/api/cms/media', { method: 'POST', body: formData });
                               const data = await res.json();
-                              if (data && (data.url || data.mediaUrl)) {
-                                const uploadedUrl = data.url || data.mediaUrl;
+                              if (data && (data.url || data.mediaUrl || data?.data?.url)) {
+                                const uploadedUrl = data.url || data.mediaUrl || data.data.url;
                                 set(f.name, uploadedUrl);
                                 toast.success(`🎉 ${file.name} uploaded successfully!`);
                               } else {
-                                const objectUrl = URL.createObjectURL(file);
-                                set(f.name, objectUrl);
-                                toast.success(`🎉 ${file.name} selected for course!`);
+                                toast.error('Upload failed — paste an image URL instead.');
                               }
                             } catch (err) {
-                              const objectUrl = URL.createObjectURL(file);
-                              set(f.name, objectUrl);
-                              toast.success(`🎉 ${file.name} uploaded!`);
+                              toast.error('Upload failed — paste an image URL instead.');
                             } finally {
                               setUploadingField(null);
                             }

@@ -403,9 +403,10 @@ function mapCourseRowToBlueprint(row: any): Blueprint {
 export default function BecomeAYouTuberPage({ defaultCategory = 'ALL' }: { defaultCategory?: string }) {
   const [activeCategory, setActiveCategory] = useState<string>(defaultCategory);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  // Courses are CMS-managed via the NestJS backend. Seed the static array as a
-  // fallback so the page still renders if the API is cold/unreachable.
-  const [courses, setCourses] = useState<Blueprint[]>(ACADEMY_COURSES);
+  // Start empty — CMS / DB is the source of truth. Static catalog is only used
+  // if the API is completely unreachable.
+  const [courses, setCourses] = useState<Blueprint[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const [previewBlueprint, setPreviewBlueprint] = useState<Blueprint | null>(null);
   const [showCheckoutModal, setShowCheckoutModal] = useState<boolean>(false);
   const [activePreviewTab, setActivePreviewTab] = useState<'overview' | 'syllabus' | 'resources' | 'instructor'>('overview');
@@ -433,18 +434,28 @@ export default function BecomeAYouTuberPage({ defaultCategory = 'ALL' }: { defau
     };
   }, [previewBlueprint, showCheckoutModal]);
 
-  // Load CMS-managed courses from the backend; keep the static fallback on error.
+  // Load published courses from Nest CMS. Empty API = empty storefront.
+  // Static catalog only if the request throws (API down).
   React.useEffect(() => {
     let cancelled = false;
-    fetchAPI('/cms/courses', { cache: 'no-store' })
+    setCoursesLoading(true);
+    fetchAPI('/cms/courses?limit=100', { cache: 'no-store' })
       .then((res: any) => {
-        const rows = Array.isArray(res?.data) ? res.data : Array.isArray(res?.data?.data) ? res.data.data : [];
-        if (!cancelled && Array.isArray(rows) && rows.length > 0) {
-          setCourses(rows.map(mapCourseRowToBlueprint));
-        }
+        if (cancelled) return;
+        const rows = Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res?.data)
+            ? res.data
+            : Array.isArray(res)
+              ? res
+              : [];
+        setCourses(rows.map(mapCourseRowToBlueprint));
       })
       .catch(() => {
-        /* keep static fallback */
+        if (!cancelled) setCourses(ACADEMY_COURSES);
+      })
+      .finally(() => {
+        if (!cancelled) setCoursesLoading(false);
       });
     return () => {
       cancelled = true;
@@ -606,6 +617,19 @@ export default function BecomeAYouTuberPage({ defaultCategory = 'ALL' }: { defau
         {/* Blueprint Cards Grid */}
         <Reveal direction="up">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {coursesLoading && (
+              <div className="col-span-full py-16 text-center text-muted-foreground text-sm">
+                Loading masterclasses…
+              </div>
+            )}
+            {!coursesLoading && filteredPlaybooks.length === 0 && (
+              <div className="col-span-full py-16 text-center space-y-2">
+                <p className="text-lg font-serif text-foreground">No masterclasses published yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Courses added in Super Admin → CMS → Creator Courses will appear here when Published.
+                </p>
+              </div>
+            )}
             {filteredPlaybooks.map(bp => (
               <div key={bp.id} className="group border border-border rounded-3xl overflow-hidden bg-card hover:border-brand/60 transition-[border-color,box-shadow,transform] duration-300 shadow-sm hover:shadow-xl flex flex-col h-full transform-gpu">
                 {/* Card Thumbnail */}

@@ -125,9 +125,9 @@ export async function backendFetch<T = unknown>(
   } catch (err) {
     console.warn('Backend fetch warning:', err);
     return {
-      ok: true,
-      status: 200,
-      data: [] as unknown as T,
+      ok: false,
+      status: 503,
+      data: null,
       error: err instanceof Error ? err.message : 'Backend unreachable',
     };
   }
