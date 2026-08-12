@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Country, State, City } from 'country-state-city';
 import { toast } from 'sonner';
 import { ArrowRight, Sparkles, CheckCircle2, Globe, Award, Briefcase, User, Mail, Phone, Lock, MapPin, Film, ChevronDown, Search, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -27,6 +26,41 @@ const EXPERIENCE_LEVELS = [
   { id: 'junior', label: 'Intermediate (1 - 3 Years)' },
   { id: 'mid', label: 'Experienced Professional (3 - 5 Years)' },
   { id: 'senior', label: 'Seasoned Veteran (5+ Years)' },
+];
+
+/** Common dial codes for talent registration (no heavy geo package). */
+const DIAL_CODES = [
+  { iso: 'IN', code: '+91', label: '🇮🇳 India +91' },
+  { iso: 'US', code: '+1', label: '🇺🇸 USA +1' },
+  { iso: 'GB', code: '+44', label: '🇬🇧 UK +44' },
+  { iso: 'AE', code: '+971', label: '🇦🇪 UAE +971' },
+  { iso: 'SG', code: '+65', label: '🇸🇬 Singapore +65' },
+  { iso: 'AU', code: '+61', label: '🇦🇺 Australia +61' },
+  { iso: 'CA', code: '+1', label: '🇨🇦 Canada +1' },
+  { iso: 'DE', code: '+49', label: '🇩🇪 Germany +49' },
+  { iso: 'FR', code: '+33', label: '🇫🇷 France +33' },
+  { iso: 'NP', code: '+977', label: '🇳🇵 Nepal +977' },
+  { iso: 'BD', code: '+880', label: '🇧🇩 Bangladesh +880' },
+  { iso: 'LK', code: '+94', label: '🇱🇰 Sri Lanka +94' },
+  { iso: 'PK', code: '+92', label: '🇵🇰 Pakistan +92' },
+  { iso: 'OTHER', code: '+', label: '🌍 Other +' },
+];
+
+const COUNTRY_OPTIONS = [
+  'India',
+  'United States',
+  'United Kingdom',
+  'United Arab Emirates',
+  'Singapore',
+  'Australia',
+  'Canada',
+  'Germany',
+  'France',
+  'Nepal',
+  'Bangladesh',
+  'Sri Lanka',
+  'Pakistan',
+  'Other / International',
 ];
 
 const INDIAN_STATES_AND_CITIES: Record<string, string[]> = {
@@ -212,53 +246,23 @@ export function SimpleTalentRegistrationForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // ── Worldwide cascading location data (offline dataset) ──
-  const allCountries = useMemo(() => Country.getAllCountries(), []);
-  const countryOptions = useMemo(() => allCountries.map((c) => c.name), [allCountries]);
+  // India-first location cascading (built-in dataset — no country-state-city package).
+  const countryOptions = COUNTRY_OPTIONS;
+  const stateOptions = useMemo(() => {
+    if (formData.country === 'India') {
+      return Object.keys(INDIAN_STATES_AND_CITIES);
+    }
+    return ['Other'];
+  }, [formData.country]);
 
-  const selectedCountry = useMemo(
-    () => allCountries.find((c) => c.name === formData.country),
-    [allCountries, formData.country],
-  );
+  const cityOptions = useMemo(() => {
+    if (formData.country === 'India' && formData.state) {
+      return INDIAN_STATES_AND_CITIES[formData.state] || ['Other'];
+    }
+    return ['Other City / International Location', 'Other'];
+  }, [formData.country, formData.state]);
 
-  const stateList = useMemo(
-    () => (selectedCountry ? State.getStatesOfCountry(selectedCountry.isoCode) : []),
-    [selectedCountry],
-  );
-  const stateOptions = useMemo(
-    () => (stateList.length ? stateList.map((s) => s.name) : ['Other']),
-    [stateList],
-  );
-
-  const selectedState = useMemo(
-    () => stateList.find((s) => s.name === formData.state),
-    [stateList, formData.state],
-  );
-
-  const cityList = useMemo(
-    () =>
-      selectedCountry && selectedState
-        ? City.getCitiesOfState(selectedCountry.isoCode, selectedState.isoCode)
-        : [],
-    [selectedCountry, selectedState],
-  );
-  const cityOptions = useMemo(
-    () => (cityList.length ? cityList.map((c) => c.name) : ['Other']),
-    [cityList],
-  );
-
-  // Worldwide phone dial codes (flag + country + code), sorted by country.
-  const dialCodes = useMemo(
-    () =>
-      allCountries
-        .map((c) => {
-          const code = `+${String(c.phonecode).replace(/[^0-9]/g, '')}`;
-          return { iso: c.isoCode, code, label: `${c.flag} ${c.name} ${code}` };
-        })
-        .filter((c) => c.code !== '+')
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [allCountries],
-  );
+  const dialCodes = DIAL_CODES;
 
   const validate = () => {
     const newErrors: Record<string, string> = {};

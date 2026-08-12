@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
+// `output: 'standalone'` needs filesystem symlinks. On Windows without Developer
+// Mode that throws EPERM during build. Keep standalone for Linux/CI/Docker;
+// local Windows can force it with FORCE_STANDALONE=1.
+const useStandalone =
+  process.env.FORCE_STANDALONE === '1' ||
+  process.env.VERCEL === '1' ||
+  process.platform !== 'win32';
+
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  ...(useStandalone ? { output: 'standalone' as const } : {}),
   experimental: {
     workerThreads: false,
   },
