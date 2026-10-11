@@ -74,21 +74,47 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (!isLogin) {
-        // Register using Server-Side Auth API (which bypasses SMTP verification limits)
-        const registerRes = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: fullName,
+        let registered = false;
+        try {
+          // 1. Try Server-Side Auth API (which bypasses SMTP verification limits)
+          const registerRes = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: fullName,
+              email,
+              password,
+              role: 'client',
+            }),
+          });
+
+          if (registerRes.ok) {
+            registered = true;
+          } else if (registerRes.status !== 404) {
+            const registerData = await registerRes.json().catch(() => ({}));
+            throw new Error(registerData.message || 'Registration failed');
+          }
+        } catch (bffErr: any) {
+          if (!bffErr.message?.includes('Registration failed')) {
+            console.warn('Server-side registration route unreachable, using direct Supabase Auth:', bffErr);
+          } else {
+            throw bffErr;
+          }
+        }
+
+        // 2. Direct fallback to Supabase Client signUp if reverse proxy blocks /api/auth/register (404)
+        if (!registered) {
+          const { error: signUpError } = await supabase.auth.signUp({
             email,
             password,
-            role: 'client',
-          }),
-        });
-
-        const registerData = await registerRes.json();
-        if (!registerRes.ok) {
-          throw new Error(registerData.message || 'Registration failed');
+            options: {
+              data: {
+                full_name: fullName,
+                role: 'client',
+              },
+            },
+          });
+          if (signUpError) throw signUpError;
         }
 
         // Auto-login the client after successful registration

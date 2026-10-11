@@ -289,29 +289,65 @@ export function SimpleTalentRegistrationForm() {
 
     setIsSubmitting(true);
     try {
-      // Register using Server-Side Auth API (which bypasses SMTP verification limits)
-      const registerRes = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: `${formData.firstName} ${formData.lastName}`.trim(),
+      let registered = false;
+      try {
+        // 1. Try Server-Side Admin Auth API first (bypasses SMTP email verification)
+        const registerRes = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: `${formData.firstName} ${formData.lastName}`.trim(),
+            email: formData.email,
+            password: formData.password,
+            role: 'talent',
+            phone: `${formData.dialCode} ${formData.mobile}`.trim(),
+            category: formData.category,
+            experienceLevel: formData.experience,
+            country: formData.country,
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+            bio: formData.bio || `Passionate ${formData.category} from ${formData.city}, ${formData.country}.`,
+          }),
+        });
+
+        if (registerRes.ok) {
+          registered = true;
+        } else if (registerRes.status !== 404) {
+          const registerData = await registerRes.json().catch(() => ({}));
+          throw new Error(registerData.message || 'Registration failed');
+        }
+      } catch (bffErr: any) {
+        if (!bffErr.message?.includes('Registration failed')) {
+          console.warn('Server-side registration route unreachable, using direct Supabase Auth:', bffErr);
+        } else {
+          throw bffErr;
+        }
+      }
+
+      // 2. If reverse proxy blocked /api/auth/register (404), fallback directly to Supabase client sign up
+      if (!registered) {
+        const { error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
-          role: 'talent',
-          phone: `${formData.dialCode} ${formData.mobile}`.trim(),
-          category: formData.category,
-          experienceLevel: formData.experience,
-          country: formData.country,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-          bio: formData.bio || `Passionate ${formData.category} from ${formData.city}, ${formData.country}.`,
-        }),
-      });
-
-      const registerData = await registerRes.json();
-      if (!registerRes.ok) {
-        throw new Error(registerData.message || 'Registration failed');
+          options: {
+            data: {
+              full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+              role: 'talent',
+              phone: `${formData.dialCode} ${formData.mobile}`.trim(),
+              category: formData.category,
+              experience_level: formData.experience,
+              country: formData.country,
+              city: formData.city,
+              state: formData.state,
+              pincode: formData.pincode,
+              bio: formData.bio || `Passionate ${formData.category} from ${formData.city}, ${formData.country}.`,
+            },
+          },
+        });
+        if (signUpError) {
+          throw new Error(signUpError.message || 'Registration failed');
+        }
       }
 
       // Auto-login the talent after successful registration
