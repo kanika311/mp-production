@@ -4,7 +4,6 @@ import { Navbar } from "@/components/ui/Navbar";
 import { HoverFooter as Footer } from "@/components/ui/hover-footer";
 import { Reveal } from "@/components/ui/Reveal";
 import { CinematicViewerModal, ProjectSpec } from "@/components/ui/CinematicViewerModal";
-import { CinematicProductScrollSection } from "@/components/ui/cinematic-product-scroll-section";
 import { CinematicTestimonial } from "@/components/ui/cinematic-testimonial";
 import { MagneticButton } from "@/components/motion/MagneticButton";
 import DecryptedText from "@/components/motion/DecryptedText";
@@ -167,7 +166,6 @@ export default function Home() {
         onOpenModal={setActiveModalProject} 
       />
       <ScrollyTelling />
-      <CinematicProductScrollSection items={portfolio} />
       <Intro intro={intro} />
       <Services services={services} loading={loading} />
       <BecomeAYouTuberSection courses={courses} />
@@ -366,67 +364,97 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
    SCROLLYTELLING — Keep with minor refinements
    ═══════════════════════════════════════════════════════════ */
 function ScrollyTelling() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"],
-  });
-
-  const text1Opacity = useTransform(scrollYProgress, [0, 0.2, 0.35], [0, 1, 0]);
-  const text1Y = useTransform(scrollYProgress, [0, 0.2, 0.35], [40, 0, -40]);
-  const text2Opacity = useTransform(scrollYProgress, [0.33, 0.5, 0.68], [0, 1, 0]);
-  const text2Y = useTransform(scrollYProgress, [0.33, 0.5, 0.68], [40, 0, -40]);
-  const text3Opacity = useTransform(scrollYProgress, [0.66, 0.83, 1], [0, 1, 0]);
-  const text3Y = useTransform(scrollYProgress, [0.66, 0.83, 1], [40, 0, -40]);
-  const img1Opacity = useTransform(scrollYProgress, [0, 0.3, 0.4], [1, 1, 0]);
-  const img2Opacity = useTransform(scrollYProgress, [0.3, 0.4, 0.63, 0.73], [0, 1, 1, 0]);
-  const img3Opacity = useTransform(scrollYProgress, [0.63, 0.73, 1], [0, 1, 1]);
-  const imageScale = useTransform(scrollYProgress, [0, 1], [1, 1.04]);
-
   const acts = [
-    { opacity: text1Opacity, y: text1Y, label: "Act I · The Vision", heading: "Every detail matters.", body: "We look beyond the surface, finding the exact optical composition and emotional resonance that moves the needle for luxury brands." },
-    { opacity: text2Opacity, y: text2Y, label: "Act II · The Craft", heading: "Crafted with intent.", body: "Lighting, framing, and pacing — synchronized on set and in post-production to deliver theatrical quality across every screen." },
-    { opacity: text3Opacity, y: text3Y, label: "Act III · The Legacy", heading: "Built to last.", body: "Films, campaigns, and lookbooks that echo in the culture long after launch. Your story, immortalized in high definition." },
+    {
+      act: "ACT I",
+      label: "The Vision",
+      heading: "Every detail matters.",
+      body: "We look beyond the surface, finding the exact optical composition and emotional resonance that moves the needle for luxury brands.",
+      image: "/images/services-lighting.jpg",
+      tag: "OPTICAL PRECISION",
+    },
+    {
+      act: "ACT II",
+      label: "The Craft",
+      heading: "Crafted with intent.",
+      body: "Lighting, framing, and pacing — synchronized on set and in post-production to deliver theatrical quality across every screen.",
+      image: "/images/about-bts.jpg",
+      tag: "THEATRICAL RIGOR",
+    },
+    {
+      act: "ACT III",
+      label: "The Legacy",
+      heading: "Built to last.",
+      body: "Films, campaigns, and lookbooks that echo in the culture long after launch. Your story, immortalized in high definition.",
+      image: "/images/careers-meeting.jpg",
+      tag: "TIMELESS IMPACT",
+    },
   ];
 
   return (
-    <section ref={containerRef} className="relative h-[300vh] bg-background">
-      <div className="sticky top-0 h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="relative h-full w-full max-w-[1600px] overflow-hidden bg-black rounded-[2rem] sm:rounded-[3rem] border border-[var(--cinematic-border)]/50">
+    <section className="relative py-28 px-4 sm:px-6 lg:px-8 bg-background border-t border-border/60 overflow-hidden isolate">
+      {/* Background Ambient Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[50vh] bg-brand/10 blur-[140px] rounded-full pointer-events-none -z-10" />
 
-          <motion.div style={{ scale: imageScale, opacity: img1Opacity }} className="absolute inset-0 h-full w-full transform-gpu will-change-[transform,opacity]">
-            <Image src="/images/services-lighting.jpg" alt="Visual setup 1" fill sizes="100vw" className="object-cover object-center" priority />
-          </motion.div>
-          <motion.div style={{ opacity: img2Opacity }} className="absolute inset-0 h-full w-full transform-gpu will-change-[opacity]">
-            <Image src="/images/about-bts.jpg" alt="Visual setup 2" fill sizes="100vw" className="object-cover object-center" />
-          </motion.div>
-          <motion.div style={{ opacity: img3Opacity }} className="absolute inset-0 h-full w-full transform-gpu will-change-[opacity]">
-            <Image src="/images/careers-meeting.jpg" alt="Visual setup 3" fill sizes="100vw" className="object-cover object-[center_20%]" />
-          </motion.div>
-
-          {/* Dark Contrast Overlays so text is crystal clear over any background image */}
-          <div className="absolute inset-0 bg-black/60 z-10 pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/70 z-10 pointer-events-none" />
-
-          <div className="absolute inset-0 z-20 flex items-center justify-center px-4 pointer-events-none">
-            {acts.map((act, i) => (
-              <motion.div
-                key={i}
-                style={{ opacity: act.opacity, y: act.y }}
-                className="absolute text-center max-w-2xl transform-gpu will-change-[transform,opacity] pointer-events-auto bg-black/70 backdrop-blur-xl border border-white/20 p-8 sm:p-12 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9)] mx-4"
-              >
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/20 border border-brand/50 text-brand text-xs sm:text-sm font-bold tracking-[0.3em] uppercase mb-5 shadow-lg">
-                  <span>{act.label}</span>
-                </div>
-                <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-white font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,1)] leading-tight mb-4">
-                  {act.heading}
-                </h2>
-                <p className="mt-4 text-base sm:text-xl text-white font-medium leading-relaxed max-w-lg mx-auto drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">
-                  {act.body}
-                </p>
-              </motion.div>
-            ))}
+      <div className="max-w-7xl mx-auto space-y-16">
+        {/* Section Header */}
+        <Reveal direction="up">
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/10 border border-brand/30 text-brand text-xs font-bold tracking-[0.3em] uppercase">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Cinematic Principles</span>
+            </div>
+            <h2 className="font-display text-4xl sm:text-6xl font-bold text-foreground tracking-tight">
+              The Three Acts of <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand via-rose-500 to-amber-500">Visual Excellence</span>
+            </h2>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
+              From initial concept to final theater color grade, we orchestrate every production through three rigorous cinematic phases.
+            </p>
           </div>
+        </Reveal>
+
+        {/* 3-Card Grid with Natural Scroll */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {acts.map((act, i) => (
+            <Reveal key={i} direction="up" delay={i * 0.15}>
+              <div className="group relative rounded-3xl overflow-hidden border border-border/80 bg-card hover:border-brand/60 transition-all duration-500 flex flex-col justify-between min-h-[480px] shadow-xl hover:shadow-[0_20px_50px_rgba(235,61,38,0.15)]">
+                {/* Background Image with Dark Gradient */}
+                <div className="absolute inset-0 z-0">
+                  <Image
+                    src={act.image}
+                    alt={act.heading}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 33vw"
+                    className="object-cover object-center group-hover:scale-105 transition-transform duration-700 brightness-[0.45] group-hover:brightness-[0.55]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-10" />
+                </div>
+
+                {/* Card Header */}
+                <div className="relative z-20 p-8 flex items-center justify-between">
+                  <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.25em] bg-brand text-white shadow-md">
+                    {act.act}
+                  </span>
+                  <span className="text-xs font-mono tracking-widest text-white/70 uppercase">
+                    {act.tag}
+                  </span>
+                </div>
+
+                {/* Card Body */}
+                <div className="relative z-20 p-8 pt-0 space-y-4">
+                  <span className="text-xs font-bold tracking-[0.25em] uppercase text-brand block">
+                    {act.label}
+                  </span>
+                  <h3 className="font-display text-2xl sm:text-3xl font-bold text-white leading-snug drop-shadow-sm">
+                    {act.heading}
+                  </h3>
+                  <p className="text-white/80 text-sm leading-relaxed font-normal">
+                    {act.body}
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>

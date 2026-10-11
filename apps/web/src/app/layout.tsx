@@ -54,7 +54,6 @@ export default function RootLayout({
           <AuthProvider>
             <LenisProvider>
               <CinematicAtmosphere />
-              <LayoutPreloader />
               <Toaster position="top-right" richColors />
               <div className="min-h-screen flex flex-col bg-background text-foreground relative z-10">
                 <PageTransitionWrapper>
