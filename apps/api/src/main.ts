@@ -50,6 +50,8 @@ async function bootstrap() {
   // CORS — allow localhost + production origins
   const allowedOrigins = [
     appUrl,
+    'https://shivaste.com',
+    'https://www.shivaste.com',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
@@ -65,7 +67,8 @@ async function bootstrap() {
       if (
         allowedOrigins.includes(origin) ||
         /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin) ||
-        /\.vercel\.app$/.test(origin)
+        /\.vercel\.app$/.test(origin) ||
+        /(^|\.)shivaste\.com$/.test(origin)
       ) {
         return callback(null, true);
       }
@@ -74,6 +77,14 @@ async function bootstrap() {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'apikey'],
+  });
+
+  // Support both /api/v1 and legacy /api endpoints smoothly
+  app.use((req: any, res: any, next: any) => {
+    if (req.url && req.url.startsWith('/api/') && !req.url.startsWith('/api/v1/')) {
+      req.url = req.url.replace('/api/', '/api/v1/');
+    }
+    next();
   });
 
   // Global prefix

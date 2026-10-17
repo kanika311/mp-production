@@ -93,9 +93,18 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Not authenticated — redirect to login for any protected route
+  // Not authenticated — redirect to specific designated login portal
   const isProtected = Object.keys(ROLE_ROUTES).some(p => pathname.startsWith(p));
   if (isProtected && !userRole) {
+    if (pathname.startsWith('/super-admin') || (pathname.startsWith('/studio-8f2k') && !pathname.startsWith('/studio-8f2k/mgmt'))) {
+      return NextResponse.redirect(new URL('/sushant-super-admin', req.url));
+    }
+    if (pathname.startsWith('/admin') || pathname.startsWith('/studio-8f2k/mgmt')) {
+      return NextResponse.redirect(new URL('/sushant-admin', req.url));
+    }
+    if (pathname.startsWith('/employee-portal') || pathname.startsWith('/editor-portal') || pathname.startsWith('/project-manager')) {
+      return NextResponse.redirect(new URL('/employee', req.url));
+    }
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
@@ -115,8 +124,8 @@ export async function middleware(req: NextRequest) {
 
 function getDashboardUrl(role: Role): string {
   switch (role) {
-    case Role.SUPER_ADMIN:    return '/studio-8f2k';
-    case Role.ADMIN:          return '/studio-8f2k/mgmt';
+    case Role.SUPER_ADMIN:    return '/super-admin';
+    case Role.ADMIN:          return '/admin';
     case Role.CLIENT:         return '/client-portal';
     case Role.TALENT:         return '/talent-dashboard';
     case Role.EDITOR:         return '/editor-portal';

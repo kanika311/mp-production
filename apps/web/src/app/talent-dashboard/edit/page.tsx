@@ -1,18 +1,43 @@
+import Link from 'next/link';
+import { Eye } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import FullEditProfileClient from './FullEditProfileClient';
 import { PortalNavbar } from '@/components/ui/PortalNavbar';
 import { auth } from '@/auth';
 import { serverFetchAPI } from '@/lib/server-api-client';
-async function getTalentProfile(accessToken: string) {
+async function getTalentProfile(sessionUser: any) {
   try {
     const data = await serverFetchAPI(`/talent/me`, { next: { revalidate: 0 } });
-    if (!data) return null;
-    return data.data ? data.data : data;
-  } catch (error) {
-    console.error('Error fetching profile in edit:', error);
-    return null;
+    if (data) return data.data ? data.data : data;
+  } catch (error: any) {
+    // If not found, attempt auto-initialization
+    try {
+      const metadata = sessionUser?.user_metadata || {};
+      const stageName = sessionUser?.name || metadata.full_name || 'Talent Member';
+      const category = metadata.category || 'actor';
+      const city = metadata.city || 'Mumbai';
+      const bio = metadata.bio || `Passionate ${category} based in ${city}.`;
+      const experienceLevel = metadata.experienceLevel || metadata.experience || 'fresher';
+
+      await serverFetchAPI(`/talent/submit`, {
+        method: 'POST',
+        body: JSON.stringify({
+          stageName,
+          bio,
+          experienceLevel,
+        }),
+      });
+
+      const freshData = await serverFetchAPI(`/talent/me`, { next: { revalidate: 0 } });
+      if (freshData) {
+        return freshData.data ? freshData.data : freshData;
+      }
+    } catch (initErr) {
+      console.warn('Auto profile initialization in edit page:', initErr);
+    }
   }
+  return null;
 }
 
 export default async function EditTalentProfilePage() {
@@ -21,21 +46,62 @@ export default async function EditTalentProfilePage() {
     redirect('/login');
   }
 
-  const accessToken = (session as any).accessToken;
-  const profile = await getTalentProfile(accessToken);
+  const metadata = (session.user as any)?.user_metadata || {};
+  let profile = await getTalentProfile(session.user);
 
+  // If still no profile in DB, provide a fully typed fallback so the talent can immediately enter details & save
   if (!profile) {
-    redirect('/talent-dashboard');
+    profile = {
+      id: session.user.id,
+      userId: session.user.id,
+      stageName: session.user.name || metadata.full_name || '',
+      bio: metadata.bio || `Passionate ${metadata.category || 'talent'} from ${metadata.city || 'India'}.`,
+      experienceLevel: metadata.experienceLevel || metadata.experience || 'fresher',
+      status: 'DRAFT',
+      user: {
+        id: session.user.id,
+        name: session.user.name || metadata.full_name || '',
+        email: session.user.email,
+        phone: metadata.phone || '',
+      },
+      userTalents: [],
+      userSkills: [],
+      userLanguages: [],
+      socialLinks: [],
+    };
   }
 
   return (
     <>
       <PortalNavbar role="TALENT" />
-      <main className="min-h-screen bg-background pt-32 pb-16">
+      <main className="min-h-screen bg-background pt-28 md:pt-32 pb-24">
         <Container>
-          <div className="mb-8">
-            <h1 className="text-3xl font-serif text-foreground mb-2">Edit Profile</h1>
-            <p className="text-muted-foreground">Manage your public information and portfolio.</p>
+          <div className="mb-6 border-b border-border/60 pb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-serif text-foreground font-bold">
+                  Edit Profile
+                </h1>
+              </div>
+              <div className="flex items-center gap-3">
+                {profile.status === 'ACTIVE' && (
+                  <Link
+                    href={`/talent/${profile.slug || profile.id}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-border bg-card hover:bg-surface text-foreground transition-all shadow-xs"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-brand" /> View Public Profile
+                  </Link>
+                )}
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  profile.status === 'ACTIVE'
+                    ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                    : 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                }`}>
+                  {profile.status === 'ACTIVE' ? '✓ Active on Roster' : 'Verification Required'}
+                </span>
+              </div>
+            </div>
           </div>
           <FullEditProfileClient initialData={profile} />
         </Container>

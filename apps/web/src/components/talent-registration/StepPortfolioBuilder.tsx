@@ -37,18 +37,37 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as any } },
 };
 
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function StepPortfolioBuilder({ data, onChange, errors }: StepPortfolioBuilderProps) {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const compCardInputRef = useRef<HTMLInputElement>(null);
   const [videoDragging, setVideoDragging] = useState(false);
 
-  const handleGalleryAdd = useCallback((files: File[]) => {
-    const newImages: PortfolioImage[] = files.map((file) => ({
-      id: crypto.randomUUID(),
-      url: URL.createObjectURL(file),
-      file,
-    }));
+  const handleGalleryAdd = useCallback(async (files: File[]) => {
+    const newImages: PortfolioImage[] = await Promise.all(
+      files.map(async (file) => {
+        let url = '';
+        try {
+          url = await fileToDataUrl(file);
+        } catch {
+          url = URL.createObjectURL(file);
+        }
+        return {
+          id: crypto.randomUUID(),
+          url,
+          file,
+        };
+      })
+    );
     onChange({ galleryImages: [...data.galleryImages, ...newImages] });
   }, [data.galleryImages, onChange]);
 
@@ -98,10 +117,16 @@ export function StepPortfolioBuilder({ data, onChange, errors }: StepPortfolioBu
             <ImageUploader
               label="Profile Photo"
               value={data.profilePhotoPreview}
-              onUpload={(file) => {
+              onUpload={async (file) => {
+                let dataUrl = '';
+                try {
+                  dataUrl = await fileToDataUrl(file);
+                } catch {
+                  dataUrl = URL.createObjectURL(file);
+                }
                 onChange({
                   profilePhoto: file,
-                  profilePhotoPreview: URL.createObjectURL(file),
+                  profilePhotoPreview: dataUrl,
                 });
               }}
               onRemove={() => onChange({ profilePhoto: null, profilePhotoPreview: '' })}
@@ -118,10 +143,16 @@ export function StepPortfolioBuilder({ data, onChange, errors }: StepPortfolioBu
             <ImageUploader
               label="Cover Banner"
               value={data.coverBannerPreview}
-              onUpload={(file) => {
+              onUpload={async (file) => {
+                let dataUrl = '';
+                try {
+                  dataUrl = await fileToDataUrl(file);
+                } catch {
+                  dataUrl = URL.createObjectURL(file);
+                }
                 onChange({
                   coverBanner: file,
-                  coverBannerPreview: URL.createObjectURL(file),
+                  coverBannerPreview: dataUrl,
                 });
               }}
               onRemove={() => onChange({ coverBanner: null, coverBannerPreview: '' })}

@@ -8,23 +8,32 @@ interface WizardProgressProps {
   totalSteps: number;
   steps: { label: string; icon: React.ReactNode }[];
   completionPercent: number;
+  completedStepNumbers?: number[];
+  onStepClick?: (stepNum: number) => void;
 }
 
-export function WizardProgress({ currentStep, totalSteps, steps, completionPercent }: WizardProgressProps) {
+export function WizardProgress({
+  currentStep,
+  totalSteps,
+  steps,
+  completionPercent,
+  completedStepNumbers = [],
+  onStepClick,
+}: WizardProgressProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="mb-10">
+      <div className="mb-6">
         <h2 className="text-lg font-serif text-[var(--foreground)] tracking-wide">
           MP <span className="text-[var(--brand)]">Productions</span>
         </h2>
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--muted-foreground)] mt-1">
+        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--muted-foreground)] mt-0.5">
           Talent Onboarding
         </p>
       </div>
 
       {/* Completion ring */}
-      <div className="relative w-24 h-24 mx-auto mb-8">
+      <div className="relative w-22 h-22 mx-auto mb-6">
         <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
           <circle
             cx="48" cy="48" r="40"
@@ -64,15 +73,18 @@ export function WizardProgress({ currentStep, totalSteps, steps, completionPerce
         {steps.map((step, index) => {
           const stepNum = index + 1;
           const isActive = stepNum === currentStep;
-          const isCompleted = stepNum < currentStep;
+          const isCompleted = completedStepNumbers.includes(stepNum);
+          const isSkipped = stepNum < currentStep && !isCompleted;
           const isFuture = stepNum > currentStep;
 
           return (
             <div
               key={stepNum}
+              onClick={() => onStepClick?.(stepNum)}
               className={`
                 relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
-                ${isActive ? 'bg-[var(--brand)]/10' : ''}
+                ${isActive ? 'bg-[var(--brand)]/10' : 'hover:bg-surface/80'}
+                ${onStepClick ? 'cursor-pointer' : ''}
               `}
             >
               {/* Connector line */}
@@ -90,12 +102,14 @@ export function WizardProgress({ currentStep, totalSteps, steps, completionPerce
               <div
                 className={`
                   relative z-10 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                  transition-all duration-500 text-xs font-bold
+                  transition-all duration-300 text-xs font-bold
                   ${isCompleted
-                    ? 'bg-[var(--brand)] text-white'
+                    ? 'bg-[var(--brand)] text-white shadow-sm'
                     : isActive
-                      ? 'border-2 border-[var(--brand)] text-[var(--brand)] bg-[var(--brand)]/10'
-                      : 'border border-[var(--border)] text-[var(--muted-foreground)]'
+                      ? 'border-2 border-[var(--brand)] text-[var(--brand)] bg-[var(--brand)]/10 shadow-sm'
+                      : isSkipped
+                        ? 'border-2 border-dashed border-[var(--border)] text-[var(--muted-foreground)]/40 bg-transparent'
+                        : 'border border-[var(--border)]/60 text-[var(--muted-foreground)]/40 bg-transparent'
                   }
                 `}
               >
@@ -106,27 +120,38 @@ export function WizardProgress({ currentStep, totalSteps, steps, completionPerce
                     transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                     width="14" height="14" viewBox="0 0 16 16" fill="none"
                   >
-                    <path d="M3.5 8L6.5 11L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3.5 8L6.5 11L12.5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                   </motion.svg>
+                ) : isSkipped ? (
+                  null
                 ) : (
                   <span>{step.icon}</span>
                 )}
               </div>
 
               {/* Step label */}
-              <div className="min-w-0">
-                <p className={`
-                  text-[10px] font-semibold tracking-wider uppercase
-                  ${isFuture ? 'text-[var(--muted-foreground)]/60' : 'text-[var(--muted-foreground)]'}
-                `}>
-                  Step {stepNum}
-                </p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <p className={`
+                    text-[10px] font-semibold tracking-wider uppercase
+                    ${isActive
+                      ? 'text-[var(--brand)]'
+                      : isCompleted
+                        ? 'text-[var(--muted-foreground)]'
+                        : isSkipped
+                          ? 'text-amber-500/90'
+                          : 'text-[var(--muted-foreground)]/50'
+                    }
+                  `}>
+                    Step {stepNum} {isSkipped && '• Skipped'}
+                  </p>
+                </div>
                 <p className={`
                   text-sm font-medium truncate
                   ${isActive
-                    ? 'text-[var(--brand)]'
+                    ? 'text-[var(--brand)] font-semibold'
                     : isCompleted
-                      ? 'text-[var(--foreground)]'
+                      ? 'text-[var(--foreground)] font-medium'
                       : 'text-[var(--muted-foreground)]'
                   }
                 `}>

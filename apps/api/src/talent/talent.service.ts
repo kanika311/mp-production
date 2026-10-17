@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, SocialPlatform, HireRequestStatus } from '@prisma/client';
+import { Prisma, SocialPlatform, HireRequestStatus, MediaType } from '@prisma/client';
 import { TalentProfileStatus } from '@mdms/types';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { CreateHireRequestDto } from './dto/create-hire-request.dto';
@@ -38,6 +38,7 @@ export class TalentService {
             avatarUrl: true,
             city: true,
             state: true,
+            gender: true,
           },
         },
         userTalents: {
@@ -45,6 +46,18 @@ export class TalentService {
             category: true,
           },
         },
+        portfolioMedia: true,
+        userSkills: {
+          include: {
+            skill: true,
+          },
+        },
+        userLanguages: {
+          include: {
+            language: true,
+          },
+        },
+        pricing: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -58,9 +71,15 @@ export class TalentService {
       include: {
         user: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             avatarUrl: true,
+            city: true,
+            state: true,
+            country: true,
+            gender: true,
+            phone: true,
           },
         },
         userTalents: {
@@ -80,6 +99,8 @@ export class TalentService {
           },
         },
         portfolioMedia: true,
+        pricing: true,
+        availability: true,
       },
     });
 
@@ -87,27 +108,73 @@ export class TalentService {
       throw new NotFoundException('Talent profile not found');
     }
 
+    // Merge draftData if available for missing fields
+    if (profile.draftData && typeof profile.draftData === 'object') {
+      const draft = profile.draftData as any;
+      if (!profile.bio && draft.bio) {
+        profile.bio = draft.bio;
+      }
+      if (!profile.stageName && (draft.stageName || draft.fullName)) {
+        profile.stageName = draft.stageName || draft.fullName;
+      }
+      if (!profile.experienceLevel && (draft.experienceLevel || draft.experience)) {
+        profile.experienceLevel = draft.experienceLevel || draft.experience;
+      }
+      if ((!profile.coverBannerUrl || profile.coverBannerUrl.startsWith('blob:')) && draft.coverBannerPreview && !draft.coverBannerPreview.startsWith('blob:')) {
+        profile.coverBannerUrl = draft.coverBannerPreview;
+      }
+      if (profile.user && (!profile.user.avatarUrl || profile.user.avatarUrl.startsWith('blob:')) && draft.profilePhotoPreview && !draft.profilePhotoPreview.startsWith('blob:')) {
+        profile.user.avatarUrl = draft.profilePhotoPreview;
+      }
+      if ((!profile.userTalents || profile.userTalents.length === 0) && (draft.category || draft.primaryCategory)) {
+        (profile as any).inferredCategory = draft.category || draft.primaryCategory;
+      }
+      if (!profile.pricing && draft.pricingAmount) {
+        const rate = parseInt(String(draft.pricingAmount).replace(/\D/g, ''), 10);
+        if (rate) {
+          (profile as any).pricing = {
+            perDay: rate * 100,
+            currency: 'INR',
+          };
+        }
+      }
+    }
+
     return profile;
   }
 
-  private async ensureUserExists(userId: string) {
+  private async ensureUserExists(userId: string, data?: any) {
+    const rawName = data?.fullName || data?.stageName || '';
+    const [firstName = 'Talent', ...rest] = rawName ? rawName.trim().split(' ') : ['Talent'];
+    const lastName = rest.join(' ') || (userId ? userId.slice(0, 6) : 'User');
+    const email = data?.email || `${userId?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'talent'}@mdms.com`;
+
     await this.prisma.user.upsert({
       where: { id: userId },
-      update: {},
+      update: {
+        ...(data?.phone && { phone: data.phone }),
+        ...(data?.city && { city: data.city }),
+        ...(data?.state && { state: data.state }),
+        ...(data?.country && { country: data.country }),
+        ...(rawName && { firstName, lastName }),
+      },
       create: {
         id: userId,
-        email: `${userId.toLowerCase().replace(/[^a-z0-9]/g, '') || 'talent'}@mdms.com`,
-        firstName: 'Talent',
-        lastName: 'User',
+        email,
+        firstName,
+        lastName,
         role: 'TALENT',
-        phone: null,
+        phone: data?.phone || null,
+        city: data?.city || null,
+        state: data?.state || null,
+        country: data?.country || null,
         isActive: true,
       },
     });
   }
 
   async saveDraft(userId: string, data: any) {
-    await this.ensureUserExists(userId);
+    await this.ensureUserExists(userId, data?.wizardData || data);
     const { currentStep, wizardData } = data;
     
     // UPSERT a draft profile for the user
@@ -128,7 +195,7 @@ export class TalentService {
   }
 
   async submitProfile(userId: string, data: any) {
-    await this.ensureUserExists(userId);
+    await this.ensureUserExists(userId, data);
     const { 
       primaryTalentId, secondaryTalentIds, attributes,
       bio, stageName, experienceLevel,
@@ -136,57 +203,95 @@ export class TalentService {
       resumeName, compCardName, galleryImages,
       achievements, education, brandsWorkedWith,
       instagram, youtube, linkedin, portfolio, facebook, imdb, website, behance, pinterest, spotify, tiktok,
+      languages, skills, pricingType, pricingAmount,
+      isAvailableForTravel, isAvailableForRemote, isAvailableImmediate,
       ...rest 
     } = data;
+
+    const existing = await this.prisma.talentProfile.findUnique({ where: { userId } });
+    let finalSlug = existing?.slug;
+    if (!finalSlug || finalSlug.startsWith('draft-')) {
+      const namePart = (stageName || data.fullName || 'talent').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      finalSlug = `${namePart}-${Date.now().toString().slice(-4)}`;
+    }
+
+    // Sanitize image previews (never save dead blob: URLs to database)
+    const sanitizedCover = (coverBannerPreview && typeof coverBannerPreview === 'string' && !coverBannerPreview.startsWith('blob:'))
+      ? coverBannerPreview
+      : (existing?.coverBannerUrl && !existing.coverBannerUrl.startsWith('blob:') ? existing.coverBannerUrl : null);
+
+    const sanitizedAvatar = (profilePhotoPreview && typeof profilePhotoPreview === 'string' && !profilePhotoPreview.startsWith('blob:'))
+      ? profilePhotoPreview
+      : null;
 
     // 1. Upsert profile with all the structured data
     const profile = await this.prisma.talentProfile.upsert({
       where: { userId },
       update: {
+        slug: finalSlug,
         bio,
         stageName,
         experienceLevel,
         status: TalentProfileStatus.PENDING_REVIEW,
         onboardingStep: 7,
         onboardingCompleted: true,
-        coverBannerUrl: coverBannerPreview,
-        introductionVideoUrl: introductionVideoPreview,
+        ...(sanitizedCover && { coverBannerUrl: sanitizedCover }),
+        introductionVideoUrl: introductionVideoPreview && !introductionVideoPreview.startsWith('blob:') ? introductionVideoPreview : null,
         resumeUrl: resumeName ? `documents/${resumeName}` : null,
         compCardUrl: compCardName ? `documents/${compCardName}` : null,
         achievements: achievements ? (achievements as any) : Prisma.DbNull,
         education: education ? (education as any) : Prisma.DbNull,
         brandsWorkedWith,
-        draftData: Prisma.DbNull, // clear draft data
+        draftData: data || Prisma.DbNull,
       },
       create: {
         userId,
-        slug: stageName ? stageName.toLowerCase().replace(/\s+/g, '-') : `talent-${Date.now()}`,
+        slug: finalSlug,
         bio,
         stageName,
         experienceLevel,
         status: TalentProfileStatus.PENDING_REVIEW,
         onboardingStep: 7,
         onboardingCompleted: true,
-        coverBannerUrl: coverBannerPreview,
-        introductionVideoUrl: introductionVideoPreview,
+        coverBannerUrl: sanitizedCover,
+        introductionVideoUrl: introductionVideoPreview && !introductionVideoPreview.startsWith('blob:') ? introductionVideoPreview : null,
         resumeUrl: resumeName ? `documents/${resumeName}` : null,
         compCardUrl: compCardName ? `documents/${compCardName}` : null,
         achievements: achievements ? (achievements as any) : Prisma.DbNull,
         education: education ? (education as any) : Prisma.DbNull,
         brandsWorkedWith,
+        draftData: data || Prisma.DbNull,
       },
     });
+
+    if (sanitizedAvatar) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { avatarUrl: sanitizedAvatar },
+      }).catch(() => {});
+    }
 
     // 2. Set categories (primary + secondary)
     await this.prisma.userTalent.deleteMany({
       where: { talentProfileId: profile.id }
     });
 
+    let catId = primaryTalentId;
+    if (!catId && (data.category || data.primaryCategory)) {
+      const catName = data.category || data.primaryCategory;
+      const matchedCat = await this.prisma.talentCategory.findFirst({
+        where: { name: { equals: catName, mode: 'insensitive' } },
+      });
+      if (matchedCat) {
+        catId = matchedCat.id;
+      }
+    }
+
     const categoryInserts = [];
-    if (primaryTalentId) {
+    if (catId) {
       categoryInserts.push({
         talentProfileId: profile.id,
-        categoryId: primaryTalentId,
+        categoryId: catId,
         isPrimary: true,
         attributes: attributes || {},
       });
@@ -223,40 +328,212 @@ export class TalentService {
     if (pinterest) socialLinks.push({ talentProfileId: profile.id, platform: SocialPlatform.PINTEREST, url: pinterest });
     if (spotify) socialLinks.push({ talentProfileId: profile.id, platform: SocialPlatform.SPOTIFY, url: spotify });
     if (tiktok) socialLinks.push({ talentProfileId: profile.id, platform: SocialPlatform.TIKTOK, url: tiktok });
-    
     if (socialLinks.length > 0) {
       await this.prisma.socialLink.createMany({ data: socialLinks });
+    }
+    
+    // 4. Save Gallery Portfolio Media (excluding dead blob: URLs)
+    if (galleryImages && Array.isArray(galleryImages) && galleryImages.length > 0) {
+      await this.prisma.portfolioMedia.deleteMany({
+        where: { talentProfileId: profile.id },
+      });
+      const mediaInserts = galleryImages
+        .map((img: any, idx: number) => ({
+          talentProfileId: profile.id,
+          url: typeof img === 'string' ? img : (img.url || img.fileUrl || ''),
+          type: MediaType.PORTFOLIO_IMAGE,
+          order: idx,
+        }))
+        .filter((m: any) => Boolean(m.url) && !m.url.startsWith('blob:'));
+
+      if (mediaInserts.length > 0) {
+        await this.prisma.portfolioMedia.createMany({ data: mediaInserts });
+      }
+    }
+
+    // 5. Save Pricing
+    const numericRate = pricingAmount ? parseInt(String(pricingAmount).replace(/\D/g, ''), 10) : null;
+    if (numericRate) {
+      const perDay = pricingType === 'per-hour' ? null : numericRate * 100;
+      const perHour = pricingType === 'per-hour' ? numericRate * 100 : null;
+      await this.prisma.talentPricing.upsert({
+        where: { talentProfileId: profile.id },
+        update: { perDay, perHour, currency: 'INR' },
+        create: { talentProfileId: profile.id, perDay, perHour, currency: 'INR' },
+      }).catch(() => {});
+    }
+
+    // 6. Save Availability
+    await this.prisma.talentAvailability.upsert({
+      where: { talentProfileId: profile.id },
+      update: {
+        travelReady: isAvailableForTravel ?? true,
+        availablePartTime: isAvailableForRemote ?? true,
+        availableFullTime: isAvailableImmediate ?? true,
+      },
+      create: {
+        talentProfileId: profile.id,
+        travelReady: isAvailableForTravel ?? true,
+        availablePartTime: isAvailableForRemote ?? true,
+        availableFullTime: isAvailableImmediate ?? true,
+      },
+    }).catch(() => {});
+
+    // 7. Save Spoken Languages
+    if (languages && Array.isArray(languages) && languages.length > 0) {
+      await this.prisma.userLanguage.deleteMany({ where: { talentProfileId: profile.id } }).catch(() => {});
+      for (const langName of languages) {
+        if (!langName || typeof langName !== 'string') continue;
+        let lang = await this.prisma.language.findUnique({ where: { name: langName } }).catch(() => null);
+        if (!lang) {
+          lang = await this.prisma.language.create({ data: { name: langName } }).catch(() => null);
+        }
+        if (lang) {
+          await this.prisma.userLanguage.create({
+            data: { talentProfileId: profile.id, languageId: lang.id, proficiency: 'Fluent' },
+          }).catch(() => {});
+        }
+      }
+    }
+
+    // 8. Save Skills & Specializations
+    if (skills && Array.isArray(skills) && skills.length > 0) {
+      await this.prisma.userSkill.deleteMany({ where: { talentProfileId: profile.id } }).catch(() => {});
+      for (const skillName of skills) {
+        if (!skillName || typeof skillName !== 'string') continue;
+        let sk = await this.prisma.skill.findUnique({ where: { name: skillName } }).catch(() => null);
+        if (!sk) {
+          sk = await this.prisma.skill.create({ data: { name: skillName, isApproved: true } }).catch(() => null);
+        }
+        if (sk) {
+          await this.prisma.userSkill.create({
+            data: { talentProfileId: profile.id, skillId: sk.id },
+          }).catch(() => {});
+        }
+      }
     }
 
     return profile;
   }
 
-  async getPendingProfiles() {
+  async getPendingProfiles(status?: string) {
+    let whereClause: Prisma.TalentProfileWhereInput = { status: TalentProfileStatus.PENDING_REVIEW };
+    if (status === 'ALL') {
+      whereClause = {};
+    } else if (status === 'ACTIVE' || status === 'APPROVED') {
+      whereClause = { status: TalentProfileStatus.ACTIVE };
+    } else if (status === 'SUSPENDED' || status === 'REJECTED') {
+      whereClause = { status: TalentProfileStatus.SUSPENDED };
+    } else if (status === 'DRAFT') {
+      whereClause = { status: TalentProfileStatus.DRAFT };
+    } else if (status === 'PENDING_REVIEW') {
+      whereClause = { status: TalentProfileStatus.PENDING_REVIEW };
+    }
+
     return this.prisma.talentProfile.findMany({
-      where: { status: TalentProfileStatus.PENDING_REVIEW },
-      include: { user: true },
-      orderBy: { createdAt: 'desc' },
+      where: whereClause,
+      include: {
+        user: true,
+        userTalents: {
+          include: {
+            category: true,
+          },
+        },
+        socialLinks: true,
+        portfolioMedia: true,
+        userSkills: {
+          include: {
+            skill: true,
+          },
+        },
+        userLanguages: {
+          include: {
+            language: true,
+          },
+        },
+        pricing: true,
+        availability: true,
+      },
+      orderBy: { updatedAt: 'desc' },
     });
   }
 
-  async moderateProfile(id: string, status: TalentProfileStatus, reviewNote?: string) {
+  async getProfileForModeration(idOrUserIdOrSlug: string) {
+    const profile = await this.prisma.talentProfile.findFirst({
+      where: {
+        OR: [
+          { id: idOrUserIdOrSlug },
+          { userId: idOrUserIdOrSlug },
+          { slug: idOrUserIdOrSlug },
+        ],
+      },
+      include: {
+        user: true,
+        userTalents: {
+          include: {
+            category: true,
+          },
+        },
+        socialLinks: true,
+        portfolioMedia: true,
+        userSkills: {
+          include: {
+            skill: true,
+          },
+        },
+        userLanguages: {
+          include: {
+            language: true,
+          },
+        },
+        pricing: true,
+        availability: true,
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException(`Talent profile ${idOrUserIdOrSlug} not found`);
+    }
+
+    return profile;
+  }
+
+  async moderateProfile(idOrUserId: string, status: TalentProfileStatus, reviewNote?: string) {
+    const existing = await this.prisma.talentProfile.findFirst({
+      where: {
+        OR: [
+          { id: idOrUserId },
+          { userId: idOrUserId },
+          { slug: idOrUserId },
+        ],
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Talent profile ${idOrUserId} not found`);
+    }
+
     const profile = await this.prisma.talentProfile.update({
-      where: { id },
+      where: { id: existing.id },
       data: { status, reviewNote, approvedAt: status === TalentProfileStatus.ACTIVE ? new Date() : null },
       include: { user: true },
     });
 
-    if (profile.user.phone) {
-      if (status === TalentProfileStatus.ACTIVE) {
-        this.whatsappService.sendMessage(
-          profile.user.phone,
-          `Congratulations ${profile.user.firstName}! Your MP Production talent profile has been approved and is now live.`
-        );
-      } else if (status === TalentProfileStatus.DEACTIVATED || status === TalentProfileStatus.SUSPENDED) {
-        this.whatsappService.sendMessage(
-          profile.user.phone,
-          `MP Production: Your talent profile application update. Note: ${reviewNote || 'Please contact support.'}`
-        );
+    if (profile.user?.phone) {
+      try {
+        if (status === TalentProfileStatus.ACTIVE) {
+          this.whatsappService.sendMessage(
+            profile.user.phone,
+            `Congratulations ${profile.user.firstName}! Your MP Production talent profile has been approved and is now live.`
+          );
+        } else if (status === TalentProfileStatus.DEACTIVATED || status === TalentProfileStatus.SUSPENDED) {
+          this.whatsappService.sendMessage(
+            profile.user.phone,
+            `MP Production: Your talent profile application update. Note: ${reviewNote || 'Please contact support.'}`
+          );
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to send WhatsApp notification: ${err}`);
       }
     }
 

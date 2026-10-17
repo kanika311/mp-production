@@ -28,22 +28,22 @@ const EXPERIENCE_LEVELS = [
   { id: 'senior', label: 'Seasoned Veteran (5+ Years)' },
 ];
 
-/** Common dial codes for talent registration (no heavy geo package). */
+/** Common dial codes for talent registration with proper country flags. */
 const DIAL_CODES = [
-  { iso: 'IN', code: '+91', label: '🇮🇳 India +91' },
-  { iso: 'US', code: '+1', label: '🇺🇸 USA +1' },
-  { iso: 'GB', code: '+44', label: '🇬🇧 UK +44' },
-  { iso: 'AE', code: '+971', label: '🇦🇪 UAE +971' },
-  { iso: 'SG', code: '+65', label: '🇸🇬 Singapore +65' },
-  { iso: 'AU', code: '+61', label: '🇦🇺 Australia +61' },
-  { iso: 'CA', code: '+1', label: '🇨🇦 Canada +1' },
-  { iso: 'DE', code: '+49', label: '🇩🇪 Germany +49' },
-  { iso: 'FR', code: '+33', label: '🇫🇷 France +33' },
-  { iso: 'NP', code: '+977', label: '🇳🇵 Nepal +977' },
-  { iso: 'BD', code: '+880', label: '🇧🇩 Bangladesh +880' },
-  { iso: 'LK', code: '+94', label: '🇱🇰 Sri Lanka +94' },
-  { iso: 'PK', code: '+92', label: '🇵🇰 Pakistan +92' },
-  { iso: 'OTHER', code: '+', label: '🌍 Other +' },
+  { iso: 'IN', code: '+91', flag: '🇮🇳', name: 'India' },
+  { iso: 'US', code: '+1', flag: '🇺🇸', name: 'USA' },
+  { iso: 'GB', code: '+44', flag: '🇬🇧', name: 'UK' },
+  { iso: 'AE', code: '+971', flag: '🇦🇪', name: 'UAE' },
+  { iso: 'CA', code: '+1', flag: '🇨🇦', name: 'Canada' },
+  { iso: 'AU', code: '+61', flag: '🇦🇺', name: 'Australia' },
+  { iso: 'SG', code: '+65', flag: '🇸🇬', name: 'Singapore' },
+  { iso: 'DE', code: '+49', flag: '🇩🇪', name: 'Germany' },
+  { iso: 'FR', code: '+33', flag: '🇫🇷', name: 'France' },
+  { iso: 'NP', code: '+977', flag: '🇳🇵', name: 'Nepal' },
+  { iso: 'BD', code: '+880', flag: '🇧🇩', name: 'Bangladesh' },
+  { iso: 'LK', code: '+94', flag: '🇱🇰', name: 'Sri Lanka' },
+  { iso: 'PK', code: '+92', flag: '🇵🇰', name: 'Pakistan' },
+  { iso: 'OTHER', code: '+', flag: '🌍', name: 'Other' },
 ];
 
 const COUNTRY_OPTIONS = [
@@ -223,13 +223,98 @@ function SearchableDropdown({
   );
 }
 
+function CountryFlag({ iso }: { iso: string }) {
+  if (iso === 'OTHER') {
+    return <span className="text-base leading-none">🌍</span>;
+  }
+  return (
+    <img
+      src={`https://flagcdn.com/w40/${iso.toLowerCase()}.png`}
+      width={20}
+      height={14}
+      alt={iso}
+      className="rounded-[2px] object-cover inline-block shrink-0 shadow-xs border border-border/40"
+      loading="eager"
+    />
+  );
+}
+
+function DialCodePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedItem = DIAL_CODES.find((d) => d.code === value) || DIAL_CODES[0];
+
+  return (
+    <div className="relative shrink-0" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="input-premium bg-surface border border-border hover:border-brand rounded-xl text-foreground font-semibold px-2.5 py-3 flex items-center justify-between gap-1.5 cursor-pointer h-full transition-colors min-w-[96px]"
+      >
+        <CountryFlag iso={selectedItem.iso} />
+        <span className="text-xs font-mono font-bold">{selectedItem.code}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180 text-brand' : ''}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-50 left-0 mt-1.5 w-56 max-h-56 overflow-y-auto bg-popover border border-border rounded-xl shadow-2xl py-1 text-xs"
+          >
+            {DIAL_CODES.map((d) => (
+              <button
+                key={`${d.iso}-${d.code}`}
+                type="button"
+                onClick={() => {
+                  onChange(d.code);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between hover:bg-muted transition-colors ${
+                  value === d.code ? 'bg-brand/10 text-brand font-bold' : 'text-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <CountryFlag iso={d.iso} />
+                  <span className="font-medium">{d.name}</span>
+                </div>
+                <span className="font-mono text-muted-foreground font-bold">{d.code}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function SimpleTalentRegistrationForm() {
   const router = useRouter();
   const supabase = createClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    fullName: '',
+    famousName: '',
     dialCode: '+91',
     mobile: '',
     email: '',
@@ -262,15 +347,12 @@ export function SimpleTalentRegistrationForm() {
     return ['Other City / International Location', 'Other'];
   }, [formData.country, formData.state]);
 
-  const dialCodes = DIAL_CODES;
-
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!formData.fullName.trim()) newErrors.fullName = 'Name is required';
     if (!formData.mobile || formData.mobile.length < 6) newErrors.mobile = 'Enter a valid contact number';
     if (!formData.email.includes('@')) newErrors.email = 'Enter a valid email address';
-    if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (formData.password.length < 6) newErrors.password = 'Min. 6 characters required';
     if (!formData.country.trim()) newErrors.country = 'Country is required';
     if (!formData.state.trim()) newErrors.state = 'State / Province is required';
     if (!formData.city.trim()) newErrors.city = 'City is required';
@@ -289,14 +371,22 @@ export function SimpleTalentRegistrationForm() {
 
     setIsSubmitting(true);
     try {
+      const nameParts = formData.fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || 'Talent';
+      const lastName = nameParts.slice(1).join(' ') || (formData.famousName.trim() || '');
+      const stageName = formData.famousName.trim() || formData.fullName.trim();
+
       let registered = false;
+      let createdUserId: string | null = null;
+
       try {
         // 1. Try Server-Side Admin Auth API first (bypasses SMTP email verification)
         const registerRes = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: `${formData.firstName} ${formData.lastName}`.trim(),
+            name: formData.fullName.trim(),
+            stageName: stageName,
             email: formData.email,
             password: formData.password,
             role: 'talent',
@@ -313,6 +403,10 @@ export function SimpleTalentRegistrationForm() {
 
         if (registerRes.ok) {
           registered = true;
+          const registerData = await registerRes.json().catch(() => ({}));
+          if (registerData?.user?.id) {
+            createdUserId = registerData.user.id;
+          }
         } else if (registerRes.status !== 404) {
           const registerData = await registerRes.json().catch(() => ({}));
           throw new Error(registerData.message || 'Registration failed');
@@ -327,12 +421,13 @@ export function SimpleTalentRegistrationForm() {
 
       // 2. If reverse proxy blocked /api/auth/register (404), fallback directly to Supabase client sign up
       if (!registered) {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
             data: {
-              full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+              full_name: formData.fullName.trim(),
+              stage_name: stageName,
               role: 'talent',
               phone: `${formData.dialCode} ${formData.mobile}`.trim(),
               category: formData.category,
@@ -348,38 +443,62 @@ export function SimpleTalentRegistrationForm() {
         if (signUpError) {
           throw new Error(signUpError.message || 'Registration failed');
         }
+        if (signUpData?.user?.id) {
+          createdUserId = signUpData.user.id;
+        }
       }
 
       // Auto-login the talent after successful registration
-      const { error: loginError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: loginError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
       if (loginError) throw loginError;
+      if (signInData?.user?.id) {
+        createdUserId = signInData.user.id;
+      }
 
       // Create the backend TalentProfile (PENDING_REVIEW) so the applicant
       // appears in the admin moderation queue and — once approved — the public
       // directory. The profile can be enriched later in the talent dashboard.
+      const applicantPayload = {
+        userId: createdUserId,
+        stageName: stageName,
+        fullName: formData.fullName.trim(),
+        email: formData.email,
+        phone: `${formData.dialCode} ${formData.mobile}`.trim(),
+        country: formData.country,
+        state: formData.state,
+        city: formData.city,
+        pincode: formData.pincode,
+        bio: formData.bio || `Passionate ${formData.category} from ${formData.city}.`,
+        experienceLevel: formData.experience,
+        category: formData.category,
+      };
+
       try {
-        await fetchAPI('/talent/submit', {
+        const res = await fetch('/api/talent/submit', {
           method: 'POST',
-          body: JSON.stringify({
-            stageName: `${formData.firstName} ${formData.lastName}`.trim(),
-            bio: formData.bio || `Passionate ${formData.category} from ${formData.city}.`,
-            experienceLevel: formData.experience,
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(applicantPayload),
         });
+        if (!res.ok) {
+          await fetchAPI('/talent/submit', {
+            method: 'POST',
+            body: JSON.stringify(applicantPayload),
+          });
+        }
       } catch (profileErr) {
         // Non-blocking: the profile can still be completed from the dashboard.
         console.error('Talent profile creation deferred:', profileErr);
       }
 
-      toast.success('🎉 Registration Successful! Redirecting to your Talent Dashboard where you can upload photos & details...');
+      toast.success('🎉 Registration Successful! Opening your Profile Editor to add photos, videos & details...');
       
       setTimeout(() => {
-        router.push('/talent-dashboard');
+        router.push('/talent-dashboard/edit');
         router.refresh();
-      }, 1500);
+      }, 1200);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to submit. Please try again later.');
@@ -405,18 +524,7 @@ export function SimpleTalentRegistrationForm() {
           transition={{ duration: 0.6 }}
           className="text-center mb-10 md:mb-14 space-y-4"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-gold/10 border border-brand-gold/30 text-brand-gold text-xs font-bold tracking-widest uppercase shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Streamlined Quick Onboarding
-          </div>
-          
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-extrabold tracking-tight flex flex-col items-center gap-4">
-            <img src="/logo.png" alt="MP Productions" className="h-16 sm:h-20 md:h-24 w-auto object-contain drop-shadow-[0_0_25px_rgba(235,61,38,0.25)]" />
-            <span>Join the <span className="text-gradient-brand">Roster</span></span>
-          </h1>
-          
-          <p className="max-w-3xl mx-auto text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed font-medium">
-            Register below with your essential contact details. Once registered, you will unlock immediate access to your <span className="text-foreground font-bold">Personal Talent Dashboard</span> where you can upload photos, showreels, social links, and multiple talents at your own pace.
-          </p>
+    
         </motion.div>
 
         {/* Form Card */}
@@ -432,107 +540,101 @@ export function SimpleTalentRegistrationForm() {
           <form onSubmit={handleSubmit} className="space-y-8">
             
             {/* Section 1: Basic Identity */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex items-center gap-2 pb-3 border-b border-border text-xs font-extrabold tracking-widest uppercase text-brand">
                 <User className="w-4 h-4" /> 01. Personal Identification
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Row 1: Name & Famous Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-foreground uppercase tracking-wider mb-2">
-                    First Name <span className="text-brand">*</span>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    Name <span className="text-brand">*</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Aditya"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3.5 px-4 transition-colors"
+                    placeholder="e.g. Aditya Sharma"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 px-3.5 text-sm transition-colors"
                   />
-                  {errors.firstName && <p className="text-destructive text-xs mt-1.5 font-medium">{errors.firstName}</p>}
+                  {errors.fullName && <p className="text-destructive text-xs mt-1 font-medium">{errors.fullName}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-foreground uppercase tracking-wider mb-2">
-                    Last Name <span className="text-brand">*</span>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5 flex justify-between items-center">
+                    <span>Famous Name</span>
+                    <span className="text-muted-foreground text-[10px] font-normal normal-case">(Stage Name / Alias)</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Sharma"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3.5 px-4 transition-colors"
+                    placeholder="e.g. Adi / Rockstar"
+                    value={formData.famousName}
+                    onChange={(e) => setFormData({ ...formData, famousName: e.target.value })}
+                    className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 px-3.5 text-sm transition-colors"
                   />
-                  {errors.lastName && <p className="text-destructive text-xs mt-1.5 font-medium">{errors.lastName}</p>}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Row 2: Mobile Number, Email Address & Password (3 fields) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-foreground uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
                     Mobile Number <span className="text-brand">*</span>
                   </label>
-                  <div className="flex gap-2">
-                    <select
+                  <div className="flex gap-1.5">
+                    <DialCodePicker
                       value={formData.dialCode}
-                      onChange={(e) => setFormData({ ...formData, dialCode: e.target.value })}
-                      aria-label="Country dial code"
-                      className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium w-28 shrink-0 py-3.5 px-2 cursor-pointer transition-colors"
-                    >
-                      {dialCodes.map((d) => (
-                        <option key={d.iso} value={d.code} className="bg-card text-card-foreground">
-                          {d.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="relative flex-1">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      onChange={(code) => setFormData({ ...formData, dialCode: code })}
+                    />
+                    <div className="relative flex-1 min-w-0">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                       <input
                         type="tel"
                         placeholder="9876543210"
                         value={formData.mobile}
                         onChange={(e) => setFormData({ ...formData, mobile: e.target.value.replace(/[^0-9]/g, '') })}
-                        className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3.5 pl-11 pr-4 transition-colors"
+                        className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pl-9 pr-2.5 text-sm transition-colors"
                       />
                     </div>
                   </div>
-                  {errors.mobile && <p className="text-destructive text-xs mt-1.5 font-medium">{errors.mobile}</p>}
+                  {errors.mobile && <p className="text-destructive text-xs mt-1 font-medium">{errors.mobile}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-foreground uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
                     Email Address <span className="text-brand">*</span>
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <input
                       type="email"
                       placeholder="talent@mpproductions.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3.5 pl-11 pr-4 transition-colors"
+                      className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pl-9 pr-3 text-sm transition-colors"
                     />
                   </div>
-                  {errors.email && <p className="text-destructive text-xs mt-1.5 font-medium">{errors.email}</p>}
+                  {errors.email && <p className="text-destructive text-xs mt-1 font-medium">{errors.email}</p>}
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-2">
-                  Create Account Password <span className="text-brand">*</span>
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Min. 6 characters for login"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3.5 pl-11 pr-4 transition-colors"
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
+                    Password <span className="text-brand">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Min. 6 chars"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pl-9 pr-3 text-sm transition-colors"
+                    />
+                  </div>
+                  {errors.password && <p className="text-destructive text-xs mt-1 font-medium">{errors.password}</p>}
                 </div>
-                {errors.password && <p className="text-destructive text-xs mt-1.5 font-medium">{errors.password}</p>}
               </div>
             </div>
 
@@ -690,24 +792,7 @@ export function SimpleTalentRegistrationForm() {
           </form>
         </motion.div>
 
-        {/* Post-Registration Feature Preview */}
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-          <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-md hover:border-brand/40 transition-all duration-300">
-            <Award className="w-10 h-10 text-brand-gold mx-auto mb-4" />
-            <h4 className="text-base sm:text-lg font-bold text-foreground mb-2">Instant Portfolio Hub</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed font-medium">Add unlimited showreels, high-res photos & vocal clips inside your dashboard.</p>
-          </div>
-          <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-md hover:border-brand/40 transition-all duration-300">
-            <Globe className="w-10 h-10 text-brand-cyan mx-auto mb-4" />
-            <h4 className="text-base sm:text-lg font-bold text-foreground mb-2">Casting Discovery</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed font-medium">Get discovered directly by verified directors, producers, and premium brands.</p>
-          </div>
-          <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-md hover:border-brand/40 transition-all duration-300">
-            <Briefcase className="w-10 h-10 text-brand mx-auto mb-4" />
-            <h4 className="text-base sm:text-lg font-bold text-foreground mb-2">Add-On Anytime</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed font-medium">No pressure during registration. Expand languages, skills & rates whenever ready.</p>
-          </div>
-        </div>
+       
 
       </main>
     </div>

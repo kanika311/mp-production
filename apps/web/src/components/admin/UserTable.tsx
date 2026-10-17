@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Search, ShieldAlert, UserMinus, UserCheck, Key, Shield } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { RefreshCw, Search, ShieldAlert, UserMinus, UserCheck, Key, Shield, Users, Sparkles, Briefcase, Loader2, Eye, Pencil, Trash2, X, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface User {
@@ -19,6 +20,9 @@ interface UserTableProps {
 }
 
 export function UserTable({ currentUserRole }: UserTableProps) {
+  const searchParams = useSearchParams();
+  const urlRole = searchParams ? searchParams.get('role') : null;
+
   const [users, setUsers] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -28,17 +32,78 @@ export function UserTable({ currentUserRole }: UserTableProps) {
   // Filters
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>(urlRole || '');
   const [loading, setLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Sync roleFilter with URL query param whenever it changes
+  useEffect(() => {
+    if (urlRole !== null) {
+      setRoleFilter(urlRole);
+      setPage(1);
+    }
+  }, [urlRole]);
+
+  const userCategoryTabs = [
+    { label: 'All Users', value: '', icon: Users },
+    { label: 'Talents', value: 'TALENT', icon: Sparkles },
+    { label: 'Clients', value: 'CLIENT', icon: Briefcase },
+    { label: 'Employees & Crew', value: 'EMPLOYEE', icon: UserCheck },
+    { label: 'Admins', value: 'ADMIN', icon: Shield },
+  ];
+
+  // Direct 1-click status toggle between Active (Green) and Inactive (Red)
+  const handleToggleStatus = async (userId: string, currentIsActive: boolean, userName: string) => {
+    setTogglingId(userId);
+    try {
+      const endpoint = currentIsActive
+        ? `/api/admin/users/${userId}/deactivate`
+        : `/api/admin/users/${userId}/reactivate`;
+      const res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || errJson.message || 'Operation failed');
+      }
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, isActive: !currentIsActive } : u))
+      );
+      toast.success(
+        !currentIsActive
+          ? `🟢 ${userName} is now ACTIVE & approved!`
+          : `🔴 ${userName} has been marked INACTIVE.`
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update user status.');
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   // Modal / Confirmations
   const [confirmAction, setConfirmAction] = useState<{
-    type: 'role' | 'deactivate' | 'reactivate' | 'reset-mfa';
+    type: 'role' | 'reset-mfa' | 'deactivate' | 'reactivate' | 'delete';
     userId: string;
     userName: string;
     payload?: any;
   } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // View User Modal State
+  const [viewUser, setViewUser] = useState<User | null>(null);
+
+  // Edit User Modal State
+  const [editUser, setEditUser] = useState<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+  } | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   // Debounce search input (300ms)
   useEffect(() => {
@@ -81,6 +146,30 @@ export function UserTable({ currentUserRole }: UserTableProps) {
     fetchUsers();
   }, [page, limit, debouncedSearch, roleFilter]);
 
+  // Save Edit User
+  const handleSaveEdit = async () => {
+    if (!editUser) return;
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${editUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editUser),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || errJson.message || 'Failed to update user');
+      }
+      toast.success('User updated successfully!');
+      setEditUser(null);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update user');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   // Executing Action API Calls
   const handleConfirmAction = async () => {
     if (!confirmAction) return;
@@ -106,6 +195,9 @@ export function UserTable({ currentUserRole }: UserTableProps) {
       } else if (type === 'reset-mfa') {
         endpoint = `/api/admin/users/${userId}/reset-mfa`;
         method = 'POST';
+      } else if (type === 'delete') {
+        endpoint = `/api/admin/users/${userId}`;
+        method = 'DELETE';
       }
 
       const res = await fetch(endpoint, { method, headers, body });
@@ -115,6 +207,7 @@ export function UserTable({ currentUserRole }: UserTableProps) {
       }
 
       toast.success(
+        type === 'delete' ? 'User permanently deleted.' :
         type === 'role' ? 'User role updated successfully.' :
         type === 'deactivate' ? 'User account suspended.' :
         type === 'reactivate' ? 'User account reactivated.' :
@@ -143,6 +236,31 @@ export function UserTable({ currentUserRole }: UserTableProps) {
 
   return (
     <div className="space-y-6">
+      {/* Category Tabs: Separate Clients, Talents, Staff, Admins */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
+        {userCategoryTabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = roleFilter === tab.value;
+          return (
+            <button
+              key={tab.label}
+              onClick={() => {
+                setRoleFilter(tab.value);
+                setPage(1);
+              }}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border ${
+                isActive
+                  ? 'bg-brand text-white border-brand shadow-sm'
+                  : 'bg-surface text-muted-foreground border-border hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-surface p-4 border border-border rounded-xl shadow-sm">
         <div className="relative w-full sm:max-w-md">
@@ -265,28 +383,34 @@ export function UserTable({ currentUserRole }: UserTableProps) {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => {
-                          setConfirmAction({
-                            type: user.isActive ? 'deactivate' : 'reactivate',
-                            userId: user.id,
-                            userName: `${user.firstName} ${user.lastName}`,
-                          });
-                        }}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wider border cursor-pointer transition-all ${
+                        type="button"
+                        disabled={togglingId === user.id}
+                        onClick={() =>
+                          handleToggleStatus(user.id, user.isActive, `${user.firstName} ${user.lastName}`)
+                        }
+                        title={
                           user.isActive
-                            ? 'bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/20'
-                            : 'bg-red-500/10 text-red-600 border-red-500/20 hover:bg-red-500/20'
-                        }`}
+                            ? 'Status: Active (Click to make Inactive)'
+                            : 'Status: Inactive (Click to make Active)'
+                        }
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer border ${
+                          user.isActive
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
+                            : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/25'
+                        } ${togglingId === user.id ? 'opacity-50 cursor-wait' : ''}`}
                       >
-                        {user.isActive ? (
-                          <>
-                            <UserCheck className="w-3 h-3" /> Active
-                          </>
+                        {togglingId === user.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <>
-                            <UserMinus className="w-3 h-3" /> Suspended
-                          </>
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              user.isActive
+                                ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                                : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
+                            }`}
+                          />
                         )}
+                        <span>{user.isActive ? 'Active' : 'Inactive'}</span>
                       </button>
                     </td>
                     <td className="px-6 py-4 text-xs text-muted-foreground" suppressHydrationWarning>
@@ -297,21 +421,65 @@ export function UserTable({ currentUserRole }: UserTableProps) {
                       }) : '—'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {currentUserRole === 'SUPER_ADMIN' && (
+                      <div className="flex items-center justify-end gap-1.5">
+                        {/* View Button */}
                         <button
-                          onClick={() => {
-                            setConfirmAction({
-                              type: 'reset-mfa',
-                              userId: user.id,
-                              userName: `${user.firstName} ${user.lastName}`,
-                            });
-                          }}
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-semibold uppercase tracking-wider hover:underline"
-                          title="Reset Multi-Factor Authentication"
+                          onClick={() => setViewUser(user)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/80 hover:border-brand hover:text-brand bg-card text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                          title="View User Details"
                         >
-                          <Key className="w-3.5 h-3.5" /> Reset MFA
+                          <Eye className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">View</span>
                         </button>
-                      )}
+
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => setEditUser({
+                            id: user.id,
+                            firstName: user.firstName || '',
+                            lastName: user.lastName || '',
+                            email: user.email,
+                            role: user.role,
+                            isActive: user.isActive,
+                          })}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/80 hover:border-blue-500 hover:text-blue-500 bg-card text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                          title="Edit User"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </button>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => setConfirmAction({
+                            type: 'delete',
+                            userId: user.id,
+                            userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+                          })}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-500/30 hover:border-rose-500 text-rose-500 hover:bg-rose-500/10 bg-card text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                          title="Delete User"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </button>
+
+                        {/* Reset MFA Button (Super Admin only) */}
+                        {currentUserRole === 'SUPER_ADMIN' && (
+                          <button
+                            onClick={() => {
+                              setConfirmAction({
+                                type: 'reset-mfa',
+                                userId: user.id,
+                                userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+                              });
+                            }}
+                            className="p-1.5 rounded-lg border border-border/80 hover:border-amber-500 hover:text-amber-500 bg-card text-muted-foreground text-xs transition-colors cursor-pointer"
+                            title="Reset Multi-Factor Authentication"
+                          >
+                            <Key className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -352,12 +520,20 @@ export function UserTable({ currentUserRole }: UserTableProps) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-surface border border-border rounded-xl max-w-md w-full shadow-2xl p-6 space-y-6 animate-scaleIn">
             <div className="flex items-start gap-4">
-              <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-lg">
+              <div className={`p-2.5 rounded-lg ${confirmAction.type === 'delete' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'}`}>
                 <ShieldAlert className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-lg font-serif text-foreground">Confirm Security Action</h3>
+                <h3 className="text-lg font-serif text-foreground">
+                  {confirmAction.type === 'delete' ? 'Delete User Permanently' : 'Confirm Security Action'}
+                </h3>
                 <p className="text-sm text-muted-foreground">
+                  {confirmAction.type === 'delete' && (
+                    <>
+                      Are you sure you want to permanently delete user{' '}
+                      <strong className="text-rose-500 font-bold">{confirmAction.userName}</strong>? This will permanently delete their account, profile data, and all permissions. This action cannot be undone.
+                    </>
+                  )}
                   {confirmAction.type === 'role' && (
                     <>
                       Are you sure you want to change the role of{' '}
@@ -392,17 +568,194 @@ export function UserTable({ currentUserRole }: UserTableProps) {
               <button
                 disabled={actionLoading}
                 onClick={() => setConfirmAction(null)}
-                className="px-4 py-2 border border-border hover:bg-muted/10 rounded-lg text-sm font-semibold text-foreground transition-colors disabled:opacity-50"
+                className="px-4 py-2 border border-border hover:bg-muted/10 rounded-lg text-sm font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 disabled={actionLoading}
                 onClick={handleConfirmAction}
-                className="px-4 py-2 bg-primary text-white hover:bg-primary/90 font-bold rounded-lg text-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                className={`px-4 py-2 font-bold rounded-lg text-sm transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer ${
+                  confirmAction.type === 'delete' 
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white' 
+                    : 'bg-primary text-white hover:bg-primary/90'
+                }`}
               >
                 {actionLoading && <RefreshCw className="w-4 h-4 animate-spin" />}
-                Confirm
+                {confirmAction.type === 'delete' ? 'Delete User' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── VIEW USER MODAL ── */}
+      {viewUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-2xl max-w-lg w-full shadow-2xl p-6 space-y-6 animate-scaleIn relative">
+            <button
+              onClick={() => setViewUser(null)}
+              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted/30 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-4 border-b border-border pb-4">
+              <div className="w-14 h-14 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center text-brand font-bold text-xl uppercase">
+                {viewUser.firstName?.[0] || viewUser.email[0]}
+              </div>
+              <div>
+                <h3 className="text-xl font-serif font-bold text-foreground">
+                  {viewUser.firstName} {viewUser.lastName}
+                </h3>
+                <p className="text-xs text-muted-foreground">{viewUser.email}</p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand/10 text-brand border border-brand/20">
+                    {viewUser.role}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                    viewUser.isActive ? 'bg-emerald-500/15 text-emerald-600' : 'bg-rose-500/15 text-rose-600'
+                  }`}>
+                    {viewUser.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="p-3 rounded-xl bg-card border border-border/80">
+                <span className="text-muted-foreground block mb-1">User ID:</span>
+                <span className="font-mono text-foreground font-semibold break-all">{viewUser.id}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-card border border-border/80">
+                <span className="text-muted-foreground block mb-1">Joined Date:</span>
+                <span className="font-semibold text-foreground">
+                  {viewUser.createdAt ? new Date(viewUser.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }) : '—'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              {viewUser.role === 'TALENT' && (
+                <a
+                  href={`/talent`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-brand font-bold hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> View on Talent Discovery Feed
+                </a>
+              )}
+              <button
+                onClick={() => setViewUser(null)}
+                className="ml-auto px-4 py-2 bg-muted/40 hover:bg-muted text-foreground font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT USER MODAL ── */}
+      {editUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-5 animate-scaleIn relative">
+            <button
+              onClick={() => setEditUser(null)}
+              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted/30 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="border-b border-border pb-3">
+              <h3 className="text-lg font-serif font-bold text-foreground">Edit User Profile</h3>
+              <p className="text-xs text-muted-foreground">Update user name, email, role, or access status.</p>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-semibold text-foreground">First Name</label>
+                  <input
+                    type="text"
+                    value={editUser.firstName}
+                    onChange={(e) => setEditUser({ ...editUser, firstName: e.target.value })}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-foreground">Last Name</label>
+                  <input
+                    type="text"
+                    value={editUser.lastName}
+                    onChange={(e) => setEditUser({ ...editUser, lastName: e.target.value })}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-foreground">Email Address</label>
+                <input
+                  type="email"
+                  value={editUser.email}
+                  onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-foreground">System Role</label>
+                <select
+                  value={editUser.role}
+                  onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand cursor-pointer"
+                >
+                  {rolesList.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/80">
+                <div>
+                  <span className="font-semibold text-foreground block">Account Status</span>
+                  <span className="text-[11px] text-muted-foreground">Toggle active portal login access</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditUser({ ...editUser, isActive: !editUser.isActive })}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    editUser.isActive ? 'bg-emerald-500/15 text-emerald-600' : 'bg-rose-500/15 text-rose-600'
+                  }`}
+                >
+                  {editUser.isActive ? 'Active' : 'Inactive'}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-border">
+              <button
+                disabled={editLoading}
+                onClick={() => setEditUser(null)}
+                className="px-4 py-2 border border-border hover:bg-muted/10 rounded-lg text-xs font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={editLoading}
+                onClick={handleSaveEdit}
+                className="px-5 py-2 bg-brand text-white hover:brightness-110 font-bold rounded-lg text-xs transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
+              >
+                {editLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                Save Changes
               </button>
             </div>
           </div>

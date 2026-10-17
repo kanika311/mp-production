@@ -47,6 +47,15 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
           localStorage.setItem('token', token);
         }
       }
+
+      // 4. Fallback to document.cookie (for OAuth redirect cookies)
+      if (!token && typeof document !== 'undefined') {
+        const cookieMatch = document.cookie.match(/(?:^|;\s*)(?:mdms_auth_token|token|accessToken)=([^;]+)/);
+        if (cookieMatch && cookieMatch[1]) {
+          token = decodeURIComponent(cookieMatch[1]);
+          localStorage.setItem('token', token);
+        }
+      }
     } catch {
       token = '';
     }

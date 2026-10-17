@@ -200,7 +200,7 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: auto; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -447,4 +447,13 @@
   80% { transform: translate(-3%, 0); }
   90% { transform: translate(2%, 2%); }
   100% { transform: translate(1%, 0); }
+}
+
+/* Hide scrollbar while preserving scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

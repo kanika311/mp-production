@@ -28,7 +28,6 @@ export function Reveal({ children, direction = 'up', delay = 0, duration = 0.8, 
       initial={{ opacity: 0, x, y }}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
       viewport={{ once: true, margin: "-5%" }}
-      style={{ transform: 'translateZ(0)' }}
       transition={{ 
         duration,
         delay,

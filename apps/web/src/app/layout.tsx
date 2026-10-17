@@ -48,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={`${outfit.variable} ${cormorant.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${outfit.variable} ${cormorant.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased selection:bg-[#eb3d26] selection:text-white" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <AuthProvider>

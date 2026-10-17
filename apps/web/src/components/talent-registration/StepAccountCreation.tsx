@@ -34,6 +34,12 @@ const item = {
 };
 
 export function StepAccountCreation({ data, onChange, errors }: StepAccountCreationProps) {
+  // Date of Birth must strictly be in the past (neither today nor any future date is allowed)
+  const maxDobDate = React.useMemo(() => {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return yesterday.toISOString().split('T')[0];
+  }, []);
+
   return (
     <motion.div
       variants={container}
@@ -152,8 +158,21 @@ export function StepAccountCreation({ data, onChange, errors }: StepAccountCreat
           <FloatingInput
             label="Date of Birth"
             type="date"
+            max={maxDobDate}
+            min="1940-01-01"
             value={data.dateOfBirth}
-            onChange={(e) => onChange({ dateOfBirth: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                const selected = new Date(val);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (selected >= today) {
+                  return; // Strictly reject today or future date
+                }
+              }
+              onChange({ dateOfBirth: val });
+            }}
             error={errors.dateOfBirth}
           />
           <FloatingSelect

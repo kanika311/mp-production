@@ -24,8 +24,8 @@ export class TalentController {
 
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Get('pending')
-  async getPendingProfiles() {
-    const profiles = await this.talentService.getPendingProfiles();
+  async getPendingProfiles(@Query('status') status?: string) {
+    const profiles = await this.talentService.getPendingProfiles(status);
     return {
       success: true,
       data: profiles,
@@ -87,6 +87,16 @@ export class TalentController {
     };
   }
 
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Get(':id/review')
+  async getProfileForReview(@Param('id') id: string) {
+    const profile = await this.talentService.getProfileForModeration(id);
+    return {
+      success: true,
+      data: profile,
+    };
+  }
+
   @Public()
   @Get(':id')
   async getPublicProfile(@Param('id') id: string) {
@@ -114,7 +124,9 @@ export class TalentController {
   @Roles(Role.TALENT, Role.CLIENT, Role.ADMIN, Role.SUPER_ADMIN)
   @Post('draft')
   async saveDraft(@Req() req: any, @Body() body: any) {
-    const userId = req.user?.id || req.user?.sub;
+    const actorRole = req.user?.role;
+    const isPrivileged = actorRole === Role.SUPER_ADMIN || actorRole === Role.ADMIN;
+    const userId = (isPrivileged && body?.userId) ? body.userId : (req.user?.id || req.user?.sub);
     const profile = await this.talentService.saveDraft(userId, body);
     return {
       success: true,
@@ -126,7 +138,9 @@ export class TalentController {
   @Roles(Role.TALENT, Role.CLIENT, Role.ADMIN, Role.SUPER_ADMIN)
   @Post('submit')
   async submitProfile(@Req() req: any, @Body() body: any) {
-    const userId = req.user?.id || req.user?.sub;
+    const actorRole = req.user?.role;
+    const isPrivileged = actorRole === Role.SUPER_ADMIN || actorRole === Role.ADMIN;
+    const userId = (isPrivileged && body?.userId) ? body.userId : (req.user?.id || req.user?.sub);
     const profile = await this.talentService.submitProfile(userId, body);
     return {
       success: true,

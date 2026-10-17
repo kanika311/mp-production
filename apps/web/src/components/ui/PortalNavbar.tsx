@@ -89,41 +89,41 @@ export function PortalNavbar({ role, title, className, user, ...props }: PortalN
         <nav className="hidden md:flex items-center gap-6">
           {isPortal ? (
             <>
-              {pathname.startsWith('/super-admin') && (
+              {(pathname.startsWith('/super-admin') || (pathname.startsWith('/studio-8f2k') && !pathname.startsWith('/studio-8f2k/mgmt'))) && (
                 <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-wider">
-                  <Link href="/super-admin" className={`transition-colors ${pathname === '/super-admin' ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k" className={`transition-colors ${pathname === '/studio-8f2k' || pathname === '/super-admin' ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Dashboard
                   </Link>
-                  <Link href="/super-admin/users" className={`transition-colors ${pathname.startsWith('/super-admin/users') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/users" className={`transition-colors ${pathname.includes('/users') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Users
                   </Link>
-                  <Link href="/super-admin/cms" className={`transition-colors ${pathname.startsWith('/super-admin/cms') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/cms" className={`transition-colors ${pathname.includes('/cms') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     CMS Engine
                   </Link>
-                  <Link href="/super-admin/moderation" className={`transition-colors ${pathname.startsWith('/super-admin/moderation') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/moderation" className={`transition-colors ${pathname.includes('/moderation') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Moderation
                   </Link>
-                  <Link href="/super-admin/audit-logs" className={`transition-colors ${pathname.startsWith('/super-admin/audit-logs') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/audit-logs" className={`transition-colors ${pathname.includes('/audit-logs') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Audit Logs
                   </Link>
                 </div>
               )}
 
-              {pathname.startsWith('/admin') && !pathname.startsWith('/super-admin') && (
+              {((pathname.startsWith('/admin') && !pathname.startsWith('/super-admin')) || pathname.startsWith('/studio-8f2k/mgmt')) && (
                 <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-wider">
-                  <Link href="/admin" className={`transition-colors ${pathname === '/admin' ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/mgmt" className={`transition-colors ${pathname === '/studio-8f2k/mgmt' || pathname === '/admin' ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Dashboard
                   </Link>
-                  <Link href="/admin/users" className={`transition-colors ${pathname.startsWith('/admin/users') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/mgmt/users" className={`transition-colors ${pathname.includes('/users') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Users
                   </Link>
-                  <Link href="/admin/sales" className={`transition-colors ${pathname.startsWith('/admin/sales') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/mgmt/sales" className={`transition-colors ${pathname.includes('/sales') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Sales & Leads CRM
                   </Link>
-                  <Link href="/admin/cms/blog" className={`transition-colors ${pathname.startsWith('/admin/cms') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/mgmt/cms/blog" className={`transition-colors ${pathname.includes('/cms/blog') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     CMS Content
                   </Link>
-                  <Link href="/admin/moderation" className={`transition-colors ${pathname.startsWith('/admin/moderation') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                  <Link href="/studio-8f2k/mgmt/moderation" className={`transition-colors ${pathname.includes('/moderation') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Moderation
                   </Link>
                 </div>

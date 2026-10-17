@@ -32,14 +32,21 @@ export function ImageUploader({
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(value || null);
 
+  React.useEffect(() => {
+    setPreviewUrl(value || null);
+  }, [value]);
+
   const handleFile = useCallback(
     (file: File) => {
       if (file.size > maxSizeMB * 1024 * 1024) {
         alert(`File size must be under ${maxSizeMB}MB`);
         return;
       }
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
       onUpload(file);
     },
     [maxSizeMB, onUpload]

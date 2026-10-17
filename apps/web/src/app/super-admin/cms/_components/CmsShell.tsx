@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { PortalNavbar } from '@/components/ui/PortalNavbar';
 import {
   LayoutDashboard,
@@ -30,6 +30,9 @@ import {
   FolderKanban,
   MessageSquare,
   Bot,
+  Sparkles,
+  Briefcase,
+  ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +59,9 @@ const ICONS: Record<string, LucideIcon> = {
   FolderKanban,
   MessageSquare,
   Bot,
+  Sparkles,
+  Briefcase,
+  ShieldAlert,
 };
 
 interface NavItem {
@@ -122,12 +128,20 @@ const NAV: { section: string; items: NavItem[] }[] = [
 
 
   {
+    section: 'Access & User Directory',
+    items: [
+      { href: '/studio-8f2k/users?role=TALENT', label: 'Talent Users', icon: 'Sparkles' },
+      { href: '/studio-8f2k/users?role=CLIENT', label: 'Client Accounts', icon: 'Briefcase' },
+      { href: '/studio-8f2k/users?role=EMPLOYEE', label: 'Employees & Staff', icon: 'Building2' },
+      { href: '/studio-8f2k/users?role=ADMIN', label: 'Admins & Management', icon: 'Shield' },
+      { href: '/studio-8f2k/users', label: 'All Users (RBAC)', icon: 'Users' },
+    ],
+  },
+  {
     section: 'Super Admin Operations',
     items: [
-      { href: '/studio-8f2k/users', label: 'Users & Roles (RBAC)', icon: 'Users' },
-      { href: '/studio-8f2k/employees', label: 'Employees & Staff', icon: 'Building2' },
       { href: '/studio-8f2k/moderation', label: 'Talent Moderation', icon: 'UserCheck' },
-      { href: '/studio-8f2k/audit-logs', label: 'Security Audit Logs', icon: 'Shield' },
+      { href: '/studio-8f2k/audit-logs', label: 'Security Audit Logs', icon: 'ShieldAlert' },
       { href: '/studio-8f2k/settings', label: 'Platform Controls & Settings', icon: 'Settings' },
       { href: '/studio-8f2k/cms/recycle-bin', label: 'Recycle Bin & Recovery', icon: 'Trash2' },
     ],
@@ -135,6 +149,9 @@ const NAV: { section: string; items: NavItem[] }[] = [
 ];
 
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const searchParams = useSearchParams();
+  const currentRole = searchParams ? searchParams.get('role') : null;
+
   return (
     <nav className="flex flex-col gap-8 pb-36">
 
@@ -146,14 +163,24 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
           <div className="flex flex-col gap-1.5">
             {group.items.map((item) => {
               const Icon = ICONS[item.icon] ?? LayoutDashboard;
-              const active =
-                item.href === '/studio-8f2k'
-                  ? pathname === '/studio-8f2k'
-                  : item.href === '/studio-8f2k/cms'
-                  ? pathname === '/studio-8f2k/cms'
-                  : item.href.includes('?')
-                  ? pathname + (typeof window !== 'undefined' ? window.location.search : '') === item.href || pathname === item.href.split('?')[0]
-                  : pathname.startsWith(item.href);
+
+              const [itemPath, itemQuery] = item.href.split('?');
+              const itemParams = new URLSearchParams(itemQuery || '');
+              const itemRole = itemParams.get('role');
+
+              let active = false;
+              if (item.href === '/studio-8f2k') {
+                active = pathname === '/studio-8f2k';
+              } else if (item.href === '/studio-8f2k/cms') {
+                active = pathname === '/studio-8f2k/cms';
+              } else if (itemRole) {
+                active = pathname === itemPath && currentRole === itemRole;
+              } else if (itemPath === '/studio-8f2k/users') {
+                active = pathname === '/studio-8f2k/users' && !currentRole;
+              } else {
+                active = pathname.startsWith(item.href);
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -193,7 +220,9 @@ export function CmsShell({ children }: { children: React.ReactNode }) {
           </div>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Super Admin & CMS Studio</p>
         </div>
-        <NavLinks pathname={pathname} />
+        <Suspense fallback={<div className="p-4 text-xs text-muted-foreground">Loading navigation...</div>}>
+          <NavLinks pathname={pathname} />
+        </Suspense>
       </aside>
 
 
@@ -230,7 +259,9 @@ export function CmsShell({ children }: { children: React.ReactNode }) {
                 <X className="size-5 text-muted-foreground" />
               </button>
             </div>
-            <NavLinks pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            <Suspense fallback={null}>
+              <NavLinks pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            </Suspense>
           </div>
         </div>
       )}

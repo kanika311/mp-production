@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
 
   transpilePackages: ['@mdms/types', '@mdms/design-tokens'],
   images: {
+    formats: ['image/avif', 'image/webp'],
     unoptimized: true,
     remotePatterns: [
       {

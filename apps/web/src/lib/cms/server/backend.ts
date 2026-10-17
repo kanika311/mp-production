@@ -8,14 +8,18 @@
  * expiry or a 401. This module must never be imported into client components.
  */
 
-const API_URL =
+function normalizeApiUrl(raw?: string): string {
+  let url = (raw || 'https://mp-backend-api.onrender.com/api/v1').trim().replace(/\/+$/, '');
+  if (url.endsWith('/api/v1')) return url;
+  if (url.endsWith('/api')) return `${url}/v1`;
+  return `${url}/api/v1`;
+}
+
+const API_URL = normalizeApiUrl(
   process.env.CMS_API_URL ||
   process.env.API_INTERNAL_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'https://mp-backend-api.onrender.com/api/v1';
-
-
-
+  process.env.NEXT_PUBLIC_API_URL
+);
 
 interface TokenCache {
   token: string;
@@ -95,7 +99,13 @@ export async function backendFetch<T = unknown>(
     if (!isFormData && !headers['Content-Type']) {
       headers['Content-Type'] = 'application/json';
     }
-    return fetch(`${API_URL}${path}`, {
+    let cleanPath = path.startsWith('/') ? path : `/${path}`;
+    if (cleanPath.startsWith('/api/v1')) {
+      cleanPath = cleanPath.substring('/api/v1'.length);
+    } else if (cleanPath.startsWith('/api')) {
+      cleanPath = cleanPath.substring('/api'.length);
+    }
+    return fetch(`${API_URL}${cleanPath}`, {
       ...init,
       headers,
       cache: 'no-store',

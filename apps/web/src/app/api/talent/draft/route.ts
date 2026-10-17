@@ -1,36 +1,36 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { backendFetch } from '@/lib/cms/server/backend';
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mp-backend-api.onrender.com/api/v1';
-    const accessToken = (session as any).accessToken;
 
-    const res = await fetch(`${apiUrl}/talent/draft`, {
+    const result = await backendFetch('/talent/draft', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        ...body,
+        userId: session.user.id,
+      }),
     });
 
-    if (!res.ok) {
-      throw new Error(`Backend responded with ${res.status}`);
+    if (!result.ok) {
+      return NextResponse.json(
+        { success: false, message: result.error || 'Failed to save draft' },
+        { status: result.status }
+      );
     }
 
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (error) {
+    return NextResponse.json(result.data || { success: true });
+  } catch (error: any) {
     console.error('Save draft error:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to save draft' },
+      { success: false, message: error?.message || 'Failed to save draft' },
       { status: 500 }
     );
   }

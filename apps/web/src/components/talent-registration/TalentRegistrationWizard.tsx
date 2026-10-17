@@ -42,7 +42,7 @@ const WIZARD_STEPS = [
   },
   { 
     label: 'Review & Publish', 
-    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> 
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> 
   },
 ];
 
@@ -104,6 +104,14 @@ export function TalentRegistrationWizard() {
       if (!data.password || data.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
       if (data.password !== data.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
       if (!data.acceptTerms) newErrors.acceptTerms = 'You must accept the terms';
+      if (data.dateOfBirth) {
+        const selectedDob = new Date(data.dateOfBirth);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDob >= today) {
+          newErrors.dateOfBirth = 'Date of birth cannot be today or a future date';
+        }
+      }
     } else if (step === 2) {
       if (!data.primaryTalentId) newErrors.primaryTalentId = 'Please select a primary talent';
     }
@@ -129,10 +137,16 @@ export function TalentRegistrationWizard() {
     
     if (currentStep < WIZARD_STEPS.length) {
       // Save draft in background (don't block UI)
-      fetchAPI('/talent/draft', {
+      fetch('/api/talent/draft', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentStep: currentStep + 1, wizardData: data }),
-      }).catch(console.error);
+      }).catch(() => {
+        fetchAPI('/talent/draft', {
+          method: 'POST',
+          body: JSON.stringify({ currentStep: currentStep + 1, wizardData: data }),
+        }).catch(console.error);
+      });
 
       setCurrentStep(prev => prev + 1);
       if (scrollContainerRef.current) {
@@ -146,14 +160,25 @@ export function TalentRegistrationWizard() {
   const saveDraftExplicit = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetchAPI('/talent/draft', {
+      const res = await fetch('/api/talent/draft', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentStep, wizardData: data }),
       });
-      // fetchAPI throws if response is not ok
+      if (!res.ok) {
+        throw new Error('Draft save failed');
+      }
       toast.success('Draft saved successfully! You can resume later.');
     } catch (error) {
-      toast.error('Could not save draft. Please try again.');
+      try {
+        await fetchAPI('/talent/draft', {
+          method: 'POST',
+          body: JSON.stringify({ currentStep, wizardData: data }),
+        });
+        toast.success('Draft saved successfully! You can resume later.');
+      } catch (err2) {
+        toast.error('Could not save draft. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -162,15 +187,34 @@ export function TalentRegistrationWizard() {
   const submitProfile = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetchAPI('/talent/submit', {
+      // 1. Call same-origin Next.js BFF endpoint /api/talent/submit
+      const res = await fetch('/api/talent/submit', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
-      toast.success('Profile submitted successfully! Pending admin review.');
-      router.push('/');
-    } catch (error) {
-      toast.error('Failed to submit profile.');
+
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(json?.message || json?.error || `Server responded with ${res.status}`);
+      }
+
+      toast.success('🎉 Profile submitted successfully! Pending admin moderation review.');
+      router.push('/talent-dashboard');
+    } catch (error: any) {
+      console.warn('BFF submit failed, trying direct API:', error);
+      // 2. Fallback to direct fetchAPI
+      try {
+        await fetchAPI('/talent/submit', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+        toast.success('🎉 Profile submitted successfully! Pending admin moderation review.');
+        router.push('/talent-dashboard');
+      } catch (err2: any) {
+        toast.error(error.message || err2.message || 'Failed to submit profile.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -187,35 +231,156 @@ export function TalentRegistrationWizard() {
   const primaryCategory = categories.find(c => c.id === data.primaryTalentId);
   const dynamicFields = primaryCategory?.fields || [];
 
+  // Compute completed step numbers based on real filled data
+  const completedStepNumbers = React.useMemo(() => {
+    const completed: number[] = [];
+
+    // Step 1: Account Creation (Identity & Contact)
+    const hasStep1 = Boolean(
+      data.fullName?.trim() ||
+      data.stageName?.trim() ||
+      (data.email?.trim() && (data.phone?.trim() || data.city?.trim()))
+    );
+    if (hasStep1) {
+      completed.push(1);
+    }
+
+    // Step 2: Professional Identity
+    const hasStep2 = Boolean(
+      data.primaryTalentId ||
+      data.experienceLevel ||
+      (data.skills && data.skills.length > 0) ||
+      (data.languages && data.languages.length > 0) ||
+      (data.secondaryTalentIds && data.secondaryTalentIds.length > 0)
+    );
+    if (hasStep2) {
+      completed.push(2);
+    }
+
+    // Step 3: Professional Details
+    const hasAttributes = Boolean(
+      data.attributes &&
+      Object.values(data.attributes).some(v =>
+        v !== undefined && v !== null && v !== '' && (Array.isArray(v) ? v.length > 0 : true)
+      )
+    );
+    // If this category requires no extra fields, it is satisfied once identity is chosen
+    const isStep3Completed = dynamicFields.length === 0 ? Boolean(hasStep2 || currentStep > 3) : hasAttributes;
+    if (isStep3Completed) {
+      completed.push(3);
+    }
+
+    // Step 4: Portfolio Builder
+    const hasMedia = Boolean(
+      data.profilePhoto ||
+      data.profilePhotoPreview ||
+      data.coverBanner ||
+      data.coverBannerPreview ||
+      (data.galleryImages && data.galleryImages.length > 0) ||
+      data.introductionVideo ||
+      data.compCard ||
+      data.resume
+    );
+    if (hasMedia) {
+      completed.push(4);
+    }
+
+    // Step 5: About Me
+    const hasAbout = Boolean(
+      (data.bio && data.bio.trim().length > 0) ||
+      (data.achievements && data.achievements.length > 0) ||
+      (data.education && data.education.length > 0) ||
+      (data.brandsWorkedWith && data.brandsWorkedWith.length > 0) ||
+      (data.pricingAmount && data.pricingAmount.trim().length > 0) ||
+      (data.pricingType && data.pricingType.trim().length > 0)
+    );
+    if (hasAbout) {
+      completed.push(5);
+    }
+
+    // Step 6: Social Media
+    const hasSocial = Boolean(
+      data.instagram?.trim() ||
+      data.youtube?.trim() ||
+      data.facebook?.trim() ||
+      data.linkedin?.trim() ||
+      data.imdb?.trim() ||
+      data.website?.trim() ||
+      data.portfolio?.trim() ||
+      data.behance?.trim() ||
+      data.pinterest?.trim() ||
+      data.spotify?.trim() ||
+      data.tiktok?.trim()
+    );
+    if (hasSocial) {
+      completed.push(6);
+    }
+
+    return completed;
+  }, [data, dynamicFields.length, currentStep]);
+
+  const totalFillableSteps = WIZARD_STEPS.length - 1; // 6 fillable steps before Review & Publish
+  const completionPercent = Math.min(100, Math.round((completedStepNumbers.length / totalFillableSteps) * 100));
+
+  const handleStepClick = (stepNum: number) => {
+    setCurrentStep(stepNum);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--bg-base)] flex flex-col md:flex-row">
+    <div className="h-full w-full flex flex-col md:flex-row overflow-hidden bg-background">
       
       {/* Top Mobile Bar */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-40">
-        <img src="/logo.png" alt="MP Productions" className="h-8 w-auto object-contain" />
-        
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="w-7 h-7 rounded-full bg-brand/10 text-brand flex items-center justify-center font-bold text-xs">
+            {currentStep}
+          </span>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Step {currentStep} of {WIZARD_STEPS.length}
+            </p>
+            <p className="text-xs font-bold text-foreground truncate max-w-[200px]">
+              {WIZARD_STEPS[currentStep - 1]?.label}
+            </p>
+          </div>
+        </div>
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand/10 text-brand">
+          {completionPercent}%
+        </span>
       </div>
 
-      {/* Left Sidebar (Desktop) */}
-      <div className="hidden md:block w-80 lg:w-96 flex-shrink-0 bg-[var(--surface)] border-r border-[var(--border)] sticky top-0 h-screen overflow-y-auto custom-scrollbar p-8">
+      {/* Left Sidebar (Desktop) — STICKY & LOCKED IN PLACE */}
+      <aside
+        data-lenis-prevent
+        className="hidden md:flex w-80 lg:w-96 flex-shrink-0 h-full flex-col bg-surface/50 border-r border-border overflow-y-auto overscroll-contain no-scrollbar p-6 lg:p-8 select-none"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
         <WizardProgress
           currentStep={currentStep}
           totalSteps={WIZARD_STEPS.length}
           steps={WIZARD_STEPS}
-          completionPercent={Math.round(((currentStep - 1) / WIZARD_STEPS.length) * 100)}
+          completionPercent={completionPercent}
+          completedStepNumbers={completedStepNumbers}
+          onStepClick={handleStepClick}
         />
-      </div>
+      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-0 relative h-screen max-h-screen overflow-hidden">
+      {/* Center / Main Content Area (Only this panel scrolls) */}
+      <section
+        data-lenis-prevent
+        className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden relative bg-background"
+      >
         
-        {/* Top Desktop Bar */}
-        <div className="hidden md:flex items-center justify-end p-6 absolute top-0 right-0 z-40">
-          
-        </div>
-
-        {/* Scrolling Content */}
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12 pb-12">
+        {/* Scrolling Content — Scrolls effortlessly with mouse wheel / touch, no visible scrollbar track */}
+        <div
+          ref={scrollContainerRef}
+          data-lenis-prevent
+          className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-8 lg:p-12 pb-16 scroll-smooth no-scrollbar"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           <div className="max-w-4xl mx-auto w-full">
             <AnimatePresence mode="wait">
               <motion.div
@@ -257,8 +422,8 @@ export function TalentRegistrationWizard() {
           </div>
         </div>
 
-        {/* Bottom Navigation Bar */}
-        <div className="shrink-0 w-full z-30 bg-[var(--card)] border-t border-[var(--border)] shadow-xl">
+        {/* Bottom Navigation Bar — Pinned at bottom of Center Panel */}
+        <div className="shrink-0 w-full z-30 bg-card/95 backdrop-blur-md border-t border-border shadow-xl">
           <WizardNavigation
             currentStep={currentStep}
             totalSteps={WIZARD_STEPS.length}
@@ -274,7 +439,7 @@ export function TalentRegistrationWizard() {
             isLastStep={currentStep === WIZARD_STEPS.length}
           />
         </div>
-      </div>
+      </section>
     </div>
   );
 }

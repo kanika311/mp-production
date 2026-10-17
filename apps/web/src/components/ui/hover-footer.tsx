@@ -253,7 +253,7 @@ export function HoverFooter() {
           {/* Brand section */}
           <div className="flex flex-col space-y-6 lg:col-span-2">
             <div className="flex items-center space-x-3">
-              <img src="/logo.png" className="h-16 w-auto object-contain scale-110 origin-left transition-all duration-300 drop-shadow-[0_0_20px_rgba(235,61,38,0.4)]" alt={footerConfig?.companyName || "MP Production Logo"} />
+              <img src="/logo.webp" className="h-16 w-auto object-contain scale-110 origin-left transition-all duration-300 drop-shadow-[0_0_20px_rgba(235,61,38,0.4)]" alt={footerConfig?.companyName || "MP Production Logo"} />
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-(--cinematic-text-muted) font-light max-w-sm">
               {footerConfig?.tagline || "MP Production is an exclusive luxury creative production house for global brands and artists. Building timeless cinema, photography, and campaigns frame by frame."}

@@ -8,12 +8,10 @@ import { CinematicTestimonial } from "@/components/ui/cinematic-testimonial";
 import { MagneticButton } from "@/components/motion/MagneticButton";
 import DecryptedText from "@/components/motion/DecryptedText";
 import Link from "next/link";
-import { useEffect, useRef, useState, useLayoutEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchAPI } from "@/lib/api-client";
 import { toast } from "sonner";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import gsap from "gsap";
-import ScrollTrigger from "gsap/ScrollTrigger";
 import {
   ArrowRight,
   Play,
@@ -102,6 +100,83 @@ function getServiceIcon(iconName?: string) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   DEFAULT FALLBACK DATA FOR INSTANT 60FPS RENDERING
+   ═══════════════════════════════════════════════════════════ */
+const DEFAULT_PORTFOLIO = [
+  {
+    id: "vogue-campaign",
+    title: "Vogue Autumn / Winter Showcase",
+    category: "Fashion Film",
+    client: "Vogue Italia",
+    location: "Milan, Italy",
+    coverImageUrl: "/assets/project-fashion.webp",
+    description: "High-contrast 8K anamorphic cinematography capturing the pinnacle of Milan Fashion Week.",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  },
+  {
+    id: "porsche-gt3",
+    title: "Velocity & Grace — GT3 Campaign",
+    category: "Commercial",
+    client: "Porsche Motorsport",
+    location: "Stuttgart, Germany",
+    coverImageUrl: "/assets/commercial_car_shoot.webp",
+    description: "High-speed tracking vehicle cinematography and theatrical sound design.",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  },
+  {
+    id: "luxe-lookbook",
+    title: "Atelier Haute Couture Lookbook",
+    category: "Brand Campaign",
+    client: "Maison Privée",
+    location: "Paris, France",
+    coverImageUrl: "/assets/fashion_lookbook.webp",
+    description: "Kodak 2383 35mm film emulation capturing ethereal fabric movement and haute couture textures.",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  },
+  {
+    id: "nocturne-music",
+    title: "Nocturne Symphony — Official Film",
+    category: "Music Video",
+    client: "Sony Music",
+    location: "London, UK",
+    coverImageUrl: "/assets/project-music.webp",
+    description: "Surrealistic cinematic narrative featuring atmospheric neon grading and choreographed performance.",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  },
+];
+
+const DEFAULT_TALENT = [
+  {
+    id: "elena-rostova",
+    slug: "elena-rostova",
+    user: { firstName: "Elena", lastName: "Rostova", avatarUrl: "/assets/talent-model-1.webp" },
+    talentTypes: ["High Fashion Model"],
+    instagramFollowers: 340000,
+  },
+  {
+    id: "alex-vance",
+    slug: "alex-vance",
+    user: { firstName: "Marcus", lastName: "Vance", avatarUrl: "/assets/talent-model-2.webp" },
+    talentTypes: ["Director & Cinematographer"],
+    instagramFollowers: 190000,
+  },
+  {
+    id: "sophia-chen",
+    slug: "sophia-chen",
+    user: { firstName: "Sophia", lastName: "Chen", avatarUrl: "/images/team-1.webp" },
+    talentTypes: ["Editorial Model"],
+    instagramFollowers: 420000,
+  },
+  {
+    id: "damon-cross",
+    slug: "damon-cross",
+    user: { firstName: "Damon", lastName: "Cross", avatarUrl: "/images/team-2.webp" },
+    talentTypes: ["Lead Actor"],
+    instagramFollowers: 280000,
+  },
+];
+
+/* ═══════════════════════════════════════════════════════════
    Main Component
    ═══════════════════════════════════════════════════════════ */
 export default function Home() {
@@ -109,36 +184,56 @@ export default function Home() {
   const [intro, setIntro] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
-  const [portfolio, setPortfolio] = useState<any[]>([]);
-  const [talent, setTalent] = useState<any[]>([]);
+  const [portfolio, setPortfolio] = useState<any[]>(DEFAULT_PORTFOLIO);
+  const [talent, setTalent] = useState<any[]>(DEFAULT_TALENT);
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeModalProject, setActiveModalProject] = useState<ProjectSpec | null>(null);
   const [currentReelIndex, setCurrentReelIndex] = useState(1);
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const safeFetch = (endpoint: string) =>
+      fetchAPI(endpoint, { cache: "no-store", signal: controller.signal }).catch(() => null);
+
     Promise.all([
-      fetchAPI("/cms/hero?page=home", { cache: "no-store" }).catch(() => null),
-      fetchAPI("/cms/config/intro", { cache: "no-store" }).catch(() => null),
-      fetchAPI("/cms/stats", { cache: "no-store" }).catch(() => null),
-      fetchAPI("/cms/services?active=true", { cache: "no-store" }).catch(() => null),
-      fetchAPI("/cms/portfolio?featured=true&limit=6", { cache: "no-store" }).catch(() => null),
-      fetchAPI("/talent/featured", { cache: "no-store" }).catch(() => null),
-      fetchAPI("/cms/testimonials?published=true", { cache: "no-store" }).catch(() => null),
-      fetchAPI("/cms/faq?limit=8", { cache: "no-store" }).catch(() => null),
-      fetchAPI("/cms/courses?limit=4", { cache: "no-store" }).catch(() => null),
+      safeFetch("/cms/hero?page=home"),
+      safeFetch("/cms/config/intro"),
+      safeFetch("/cms/stats"),
+      safeFetch("/cms/services?active=true"),
+      safeFetch("/cms/portfolio?featured=true&limit=6"),
+      safeFetch("/talent/featured"),
+      safeFetch("/cms/testimonials?published=true"),
+      safeFetch("/cms/faq?limit=8"),
+      safeFetch("/cms/courses?limit=4"),
     ])
       .then(([heroRes, introRes, statsRes, servRes, portRes, talentRes, testRes, faqRes, courseRes]) => {
+        if (!isMounted) return;
         if (heroRes) setHero(heroRes.data || heroRes);
         if (introRes) setIntro(introRes.data || introRes);
         if (statsRes) setStats(statsRes.data || statsRes);
-        if (servRes) setServices(Array.isArray(servRes) ? servRes : (servRes.data || []));
-        if (portRes) setPortfolio(Array.isArray(portRes) ? portRes : (portRes.data || []));
-        if (talentRes) setTalent(Array.isArray(talentRes) ? talentRes : (talentRes.data || []));
+        if (servRes) {
+          const rows = Array.isArray(servRes) ? servRes : (servRes.data || []);
+          if (rows.length > 0) setServices(rows);
+        }
+        if (portRes) {
+          const rows = Array.isArray(portRes) ? portRes : (portRes.data || []);
+          if (rows.length > 0) setPortfolio(rows);
+        }
+        if (talentRes) {
+          const rows = Array.isArray(talentRes) ? talentRes : (talentRes.data || []);
+          if (rows.length > 0) setTalent(rows);
+        }
         if (testRes) setTestimonials(Array.isArray(testRes) ? testRes : (testRes.data || []));
-        if (faqRes) setFaqs(Array.isArray(faqRes) ? faqRes : (faqRes.data || []));
+        if (faqRes) {
+          const rows = Array.isArray(faqRes) ? faqRes : (faqRes.data || []);
+          if (rows.length > 0) setFaqs(rows);
+        }
         if (courseRes) {
           const rows = Array.isArray(courseRes)
             ? courseRes
@@ -147,19 +242,26 @@ export default function Home() {
               : Array.isArray(courseRes.data?.data)
                 ? courseRes.data.data
                 : [];
-          setCourses(rows);
+          if (rows.length > 0) setCourses(rows);
         }
       })
       .catch(() => {
-        toast.error("Failed to load page content");
+        // Silently preserve default states without disruptive toasts
       })
       .finally(() => {
-        setLoading(false);
+        clearTimeout(timeoutId);
+        if (isMounted) setLoading(false);
       });
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   return (
-    <div className="bg-background min-h-screen text-foreground overflow-x-clip">
+    <div className="bg-background min-h-screen text-foreground selection:bg-brand selection:text-white overflow-x-clip font-sans transition-colors duration-300">
       <Navbar />
       <Hero 
         hero={hero} 
@@ -192,26 +294,12 @@ export default function Home() {
    HERO — Cinematic split layout
    ═══════════════════════════════════════════════════════════ */
 function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: ProjectSpec) => void }) {
-  const bgRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-    const ctx = gsap.context(() => {
-      if (bgRef.current) {
-        gsap.to(bgRef.current, {
-          y: "20%",
-          ease: "none",
-          scrollTrigger: {
-            trigger: bgRef.current.parentElement,
-            start: "top top",
-            end: "bottom top",
-            scrub: true,
-          },
-        });
-      }
-    });
-    return () => ctx.revert();
-  }, []);
+  const containerRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
 
   const headingText = hero?.heading || "Stories built\nframe by frame.";
   const subheadingText =
@@ -223,51 +311,54 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
   const headingWords = headingText.split(/(\s+)/);
 
   return (
-    <section className="relative min-h-screen flex items-end overflow-hidden isolate pb-0 px-0 sm:px-4 lg:px-6">
+    <section ref={containerRef} className="relative min-h-screen flex items-end overflow-hidden isolate pb-0 px-0 sm:px-4 lg:px-6">
       {/* Background layer — Full Bleed Merged With Navbar */}
-      <div className="absolute inset-0 top-0 bottom-4 -z-10 bg-[#060608] overflow-hidden select-none rounded-none sm:rounded-b-[3rem] border-b border-[var(--cinematic-border)]/50">
-        <div ref={bgRef} className="absolute inset-0 h-[120%] w-full -top-[10%] transform-gpu" style={{ transform: 'translateZ(0)' }}>
-
+      <div className="absolute inset-0 top-0 bottom-0 -z-10 bg-[#050507] overflow-hidden select-none">
+        <motion.div style={{ y }} className="absolute inset-0 h-[120%] w-full -top-[10%] transform-gpu">
           <video
             className="absolute inset-0 h-full w-full object-cover object-center transform-gpu"
             autoPlay={true}
             muted={true}
             loop={true}
             playsInline={true}
-            preload="none"
+            preload="auto"
+            poster="/assets/hero_cinematic_dark.webp"
           >
             <source src="https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/hero.mp4" type="video/mp4" />
           </video>
-        </div>
+        </motion.div>
 
         {/* Top Vignette Gradient for Navbar Contrast */}
-        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-1 pointer-events-none" />
-        <div className="absolute inset-0 dark:bg-black/65 bg-black/45 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none dark:bg-gradient-to-t dark:from-black bg-gradient-to-t from-white to-transparent" />
-        <div className="absolute inset-0 bg-[var(--hero-gradient-left)] pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-44 bg-gradient-to-b from-black/85 via-black/45 to-transparent z-1 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/55 pointer-events-none" />
+        {/* Seamless bottom fade into page background */}
+        <div className="absolute bottom-0 left-0 right-0 h-52 pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent pointer-events-none" />
       </div>
 
       {/* Main content */}
-      <div className="mx-auto max-w-7xl w-full px-6 sm:px-10 pb-20 pt-40 md:pt-48 z-10">
+      <div className="mx-auto max-w-7xl w-full px-6 sm:px-10 pb-16 pt-36 sm:pt-44 md:pt-48 z-10">
         {/* Eyebrow */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="flex items-center gap-3 mb-8"
+          className="flex items-center gap-3 mb-6"
         >
-          <span className="h-[2px] w-12 bg-brand" />
-          <span className="text-xs sm:text-sm font-bold tracking-[0.25em] uppercase text-white drop-shadow-sm">
-            Production House · Est. 2018
-          </span>
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.08] border border-white/15 backdrop-blur-md">
+            <span className="h-2 w-2 rounded-full bg-brand animate-pulse shadow-[0_0_10px_#eb3d26]" />
+            <span className="text-[11px] sm:text-xs font-mono font-medium tracking-[0.25em] uppercase text-white/90">
+              Cinematic Studio · Est. 2018
+            </span>
+          </div>
         </motion.div>
 
         {/* Heading */}
         <div className="max-w-4xl">
-          <h1 className="font-display text-5xl sm:text-7xl lg:text-[5.5rem] xl:text-[6.5rem] text-white leading-[0.95] tracking-tight drop-shadow-md">
+          <h1 className="font-display text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] xl:text-[6.2rem] text-white leading-[1.05] sm:leading-[0.98] tracking-tight drop-shadow-xl break-normal">
             {headingWords.map((word: string, i: number) => {
               if (word.match(/\s+/)) {
-                if (word.includes("\n")) return <br key={i} />;
+                if (word.includes("\n")) return <br key={i} className="hidden sm:inline" />;
                 return <span key={i}> </span>;
               }
               return (
@@ -290,7 +381,7 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.5 }}
-          className="mt-8 max-w-2xl text-lg sm:text-2xl text-white leading-relaxed font-medium drop-shadow-md"
+          className="mt-6 sm:mt-8 max-w-2xl text-base sm:text-xl text-white/75 leading-relaxed font-normal drop-shadow-md"
         >
           {subheadingText}
         </motion.p>
@@ -300,34 +391,32 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-10 flex flex-wrap items-center gap-4 z-20 relative"
+          className="mt-8 sm:mt-10 flex flex-wrap items-center gap-3.5 z-20 relative"
         >
           <MagneticButton strength={20}>
             <Link
               href={ctaUrl}
-              className="group inline-flex items-center gap-3 rounded-full bg-brand hover:bg-white hover:text-black px-9 py-4 text-base sm:text-lg font-bold tracking-wide text-white transition-all duration-300 shadow-glow cursor-pointer"
+              className="group inline-flex items-center gap-3 rounded-full bg-brand hover:bg-[#d63520] px-8 py-3.5 sm:px-9 sm:py-4 text-sm sm:text-base font-bold tracking-wide text-white transition-all duration-300 shadow-[0_0_35px_rgba(235,61,38,0.45)] cursor-pointer"
             >
               <span>{ctaText}</span>
-              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </MagneticButton>
 
           <MagneticButton strength={20}>
             <Link
               href="/become-a-youtuber"
-              className="group inline-flex items-center gap-3 rounded-full border border-border bg-surface hover:bg-surface-elevated text-foreground px-9 py-4 text-base sm:text-lg font-bold tracking-wide backdrop-blur-md transition-all cursor-pointer shadow-md hover:border-brand/60"
+              className="group inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] hover:border-white/30 text-white px-7 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold tracking-wide backdrop-blur-md transition-all cursor-pointer shadow-lg"
             >
-              <Sparkles className="h-5 w-5 text-brand fill-brand" />
+              <Sparkles className="h-4 w-4 text-brand fill-brand" />
               <span>Become a YouTuber</span>
             </Link>
           </MagneticButton>
 
-
-
           <MagneticButton strength={20}>
             <Link
               href="/join/talent"
-              className="group bg-white/20 hover:bg-white/35 text-white inline-flex items-center gap-3 rounded-full border border-white/30 px-9 py-4 text-base sm:text-lg font-bold tracking-wide backdrop-blur-md transition-all cursor-pointer shadow-md"
+              className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.1] text-white/80 hover:text-white px-6 py-3.5 sm:px-7 sm:py-4 text-sm sm:text-base font-medium tracking-wide backdrop-blur-md transition-all cursor-pointer"
             >
               <span>Register as Talent</span>
             </Link>
@@ -339,19 +428,21 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-20 pt-8 border-t border-white/20 flex flex-wrap items-center gap-x-12 gap-y-6"
+          className="mt-14 sm:mt-16 pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8"
         >
           {[
-            { n: 500, s: "+", label: "Productions" },
+            { n: 500, s: "+", label: "Productions Delivered" },
             { n: 1200, s: "+", label: "Talent Roster" },
             { n: 40, s: "+", label: "Brand Partners" },
-            { n: 18, s: "M+", label: "Impressions" },
+            { n: 18, s: "M+", label: "Audience Reach" },
           ].map(({ n, s, label }) => (
-            <div key={label} className="flex items-baseline gap-2">
-              <span className="text-3xl sm:text-4xl font-display font-bold text-white drop-shadow-sm">
+            <div key={label} className="flex flex-col gap-1 border-l border-white/10 pl-4">
+              <span className="text-2xl sm:text-4xl font-display font-bold text-white drop-shadow-sm">
                 <Counter n={n} suffix={s} />
               </span>
-              <span className="text-xs sm:text-sm text-white font-bold tracking-wider uppercase drop-shadow-sm">{label}</span>
+              <span className="text-[10px] sm:text-xs text-white/60 font-mono tracking-widest uppercase">
+                {label}
+              </span>
             </div>
           ))}
         </motion.div>
@@ -370,7 +461,7 @@ function ScrollyTelling() {
       label: "The Vision",
       heading: "Every detail matters.",
       body: "We look beyond the surface, finding the exact optical composition and emotional resonance that moves the needle for luxury brands.",
-      image: "/images/services-lighting.jpg",
+      image: "/images/services-lighting.webp",
       tag: "OPTICAL PRECISION",
     },
     {
@@ -378,7 +469,7 @@ function ScrollyTelling() {
       label: "The Craft",
       heading: "Crafted with intent.",
       body: "Lighting, framing, and pacing — synchronized on set and in post-production to deliver theatrical quality across every screen.",
-      image: "/images/about-bts.jpg",
+      image: "/images/about-bts.webp",
       tag: "THEATRICAL RIGOR",
     },
     {
@@ -386,38 +477,41 @@ function ScrollyTelling() {
       label: "The Legacy",
       heading: "Built to last.",
       body: "Films, campaigns, and lookbooks that echo in the culture long after launch. Your story, immortalized in high definition.",
-      image: "/images/careers-meeting.jpg",
+      image: "/images/careers-meeting.webp",
       tag: "TIMELESS IMPACT",
     },
   ];
 
   return (
-    <section className="relative py-28 px-4 sm:px-6 lg:px-8 bg-background border-t border-border/60 overflow-hidden isolate">
+    <section className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-background border-t border-border overflow-hidden isolate">
       {/* Background Ambient Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[50vh] bg-brand/10 blur-[140px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[50vh] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/15 via-transparent to-transparent rounded-full pointer-events-none -z-10 transform-gpu" />
 
-      <div className="max-w-7xl mx-auto space-y-16">
+      <div className="max-w-7xl mx-auto space-y-14 sm:space-y-16">
         {/* Section Header */}
         <Reveal direction="up">
           <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/10 border border-brand/30 text-brand text-xs font-bold tracking-[0.3em] uppercase">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/10 border border-brand/30 text-brand text-xs font-bold tracking-[0.25em] uppercase">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Cinematic Principles</span>
             </div>
-            <h2 className="font-display text-4xl sm:text-6xl font-bold text-foreground tracking-tight">
-              The Three Acts of <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand via-rose-500 to-amber-500">Visual Excellence</span>
+            <h2 className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight">
+              The Three Acts of{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand via-rose-500 to-amber-400">
+                Visual Excellence
+              </span>
             </h2>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-              From initial concept to final theater color grade, we orchestrate every production through three rigorous cinematic phases.
+            <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto font-normal">
+              Our signature methodology for crafting campaigns that capture imagination and command culture.
             </p>
           </div>
         </Reveal>
 
         {/* 3-Card Grid with Natural Scroll */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {acts.map((act, i) => (
             <Reveal key={i} direction="up" delay={i * 0.15}>
-              <div className="group relative rounded-3xl overflow-hidden border border-border/80 bg-card hover:border-brand/60 transition-all duration-500 flex flex-col justify-between min-h-[480px] shadow-xl hover:shadow-[0_20px_50px_rgba(235,61,38,0.15)]">
+              <div className="group relative rounded-[2rem] overflow-hidden border border-border bg-card backdrop-blur-xl hover:border-brand/60 transition-all duration-700 flex flex-col justify-between min-h-[460px] sm:min-h-[500px] shadow-xl hover:shadow-[0_20px_60px_rgba(235,61,38,0.2)]">
                 {/* Background Image with Dark Gradient */}
                 <div className="absolute inset-0 z-0">
                   <Image
@@ -425,30 +519,30 @@ function ScrollyTelling() {
                     alt={act.heading}
                     fill
                     sizes="(max-width: 1024px) 100vw, 33vw"
-                    className="object-cover object-center group-hover:scale-105 transition-transform duration-700 brightness-[0.45] group-hover:brightness-[0.55]"
+                    className="object-cover object-center group-hover:scale-105 transition-transform duration-700 brightness-[0.38] group-hover:brightness-[0.48]"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-10" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-transparent z-10" />
                 </div>
 
                 {/* Card Header */}
-                <div className="relative z-20 p-8 flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.25em] bg-brand text-white shadow-md">
+                <div className="relative z-20 p-7 sm:p-8 flex items-center justify-between">
+                  <span className="px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.25em] bg-brand text-white shadow-[0_0_15px_rgba(235,61,38,0.5)]">
                     {act.act}
                   </span>
-                  <span className="text-xs font-mono tracking-widest text-white/70 uppercase">
+                  <span className="text-xs font-mono tracking-widest text-white/60 uppercase">
                     {act.tag}
                   </span>
                 </div>
 
                 {/* Card Body */}
-                <div className="relative z-20 p-8 pt-0 space-y-4">
-                  <span className="text-xs font-bold tracking-[0.25em] uppercase text-brand block">
+                <div className="relative z-20 p-7 sm:p-8 pt-0 space-y-3">
+                  <span className="text-xs font-mono font-bold tracking-[0.25em] uppercase text-brand block">
                     {act.label}
                   </span>
-                  <h3 className="font-display text-2xl sm:text-3xl font-bold text-white leading-snug drop-shadow-sm">
+                  <h3 className="font-display text-2xl sm:text-3xl font-bold text-white leading-snug drop-shadow-sm group-hover:text-brand transition-colors">
                     {act.heading}
                   </h3>
-                  <p className="text-white/80 text-sm leading-relaxed font-normal">
+                  <p className="text-white/70 text-sm leading-relaxed font-normal">
                     {act.body}
                   </p>
                 </div>
@@ -467,44 +561,48 @@ function ScrollyTelling() {
 function Intro({ intro }: { intro?: any }) {
   const defaultHeading = "We represent the new epoch of";
   const defaultItalic = "aesthetic storytelling.";
-  const defaultBody = "Bridging the gap between award-winning directors and verified international modeling talent. We assemble crews, lock locations, shoot RAW, and color-grade to theatrical standards.";
+  const defaultBody = "";
   const defaultLocations = ["London", "Mumbai", "Dubai"];
 
   const heading = intro?.heading || defaultHeading;
   const italic = intro?.italicText || defaultItalic;
   const body = intro?.body || defaultBody;
   const locations = intro?.locations || defaultLocations;
-  const extraContent = intro?.extraContent; // New optional field for extra spacing/content
+  const extraContent = intro?.extraContent;
 
   return (
-    <section className="mx-auto max-w-7xl px-6 sm:px-10 py-16 lg:py-24">
+    <section className="mx-auto max-w-7xl px-6 sm:px-10 py-20 lg:py-28 border-t border-border">
       <Reveal direction="up">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
           {/* Left — Pull quote */}
           <div>
-            <span className="h-[2px] w-16 bg-brand block mb-8" />
-            <h2 className="font-display text-4xl sm:text-5xl lg:text-[3.5rem] text-foreground font-bold leading-[1.1] tracking-tight">
+            <span className="h-[2px] w-16 bg-brand block mb-6 shadow-[0_0_12px_#eb3d26]" />
+            <h2 className="font-display text-3xl sm:text-5xl lg:text-[3.5rem] text-foreground font-bold leading-[1.08] tracking-tight">
               {heading}{" "}
-              <span className="italic text-muted-foreground font-medium">{italic}</span>
+              <span className="italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-foreground via-foreground/80 to-brand">
+                {italic}
+              </span>
             </h2>
           </div>
 
           {/* Right — Body */}
-          <div className="lg:pt-4">
-            <p className="text-lg sm:text-xl text-foreground leading-relaxed font-medium whitespace-pre-wrap">
-              {body}
+          <div className="lg:pt-2">
+            <p className="text-base sm:text-xl text-foreground/90 leading-relaxed font-normal whitespace-pre-wrap">
+              {body || "We combine theatrical cinematography, cutting-edge post-production, and exclusive talent representation to craft stories that resonate globally across luxury, fashion, and digital culture."}
             </p>
             {extraContent && (
-              <p className="mt-6 text-base text-muted-foreground leading-relaxed font-medium whitespace-pre-wrap">
+              <p className="mt-5 text-sm sm:text-base text-muted-foreground leading-relaxed font-normal whitespace-pre-wrap">
                 {extraContent}
               </p>
             )}
-            <div className="mt-8 flex items-center flex-wrap gap-6 text-xs sm:text-sm tracking-[0.2em] uppercase font-bold text-foreground">
+            <div className="mt-8 flex items-center flex-wrap gap-4 sm:gap-6 text-xs sm:text-sm tracking-[0.2em] uppercase font-mono font-medium text-muted-foreground">
               {locations.map((loc: string, idx: number) => (
-                <div key={idx} className="flex items-center gap-6">
-                  <span>{loc}</span>
+                <div key={idx} className="flex items-center gap-4 sm:gap-6">
+                  <span className="px-3.5 py-1 rounded-full bg-surface border border-border text-foreground font-semibold">
+                    {loc}
+                  </span>
                   {idx < locations.length - 1 && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_8px_#eb3d26]" />
                   )}
                 </div>
               ))}
@@ -512,14 +610,27 @@ function Intro({ intro }: { intro?: any }) {
           </div>
         </div>
 
-        {/* Cinematic Visual Fill */}
-        <div className="mt-20 lg:mt-32 relative w-full h-[300px] sm:h-[450px] lg:h-[600px] rounded-3xl overflow-hidden group">
-          <div className="absolute inset-0 bg-black/20 z-10 group-hover:bg-transparent transition-colors duration-700" />
+        {/* Cinematic Visual Frame with Film Aspect Markings */}
+        <div className="mt-16 lg:mt-24 relative w-full h-[280px] sm:h-[450px] lg:h-[560px] rounded-3xl overflow-hidden group border border-border shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10 group-hover:from-black/60 transition-colors duration-700" />
+          
+          {/* Authentic Film Metadata Watermark */}
+          <div className="absolute top-4 left-4 z-20 flex items-center gap-3">
+            <span className="px-2.5 py-1 rounded bg-black/60 backdrop-blur-md border border-white/15 text-[10px] font-mono tracking-widest text-white/80 uppercase">
+              2.39:1 ANAMORPHIC
+            </span>
+            <span className="hidden sm:inline-block px-2.5 py-1 rounded bg-black/60 backdrop-blur-md border border-white/15 text-[10px] font-mono tracking-widest text-brand uppercase">
+              8K MASTER GRADE
+            </span>
+          </div>
+
           <Image
-            src={intro?.imageUrl || "/images/portfolio-equipment.jpg"}
+            src={intro?.imageUrl || "/images/portfolio-equipment.webp"}
             alt="Cinematic showcase"
             fill
-            className="object-cover object-center scale-105 group-hover:scale-100 transition-transform duration-[1.5s] ease-out" sizes="100vw" />
+            className="object-cover object-center scale-105 group-hover:scale-100 transition-transform duration-[1.5s] ease-out brightness-90 group-hover:brightness-100"
+            sizes="100vw"
+          />
         </div>
       </Reveal>
     </section>
@@ -535,28 +646,28 @@ const DEFAULT_SERVICES = [
     title: "Pre-Production & Creative Direction",
     description: "Scriptwriting, visual storyboarding, moodboarding, location scouting, and comprehensive casting for luxury lookbooks and commercial cinema.",
     tags: ["Storyboarding", "Scouting", "Casting"],
-    imageUrl: "/images/services-lighting.jpg"
+    imageUrl: "/images/services-lighting.webp"
   },
   {
     id: "cinematography",
     title: "High-Fashion Cinematography",
     description: "ARRI & RED 8K camera packages with anamorphic glass, master Gaffer lighting, and elite camera operators for high-fashion campaigns.",
     tags: ["ARRI Alexa 35", "Anamorphic", "Lighting"],
-    imageUrl: "/images/portfolio-equipment.jpg"
+    imageUrl: "/images/portfolio-equipment.webp"
   },
   {
     id: "post-production",
     title: "Post-Production & Color Grading",
     description: "Theatrical editing, Kodak film emulation, Dolby Vision HDR color grading, motion graphics, and immersive sound design.",
     tags: ["Dolby Vision", "Kodak 2383", "Sound Design"],
-    imageUrl: "/images/about-bts.jpg"
+    imageUrl: "/images/about-bts.webp"
   },
   {
     id: "talent-management",
     title: "Talent Roster & Representation",
     description: "Exclusive access to international cover models, actors, dancers, and visual directors with secure escrow contract protections.",
     tags: ["Global Roster", "Escrow Contract", "Agency Access"],
-    imageUrl: "/images/projects-outdoor.jpg"
+    imageUrl: "/images/projects-outdoor.webp"
   }
 ];
 
@@ -565,33 +676,33 @@ function Services({ services = [], loading }: { services?: any[]; loading?: bool
   const displayServices = sourceServices.slice(0, 4);
 
   return (
-    <section className="pt-8 pb-16 lg:pb-24 bg-background">
+    <section className="py-24 sm:py-32 bg-background border-t border-border">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
         {/* Header */}
         <Reveal direction="up" className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-16">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <span className="h-[2px] w-12 bg-brand" />
+              <span className="h-[2px] w-12 bg-brand shadow-[0_0_8px_#eb3d26]" />
               <span className="text-xs sm:text-sm font-bold tracking-[0.25em] uppercase text-brand">Capabilities</span>
             </div>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-display text-foreground font-bold leading-tight">
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-display text-foreground font-bold leading-tight">
               <DecryptedText text="Our Creative" animateOn="view" speed={50} sequential={true} revealDirection="start" /><br />
               <DecryptedText text="Disciplines" animateOn="view" speed={50} sequential={true} revealDirection="start" />
             </h2>
           </div>
           <Link
             href="/services"
-            className="group inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border bg-card hover:bg-brand hover:text-white hover:border-brand text-foreground font-bold text-sm tracking-wide transition-all duration-300 shadow-md cursor-pointer shrink-0"
+            className="group inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border bg-surface hover:bg-brand hover:border-brand text-foreground hover:text-white font-bold text-sm tracking-wide transition-all duration-300 shadow-md cursor-pointer shrink-0 backdrop-blur-md"
           >
             <span>View All Services</span>
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </Reveal>
 
-        {/* Boxed Layout */}
+        {/* Disciplines Grid */}
         <div className="flex flex-col gap-6">
           {loading && services.length === 0 ? (
-            <div className="h-64 rounded-3xl bg-muted/20 animate-pulse" />
+            <div className="h-64 rounded-3xl bg-surface/50 animate-pulse border border-border" />
           ) : (
             displayServices.map((s, idx) => {
               const serviceName = s.title || s.name || `Service 0${idx + 1}`;
@@ -601,10 +712,10 @@ function Services({ services = [], loading }: { services?: any[]; loading?: bool
                 ? rawTags
                 : (typeof rawTags === 'string' ? (() => { try { return JSON.parse(rawTags); } catch { return ["Cinematic", "Global"]; } })() : ["Cinematic"]);
               const FALLBACK_POOL = [
-                "/images/services-lighting.jpg",
-                "/images/portfolio-equipment.jpg",
-                "/images/about-bts.jpg",
-                "/images/projects-outdoor.jpg"
+                "/images/services-lighting.webp",
+                "/images/portfolio-equipment.webp",
+                "/images/about-bts.webp",
+                "/images/projects-outdoor.webp"
               ];
               const rawImg = s.imageUrl || s.coverImage || s.img || s.image;
               const imageSrc = (rawImg && typeof rawImg === 'string' && rawImg.length > 5)
@@ -613,33 +724,33 @@ function Services({ services = [], loading }: { services?: any[]; loading?: bool
 
               return (
                 <Reveal key={s.id || idx} direction="up" delay={idx * 0.05}>
-                  <div className="group relative rounded-[2rem] border border-border bg-card hover:border-brand/60 transition-[border-color,box-shadow,transform] duration-300 overflow-hidden shadow-xl p-8 sm:p-12 transform-gpu">
+                  <div className="group relative rounded-[2rem] border border-border bg-card dark:bg-gradient-to-b dark:from-[#101117]/90 dark:to-[#090a0e]/95 hover:border-brand/50 transition-all duration-500 overflow-hidden shadow-xl p-6 sm:p-10 transform-gpu">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                       
                       {/* Left: Metadata & Titles */}
-                      <div className="lg:col-span-7 flex flex-col justify-between h-full">
+                      <div className="lg:col-span-7 flex flex-col justify-between h-full order-2 lg:order-1">
                         <div>
-                          <div className="flex items-center gap-4 mb-6">
-                            <span className="text-sm sm:text-base font-bold text-brand tracking-widest font-mono">/ 0{idx + 1}</span>
+                          <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                            <span className="text-sm font-bold text-brand tracking-widest font-mono">/ 0{idx + 1}</span>
                             <span className="h-1 w-1 rounded-full bg-border" />
-                            <span className="text-xs sm:text-sm font-bold text-muted-foreground tracking-widest uppercase">Verified Discipline</span>
+                            <span className="text-xs font-mono font-medium text-muted-foreground tracking-widest uppercase">Verified Discipline</span>
                           </div>
 
-                          <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl text-foreground font-bold group-hover:text-brand transition-colors leading-tight mb-6">
+                          <h3 className="font-display text-2xl sm:text-4xl lg:text-5xl text-foreground font-bold group-hover:text-brand transition-colors leading-tight mb-4">
                             {serviceName}
                           </h3>
 
-                          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed font-medium mb-8 max-w-xl">
+                          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-normal mb-6 max-w-xl">
                             {desc}
                           </p>
                         </div>
 
                         {/* Tags */}
-                        <div className="flex flex-wrap gap-2.5 pt-6 border-t border-border">
+                        <div className="flex flex-wrap gap-2 pt-5 border-t border-border">
                           {tags.map((tag: string, tIdx: number) => (
                             <span
                               key={tIdx}
-                              className="px-4 py-1.5 rounded-full bg-muted text-xs sm:text-sm font-bold uppercase tracking-wider text-foreground border border-border"
+                              className="px-3.5 py-1.5 rounded-full bg-surface text-[11px] sm:text-xs font-mono font-medium uppercase tracking-wider text-foreground border border-border"
                             >
                               {tag}
                             </span>
@@ -648,15 +759,15 @@ function Services({ services = [], loading }: { services?: any[]; loading?: bool
                       </div>
 
                       {/* Right: Cinematic Image */}
-                      <div className="lg:col-span-5 relative min-h-[220px] lg:min-h-full rounded-[1.5rem] overflow-hidden border border-border group-hover:border-brand/40 transition-colors duration-500">
+                      <div className="lg:col-span-5 relative min-h-[200px] sm:min-h-[260px] lg:min-h-[280px] rounded-2xl overflow-hidden border border-border group-hover:border-brand/40 transition-colors duration-500 order-1 lg:order-2">
                         <Image
                           src={imageSrc}
                           alt={serviceName}
                           fill
                           sizes="(max-width: 1024px) 100vw, 40vw"
-                          className="object-cover scale-105 group-hover:scale-100 transition-transform duration-[1.5s] ease-out brightness-[0.8] group-hover:brightness-100"
+                          className="object-cover scale-105 group-hover:scale-100 transition-transform duration-[1.5s] ease-out brightness-[0.75] group-hover:brightness-100"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-20 transition-opacity duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80 group-hover:opacity-30 transition-opacity duration-500" />
                       </div>
 
                     </div>
@@ -671,10 +782,10 @@ function Services({ services = [], loading }: { services?: any[]; loading?: bool
         <Reveal direction="up" className="mt-12 text-center">
           <Link
             href="/services"
-            className="inline-flex items-center gap-3 px-10 py-4 rounded-full bg-brand text-white hover:bg-foreground hover:text-background font-bold text-base sm:text-lg tracking-wide transition-all duration-300 shadow-glow group cursor-pointer"
+            className="inline-flex items-center gap-3 px-9 py-4 rounded-full bg-brand text-white hover:bg-foreground hover:text-background font-bold text-sm sm:text-base tracking-wide transition-all duration-300 shadow-[0_0_35px_rgba(235,61,38,0.4)] group cursor-pointer"
           >
             <span>View All Services & Disciplines</span>
-            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </Reveal>
       </div>
@@ -694,7 +805,7 @@ function FeaturedProjects({
   loading?: boolean;
   onOpenModal?: (project: ProjectSpec) => void;
 }) {
-  const displayProjects = portfolio;
+  const displayProjects = portfolio && portfolio.length > 0 ? portfolio : DEFAULT_PORTFOLIO;
 
   const buildModalSpec = (p: any, i: number): ProjectSpec => ({
     title: p.title,
@@ -712,34 +823,34 @@ function FeaturedProjects({
   });
 
   return (
-    <section className="mx-auto max-w-7xl px-6 sm:px-10 py-32">
+    <section className="mx-auto max-w-7xl px-6 sm:px-10 py-24 sm:py-32 border-t border-border">
       {/* Header row */}
       <Reveal direction="up" className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-16">
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <span className="h-[2px] w-12 bg-brand" />
+            <span className="h-[2px] w-12 bg-brand shadow-[0_0_8px_#eb3d26]" />
             <span className="text-xs sm:text-sm font-bold tracking-[0.25em] uppercase text-brand">Selected Work</span>
           </div>
-          <h2 className="font-display text-4xl sm:text-5xl text-foreground font-bold leading-tight">Featured Productions</h2>
+          <h2 className="font-display text-3xl sm:text-5xl text-foreground font-bold leading-tight">Featured Productions</h2>
         </div>
         <Link
           href="/portfolio"
-          className="text-base font-bold text-muted-foreground hover:text-brand transition-colors flex items-center gap-2"
+          className="text-sm sm:text-base font-bold text-muted-foreground hover:text-brand transition-colors flex items-center gap-2 font-mono uppercase tracking-wider"
         >
-          <span>View All</span>
+          <span>View All Work</span>
           <ArrowRight className="h-4 w-4" />
         </Link>
       </Reveal>
 
       {loading && portfolio.length === 0 ? (
-        <div className="grid gap-4 md:grid-cols-12">
-          <div className="md:col-span-12 h-[420px] rounded-2xl bg-muted/20 animate-pulse" />
+        <div className="grid gap-6 md:grid-cols-12">
+          <div className="md:col-span-12 h-[420px] rounded-3xl bg-surface/50 animate-pulse border border-border" />
           {[1, 2, 3].map((i) => (
-            <div key={i} className="md:col-span-4 h-[320px] rounded-2xl bg-muted/20 animate-pulse" />
+            <div key={i} className="md:col-span-4 h-[320px] rounded-3xl bg-surface/50 animate-pulse border border-border" />
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-12">
+        <div className="grid gap-6 md:grid-cols-12">
           {displayProjects.map((p, i) => {
             const handleClick = (e: React.MouseEvent) => {
               if (onOpenModal) {
@@ -754,35 +865,35 @@ function FeaturedProjects({
                 <Reveal key={p.id || p.title || i} direction="up" className="md:col-span-12">
                   <div
                     onClick={handleClick}
-                    className="group relative overflow-hidden rounded-2xl cursor-pointer h-[420px] sm:h-[480px]"
+                    className="group relative overflow-hidden rounded-[2rem] cursor-pointer h-[420px] sm:h-[500px] border border-border hover:border-brand/60 transition-all duration-700 shadow-2xl"
                   >
                     <Image
-                      src={p.coverImageUrl || p.mediaUrl || p.img || "/assets/project-fashion.jpg"}
+                      src={p.coverImageUrl || p.mediaUrl || p.img || "/assets/project-fashion.webp"}
                       alt={p.title}
                       fill
                       sizes="(max-width: 768px) 100vw, 66vw"
-                      className="object-cover object-[center_30%] transition-transform duration-[1200ms] ease-out group-hover:scale-[1.03]"
+                      className="object-cover object-[center_30%] transition-transform duration-[1200ms] ease-out group-hover:scale-[1.03] brightness-90 group-hover:brightness-100"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent" />
 
                     <div className="absolute bottom-0 left-0 p-8 sm:p-12 z-10 max-w-2xl">
                       <div className="flex items-center gap-3 mb-3">
-                        <span className="text-xs sm:text-sm font-bold tracking-[0.2em] uppercase text-brand">{p.category}</span>
-                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                        <span className="text-xs sm:text-sm font-bold uppercase text-white">{p.client || p.location}</span>
+                        <span className="text-xs sm:text-sm font-mono font-bold tracking-[0.2em] uppercase text-brand">{p.category}</span>
+                        <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+                        <span className="text-xs sm:text-sm font-mono font-medium uppercase text-white/80">{p.client || p.location}</span>
                       </div>
-                      <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl text-white leading-tight group-hover:text-brand transition-colors">
+                      <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl text-white font-bold leading-tight group-hover:text-brand transition-colors">
                         {p.title}
                       </h3>
-                      <p className="mt-4 text-base sm:text-lg text-white font-semibold group-hover:text-brand transition-colors flex items-center gap-2">
+                      <p className="mt-4 text-sm sm:text-base text-white/80 font-medium group-hover:text-brand transition-colors flex items-center gap-2">
                         <span>View production details</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                       </p>
                     </div>
 
-                    <div className="absolute right-8 top-8 h-12 w-12 grid place-items-center rounded-full bg-brand text-primary-foreground opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-100 scale-75">
-                      <Play className="h-4 w-4 fill-primary-foreground text-primary-foreground ml-0.5" />
+                    <div className="absolute right-8 top-8 h-12 w-12 grid place-items-center rounded-full bg-brand text-white opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-100 scale-75 shadow-[0_0_25px_rgba(235,61,38,0.6)]">
+                      <Play className="h-4 w-4 fill-white text-white ml-0.5" />
                     </div>
                   </div>
                 </Reveal>
@@ -794,19 +905,19 @@ function FeaturedProjects({
               <Reveal key={p.id || p.title || i} direction="up" delay={0.08 * i} className="md:col-span-4">
                 <div
                   onClick={handleClick}
-                  className="group relative overflow-hidden rounded-2xl cursor-pointer h-[320px] sm:h-[360px]"
+                  className="group relative overflow-hidden rounded-[1.75rem] cursor-pointer h-[320px] sm:h-[360px] border border-border hover:border-brand/60 transition-all duration-700 shadow-2xl"
                 >
                   <Image
-                    src={p.coverImageUrl || p.mediaUrl || p.img || "/assets/fashion_lookbook.png"}
+                    src={p.coverImageUrl || p.mediaUrl || p.img || "/assets/fashion_lookbook.webp"}
                     alt={p.title}
                     fill
                     sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.04]"
+                    className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.04] brightness-90 group-hover:brightness-100"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
 
                   <div className="absolute bottom-0 left-0 p-6 z-10">
-                    <span className="text-xs font-bold tracking-[0.2em] uppercase text-brand block mb-2">{p.category}</span>
+                    <span className="text-[11px] font-mono font-bold tracking-[0.2em] uppercase text-brand block mb-2">{p.category}</span>
                     <h3 className="font-display text-xl sm:text-2xl text-white font-bold leading-tight group-hover:text-brand transition-colors">
                       {p.title}
                     </h3>
@@ -822,12 +933,13 @@ function FeaturedProjects({
 }
 
 /* ═══════════════════════════════════════════════════════════
-   FEATURED TALENT — Horizontal scroll strip
+   FEATURED TALENT — Agency Editorial Portrait Cards
    ═══════════════════════════════════════════════════════════ */
 function FeaturedTalent({ talent = [], loading }: { talent?: any[]; loading?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const displayTalent = talent.slice(0, 12); // Featured strip — cap to keep the homepage light; full roster on /talent
+  const sourceTalent = talent && talent.length > 0 ? talent : DEFAULT_TALENT;
+  const displayTalent = sourceTalent.slice(0, 12);
 
   const scroll = (dir: "left" | "right") => {
     if (scrollRef.current) {
@@ -837,25 +949,25 @@ function FeaturedTalent({ talent = [], loading }: { talent?: any[]; loading?: bo
   };
 
   return (
-    <section className="py-32 overflow-hidden">
+    <section className="py-24 sm:py-32 overflow-hidden bg-background border-t border-border">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
         {/* Header */}
         <Reveal direction="up" className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <span className="h-[2px] w-12 bg-brand" />
+              <span className="h-[2px] w-12 bg-brand shadow-[0_0_8px_#eb3d26]" />
               <span className="text-xs sm:text-sm font-bold tracking-[0.25em] uppercase text-brand">Exclusive Roster</span>
             </div>
-            <h2 className="font-display text-4xl sm:text-5xl text-foreground font-bold leading-tight">Featured Talent</h2>
+            <h2 className="font-display text-3xl sm:text-5xl text-foreground font-bold leading-tight">Featured Talent</h2>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => scroll("left")} className="h-10 w-10 rounded-full border border-border grid place-items-center text-foreground hover:text-brand hover:border-brand transition-colors">
+            <button onClick={() => scroll("left")} className="h-10 w-10 rounded-full border border-border bg-surface grid place-items-center text-foreground hover:text-brand hover:border-brand transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => scroll("right")} className="h-10 w-10 rounded-full border border-border grid place-items-center text-foreground hover:text-brand hover:border-brand transition-colors">
+            <button onClick={() => scroll("right")} className="h-10 w-10 rounded-full border border-border bg-surface grid place-items-center text-foreground hover:text-brand hover:border-brand transition-colors">
               <ChevronRight className="w-4 h-4" />
             </button>
-            <Link href="/talent" className="hidden sm:flex items-center gap-2 text-base font-bold text-muted-foreground hover:text-brand transition-colors ml-2">
+            <Link href="/talent" className="hidden sm:flex items-center gap-2 text-sm sm:text-base font-bold text-muted-foreground hover:text-brand transition-colors ml-2 font-mono uppercase tracking-wider">
               <span>View All</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
@@ -863,56 +975,64 @@ function FeaturedTalent({ talent = [], loading }: { talent?: any[]; loading?: bo
         </Reveal>
       </div>
 
-      {/* Horizontal scroll strip */}
+      {/* Horizontal scroll strip with Editorial Cards */}
       {loading && talent.length === 0 ? (
-        <div className="flex gap-4 px-6 sm:px-10">
+        <div className="flex gap-5 px-6 sm:px-10">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="shrink-0 w-64 h-80 rounded-2xl bg-card animate-pulse" />
+            <div key={i} className="shrink-0 w-[260px] sm:w-[300px] h-[380px] sm:h-[420px] rounded-3xl bg-surface/50 animate-pulse border border-border" />
           ))}
         </div>
       ) : (
         <div
           ref={scrollRef}
-          className="flex gap-5 overflow-x-auto scrollbar-hide px-6 sm:px-10 pb-4 snap-x snap-mandatory"
+          className="flex gap-6 overflow-x-auto scrollbar-hide px-6 sm:px-10 pb-4 snap-x snap-mandatory"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {displayTalent.map((t: any, i: number) => (
             <Link
               key={t.id || t.slug || i}
               href={`/talent/${t.slug || t.id}`}
-              className="group shrink-0 w-[240px] sm:w-[280px] snap-start flex flex-col items-center text-center"
+              className="group shrink-0 w-[260px] sm:w-[300px] h-[380px] sm:h-[420px] snap-start relative rounded-3xl overflow-hidden border border-border hover:border-brand/60 transition-all duration-500 shadow-xl flex flex-col justify-end p-6 bg-card"
             >
-              <div className="relative h-48 w-48 sm:h-56 sm:w-56 rounded-full overflow-hidden mb-8 transition-transform duration-700 group-hover:scale-105">
-                {/* Avatar placeholder / Image */}
-                <div className="absolute inset-0 bg-card flex items-center justify-center">
-                  {t.user?.avatarUrl ? (
-                    <Image src={t.user.avatarUrl} alt={`${t.user.firstName ?? ''} ${t.user.lastName ?? ''}`.trim() || 'Talent'} fill className="object-cover" sizes="(max-width: 640px) 192px, 224px" />
-                  ) : (
-                    <div className="text-4xl font-display text-muted-foreground group-hover:text-brand transition-colors duration-500">
+              {/* Full bleed portrait background */}
+              <div className="absolute inset-0 z-0">
+                {t.user?.avatarUrl ? (
+                  <Image
+                    src={t.user.avatarUrl}
+                    alt={`${t.user.firstName ?? ''} ${t.user.lastName ?? ''}`.trim() || 'Talent'}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-700 brightness-90 group-hover:brightness-100"
+                    sizes="(max-width: 640px) 260px, 300px"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[#151722] flex items-center justify-center">
+                    <span className="text-5xl font-display text-white/30">
                       {t.user?.firstName?.[0] || "T"}
-                      {t.user?.lastName?.[0] || "M"}
-                    </div>
-                  )}
-                </div>
-                {/* Overlay on hover */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500 z-10" />
+                    </span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
               </div>
 
-              {/* Info below avatar */}
-              <div className="flex flex-col items-center">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-brand" />
-                  <span className="text-xs font-bold tracking-[0.2em] uppercase text-brand">Exclusive</span>
-                </div>
-                <h3 className="font-display text-2xl sm:text-3xl text-foreground font-bold group-hover:text-brand transition-colors leading-tight mb-2">
+              {/* Top badge */}
+              <div className="absolute top-4 left-4 z-20">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/15 text-white/90">
+                  <CheckCircle2 className="h-3 w-3 text-brand" />
+                  <span>Exclusive</span>
+                </span>
+              </div>
+
+              {/* Bottom Info */}
+              <div className="relative z-20 space-y-1.5">
+                <h3 className="font-display text-2xl sm:text-3xl text-white font-bold group-hover:text-brand transition-colors leading-tight drop-shadow-md">
                   {t.user?.firstName || "Talent"} {t.user?.lastName || ""}
                 </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground font-bold tracking-widest uppercase mb-4">
+                <p className="text-xs font-mono font-medium tracking-widest uppercase text-brand">
                   {t.talentTypes?.[0]?.replace(/_/g, " ") || "Artist"}
                 </p>
-                <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-muted-foreground group-hover:text-brand transition-colors">
-                  <span>{t.instagramFollowers ? `${(t.instagramFollowers / 1000).toFixed(0)}K Followers` : "Verified Roster"}</span>
-                  <ArrowRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
+                <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs font-mono text-white/70">
+                  <span>{t.instagramFollowers ? `${(t.instagramFollowers / 1000).toFixed(0)}K Followers` : "Agency Roster"}</span>
+                  <ArrowRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-brand" />
                 </div>
               </div>
             </Link>
@@ -935,23 +1055,23 @@ function Stats({ stats }: { stats?: any }) {
   ];
 
   return (
-    <section className="border-y border-border bg-muted/10">
+    <section className="border-y border-border bg-surface/50">
       <div className="mx-auto max-w-7xl px-6 sm:px-10 py-20">
         <Reveal direction="up">
           <div className="flex flex-wrap justify-between items-center gap-y-10">
             {items.map(({ n, s, label, icon: Icon }, i) => (
               <div key={label} className="flex items-center gap-8">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-3 mb-2">
+                <div className="text-center sm:text-left">
+                  <div className="flex items-center justify-center sm:justify-start gap-3 mb-2">
                     <Icon className="h-6 w-6 text-brand" />
                     <span className="font-display text-4xl sm:text-5xl font-bold text-foreground">
                       <Counter n={n} suffix={s} />
                     </span>
                   </div>
-                  <span className="text-xs sm:text-sm font-bold tracking-[0.2em] uppercase text-muted-foreground block">{label}</span>
+                  <span className="text-xs sm:text-sm font-mono tracking-[0.2em] uppercase text-muted-foreground block">{label}</span>
                 </div>
                 {i < items.length - 1 && (
-                  <div className="hidden md:block h-12 w-[1px] bg-border" />
+                  <div className="hidden lg:block h-12 w-[1px] bg-border" />
                 )}
               </div>
             ))}
@@ -969,20 +1089,20 @@ function Process({ process = [] }: { process?: any[] }) {
   const displayProcess = process;
 
   return (
-    <section className="py-32">
+    <section className="py-24 sm:py-32 bg-background border-t border-border">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
         <div className="grid gap-16 lg:grid-cols-12 lg:gap-20">
           {/* Pinned header */}
           <div className="lg:col-span-4">
             <Reveal direction="up" className="lg:sticky lg:top-32">
               <div className="flex items-center gap-3 mb-4">
-                <span className="h-[2px] w-12 bg-brand" />
+                <span className="h-[2px] w-12 bg-brand shadow-[0_0_8px_#eb3d26]" />
                 <span className="text-xs sm:text-sm font-bold tracking-[0.25em] uppercase text-brand">Methodology</span>
               </div>
-              <h2 className="font-display text-4xl sm:text-5xl text-foreground font-bold leading-tight">
+              <h2 className="font-display text-3xl sm:text-5xl text-foreground font-bold leading-tight">
                 Production Process
               </h2>
-              <p className="mt-6 text-base sm:text-lg text-muted-foreground font-medium leading-relaxed">
+              <p className="mt-6 text-base sm:text-lg text-muted-foreground font-normal leading-relaxed">
                 A rigorous four-phase pipeline that eliminates friction between
                 creative ambition and technical execution.
               </p>
@@ -991,21 +1111,21 @@ function Process({ process = [] }: { process?: any[] }) {
 
           {/* Timeline */}
           <div className="lg:col-span-8 lg:pl-10">
-            <div className="space-y-16">
+            <div className="space-y-6">
               {displayProcess.map((p, i) => (
                 <Reveal key={p.step || i} direction="up" delay={0.05 * i}>
-                  <div className="group flex flex-col md:flex-row md:items-start gap-6 md:gap-12 border border-border bg-card shadow-xl transition-all duration-500 hover:border-brand/60 min-h-[280px] md:min-h-[220px]">
+                  <div className="group flex flex-col md:flex-row md:items-start gap-6 md:gap-10 border border-border bg-card dark:bg-gradient-to-b dark:from-[#101117]/90 dark:to-[#090a0e]/95 rounded-3xl p-6 md:p-8 shadow-xl transition-all duration-500 hover:border-brand/60">
                     {/* Number */}
-                    <div className="text-brand font-mono text-xl md:text-2xl font-bold tracking-widest pt-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div className="text-brand font-mono text-xl md:text-2xl font-bold tracking-widest pt-1 opacity-90 group-hover:opacity-100 transition-opacity">
                       {p.step || `0${i + 1}`}
                     </div>
 
                     {/* Content */}
                     <div>
-                      <h3 className="font-display text-3xl md:text-4xl text-foreground font-bold group-hover:text-brand transition-colors leading-tight mb-4 h-[90px] md:h-[100px] flex items-center">
+                      <h3 className="font-display text-2xl sm:text-3xl text-foreground font-bold group-hover:text-brand transition-colors leading-tight mb-3">
                         <DecryptedText text={p.title} animateOn="hover" speed={40} sequential={true} revealDirection="start" useOriginalCharsOnly={true} />
                       </h3>
-                      <p className="text-base md:text-xl text-muted-foreground font-medium leading-relaxed max-w-xl">
+                      <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed max-w-xl">
                         {p.desc || p.description}
                       </p>
                     </div>
@@ -1049,10 +1169,14 @@ function Faq({ faqs = [], loading }: { faqs?: any[]; loading?: boolean }) {
   const displayFaqs = sourceFaqs;
 
   return (
-    <section className="py-32 bg-background">
+    <section className="py-24 sm:py-32 bg-background border-t border-border">
       <div className="mx-auto max-w-3xl px-6 sm:px-10">
         <Reveal direction="up" className="text-center mb-16">
-          <h2 className="font-display text-4xl sm:text-5xl text-foreground font-bold leading-tight">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <span className="h-[2px] w-12 bg-brand shadow-[0_0_8px_#eb3d26]" />
+            <span className="text-xs sm:text-sm font-bold tracking-[0.25em] uppercase text-brand">Answers</span>
+          </div>
+          <h2 className="font-display text-3xl sm:text-5xl text-foreground font-bold leading-tight">
             Frequently Asked Questions
           </h2>
         </Reveal>
@@ -1060,7 +1184,7 @@ function Faq({ faqs = [], loading }: { faqs?: any[]; loading?: boolean }) {
         {loading && faqs.length === 0 ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-muted/20 animate-pulse" />
+              <div key={i} className="h-16 rounded-2xl bg-surface/50 animate-pulse border border-border" />
             ))}
           </div>
         ) : (
@@ -1072,26 +1196,26 @@ function Faq({ faqs = [], loading }: { faqs?: any[]; loading?: boolean }) {
                 const answerText = f.a || f.answer || f.desc || f.description;
 
                 return (
-                  <div key={f.id || questionText || i} className="border border-border rounded-2xl p-6 md:p-8 bg-card shadow-xl transition-all duration-300 hover:border-brand/60">
+                  <div key={f.id || questionText || i} className="border border-border rounded-2xl p-6 md:p-8 bg-card hover:border-brand/60 shadow-md transition-all duration-300">
                     <button
-                      className="group flex w-full items-center justify-between gap-6 text-left transition"
+                      className="group flex w-full items-center justify-between gap-6 text-left transition cursor-pointer"
                       onClick={() => setOpen(isOpen ? null : i)}
                     >
-                      <span className="font-display text-xl md:text-2xl text-foreground font-bold group-hover:text-brand transition-colors">{questionText}</span>
+                      <span className="font-display text-lg sm:text-xl text-foreground font-bold group-hover:text-brand transition-colors">{questionText}</span>
                       <span
                         className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-all duration-300 ${
-                          isOpen ? "border-brand bg-brand text-white rotate-0" : "border-border text-foreground"
+                          isOpen ? "border-brand bg-brand text-white rotate-0 shadow-[0_0_12px_rgba(235,61,38,0.5)]" : "border-border text-foreground hover:border-brand/60"
                         }`}
                       >
                         {isOpen ? <Minus className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
                       </span>
                     </button>
                     <div
-                      className="grid overflow-hidden text-base md:text-lg transition-all duration-300"
+                      className="grid overflow-hidden text-sm sm:text-base transition-all duration-300"
                       style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
                     >
                       <div className="min-h-0">
-                        <p className="pt-6 pb-2 leading-relaxed text-muted-foreground font-medium">{answerText}</p>
+                        <p className="pt-5 pb-1 leading-relaxed text-muted-foreground font-normal">{answerText}</p>
                       </div>
                     </div>
                   </div>
@@ -1106,57 +1230,57 @@ function Faq({ faqs = [], loading }: { faqs?: any[]; loading?: boolean }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CONTACT CTA — Full-bleed gradient (no card border)
+   CONTACT CTA — Full-bleed gradient
    ═══════════════════════════════════════════════════════════ */
 function ContactCta() {
   return (
-    <section className="px-4 sm:px-6 lg:px-8 pb-12 md:pb-16">
-      <div className="relative overflow-hidden rounded-[2rem] md:rounded-[3rem] py-16 md:py-24 bg-gradient-to-br from-[var(--cinematic-bg)] via-[#0e0810] to-[var(--cinematic-bg)] border border-white/20">
-      {/* Ambient glow — GPU radial gradients */}
-      <div className="pointer-events-none absolute -right-40 -top-40 h-[500px] w-[500px] rounded-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/15 via-brand/5 to-transparent transform-gpu" />
-      <div className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/10 via-brand/2 to-transparent transform-gpu" />
+    <section className="px-4 sm:px-6 lg:px-8 pb-16 pt-8 bg-background">
+      <div className="relative overflow-hidden rounded-[2rem] md:rounded-[3rem] py-16 md:py-24 bg-gradient-to-br from-card via-surface to-card border border-border shadow-2xl">
+        {/* Ambient glow */}
+        <div className="pointer-events-none absolute -right-40 -top-40 h-[500px] w-[500px] rounded-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/20 via-brand/5 to-transparent transform-gpu" />
+        <div className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/15 via-brand/2 to-transparent transform-gpu" />
 
-      <div className="relative mx-auto max-w-4xl px-6 sm:px-10 text-center">
-        <Reveal direction="up">
-          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs sm:text-sm font-bold tracking-[0.2em] uppercase text-white border border-white/20 mb-8 backdrop-blur-md">
-            <span className="pulse-dot inline-block h-2 w-2 rounded-full bg-brand" />
-            Now Booking Q4 2026 / Q1 2027
-          </div>
+        <div className="relative mx-auto max-w-4xl px-6 sm:px-10 text-center">
+          <Reveal direction="up">
+            <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs sm:text-sm font-mono font-medium tracking-[0.2em] uppercase text-foreground border border-border mb-8 backdrop-blur-md bg-surface">
+              <span className="inline-block h-2 w-2 rounded-full bg-brand animate-pulse shadow-[0_0_8px_#eb3d26]" />
+              Now Booking Q4 2026 / Q1 2027
+            </div>
 
-          <h2 className="font-display text-4xl sm:text-6xl lg:text-7xl text-white leading-[0.95] tracking-tight">
-            Got a vision to build?
-            <br />
-            <span className="italic text-white font-bold">Let&apos;s roll cameras.</span>
-          </h2>
+            <h2 className="font-display text-4xl sm:text-6xl lg:text-7xl text-foreground leading-[0.98] tracking-tight">
+              Got a vision to build?
+              <br />
+              <span className="italic font-bold text-transparent bg-clip-text bg-gradient-to-r from-foreground via-foreground/90 to-brand">Let&apos;s roll cameras.</span>
+            </h2>
 
-          <p className="mt-8 max-w-2xl mx-auto text-lg sm:text-xl text-white font-medium leading-relaxed drop-shadow-sm">
-            Whether you are a luxury brand launching a flagship campaign or an
-            international artist dropping a narrative video — we assemble the
-            master crew, lock the locations, and deliver the frames.
-          </p>
+            <p className="mt-8 max-w-2xl mx-auto text-base sm:text-xl text-muted-foreground font-normal leading-relaxed">
+              Whether you are a luxury brand launching a flagship campaign or an
+              international artist dropping a narrative video — we assemble the
+              master crew, lock the locations, and deliver the frames.
+            </p>
 
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-            <MagneticButton strength={20}>
-              <Link
-                href="/contact"
-                className="group inline-flex items-center gap-3 rounded-full bg-brand px-10 py-4 text-base sm:text-lg font-bold tracking-wide text-white hover:bg-white hover:text-black transition-all duration-300 shadow-glow"
-              >
-                <span>Commission Studio</span>
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </MagneticButton>
+            <div className="mt-10 sm:mt-12 flex flex-wrap items-center justify-center gap-4">
+              <MagneticButton strength={20}>
+                <Link
+                  href="/contact"
+                  className="group inline-flex items-center gap-3 rounded-full bg-brand px-9 sm:px-10 py-4 text-sm sm:text-base font-bold tracking-wide text-white hover:bg-[#d63520] transition-all duration-300 shadow-[0_0_35px_rgba(235,61,38,0.45)] cursor-pointer"
+                >
+                  <span>Commission Studio</span>
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </MagneticButton>
 
-            <MagneticButton strength={20}>
-              <Link
-                href="/join/talent"
-                className="inline-flex items-center gap-3 rounded-full border border-white/30 bg-white/20 hover:bg-white/35 px-10 py-4 text-base sm:text-lg font-bold tracking-wide text-white backdrop-blur-md transition-all shadow-md"
-              >
-                Apply as Talent
-              </Link>
-            </MagneticButton>
-          </div>
-        </Reveal>
-      </div>
+              <MagneticButton strength={20}>
+                <Link
+                  href="/join/talent"
+                  className="inline-flex items-center gap-3 rounded-full border border-border bg-surface hover:bg-surface-elevated px-8 sm:px-9 py-4 text-sm sm:text-base font-semibold tracking-wide text-foreground backdrop-blur-md transition-all shadow-md cursor-pointer"
+                >
+                  Apply as Talent
+                </Link>
+              </MagneticButton>
+            </div>
+          </Reveal>
+        </div>
       </div>
     </section>
   );
@@ -1172,7 +1296,7 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
       category: 'CAMERA & LIGHTING',
       duration: '4.5 Hours',
       rating: '4.9 ★',
-      image: '/images/services-lighting.jpg',
+      image: '/images/services-lighting.webp',
       bullets: ['3-Point Studio Lighting', 'Sony/Canon Log Setup'],
       color: 'text-amber-500 dark:text-amber-400',
     },
@@ -1181,7 +1305,7 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
       category: 'VIRAL GROWTH',
       duration: '3.2 Hours',
       rating: '5.0 ★',
-      image: '/assets/project-fashion.jpg',
+      image: '/assets/project-fashion.webp',
       bullets: ['3-Second Retention Hooks', 'High-CTR Thumbnails'],
       color: 'text-rose-500 dark:text-rose-400',
     },
@@ -1190,7 +1314,7 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
       category: 'EDITING & VFX',
       duration: '5.0 Hours',
       rating: '4.9 ★',
-      image: '/images/about-bts.jpg',
+      image: '/images/about-bts.webp',
       bullets: ['Node Graph Architecture', 'Skin Tone Qualifiers'],
       color: 'text-cyan-500 dark:text-cyan-400',
     },
@@ -1199,7 +1323,7 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
       category: 'MONETIZATION',
       duration: '2.8 Hours',
       rating: '4.8 ★',
-      image: '/assets/service_casting.png',
+      image: '/assets/service_casting.webp',
       bullets: ['Media Kit Templates', 'Brand Pitch Scripts'],
       color: 'text-emerald-500 dark:text-emerald-400',
     },
@@ -1212,33 +1336,36 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
           category: String(c.categoryLabel || c.category || 'MASTERCLASS').toUpperCase(),
           duration: c.duration || '',
           rating: `${Number(c.rating) || 5} ★`,
-          image: c.image || '/images/services-lighting.jpg',
+          image: c.image || '/images/services-lighting.webp',
           bullets: Array.isArray(c.topics) ? c.topics.slice(0, 2) : [],
           color: 'text-amber-500 dark:text-amber-400',
         }))
       : fallbackCards;
 
   return (
-    <section className="relative py-28 px-6 sm:px-10 overflow-hidden bg-background text-foreground isolate border-t border-b border-border/50">
-      {/* Ambient Radial Lights — Hardware-accelerated GPU radial gradients */}
+    <section className="relative py-24 sm:py-32 px-6 sm:px-10 overflow-hidden bg-surface/40 dark:bg-[#07070a] text-foreground isolate border-t border-b border-border">
+      {/* Ambient Radial Lights */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[90vw] h-[60vh] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/15 via-brand/5 to-transparent rounded-full pointer-events-none transform-gpu -z-10" />
       <div className="absolute bottom-0 right-0 w-[45vw] h-[45vh] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-amber-500/2 to-transparent rounded-full pointer-events-none transform-gpu -z-10" />
 
       <div className="mx-auto max-w-7xl space-y-16">
         {/* Top Header & Eyebrow */}
         <Reveal direction="up">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-border/60 pb-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-border pb-10">
             <div className="space-y-4 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/15 border border-brand/40 text-brand text-xs font-bold uppercase tracking-[0.3em] shadow-[0_0_20px_rgba(229,9,20,0.25)]">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/15 border border-brand/40 text-brand text-xs font-bold uppercase tracking-[0.25em] shadow-[0_0_20px_rgba(229,9,20,0.25)]">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>GenZ Creator Lab</span>
               </div>
 
-              <h2 className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold text-foreground tracking-tight leading-[0.95]">
-                Become a <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand via-rose-500 to-amber-500">YouTuber</span>
+              <h2 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold text-foreground tracking-tight leading-[1.02]">
+                Become a{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand via-rose-500 to-amber-400">
+                  YouTuber
+                </span>
               </h2>
 
-              <p className="text-lg sm:text-xl text-muted-foreground font-medium leading-relaxed max-w-2xl">
+              <p className="text-base sm:text-lg text-muted-foreground font-normal leading-relaxed max-w-2xl">
                 Stop guessing the algorithm. Access MP Production&apos;s battle-tested Creator Masterclasses — 4K camera setups, viral retention hooks, DaVinci color grading, and 6-figure sponsor deal playbooks.
               </p>
             </div>
@@ -1247,57 +1374,57 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
               <MagneticButton strength={20}>
                 <Link
                   href="/become-a-youtuber"
-                  className="group inline-flex items-center gap-3 rounded-full bg-brand hover:bg-foreground hover:text-background px-9 py-4 text-base sm:text-lg font-bold tracking-wide text-white transition-all duration-300 shadow-[0_0_40px_rgba(229,9,20,0.4)] cursor-pointer"
+                  className="group inline-flex items-center gap-3 rounded-full bg-brand hover:bg-[#d63520] px-9 py-4 text-sm sm:text-base font-bold tracking-wide text-white transition-all duration-300 shadow-[0_0_35px_rgba(235,61,38,0.45)] cursor-pointer"
                 >
                   <span>Explore Courses</span>
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </MagneticButton>
             </div>
           </div>
         </Reveal>
 
-        {/* 4-Card Masterclass Showcase Grid — CMS-driven when published courses exist */}
+        {/* 4-Card Masterclass Showcase Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {cards.map((card, idx) => (
             <Reveal key={idx} direction="up" delay={idx * 0.1}>
               <Link
                 href="/become-a-youtuber"
-                className="group border border-border rounded-3xl overflow-hidden bg-card hover:border-brand/60 transition-[border-color,box-shadow,transform] duration-300 shadow-xl flex flex-col justify-between h-full transform-gpu"
+                className="group border border-border rounded-3xl overflow-hidden bg-card hover:border-brand/60 transition-all duration-300 shadow-xl flex flex-col justify-between h-full transform-gpu"
               >
                 <div>
                   {/* Thumbnail Image */}
-                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/40">
                     <Image
                       src={card.image}
                       alt={card.title}
                       fill
                       sizes="(max-width: 768px) 100vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                     
                     <div className="absolute top-3 left-3 z-10">
-                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-brand text-white shadow-md">
+                      <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-brand text-white shadow-md">
                         {card.category}
                       </span>
                     </div>
 
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] font-semibold text-white z-10">
-                      <span>{card.duration}</span>
-                      <span className={card.color}>{card.rating}</span>
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] font-mono text-white/90 z-10">
+                      <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10">{card.duration}</span>
+                      <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10 font-bold text-amber-400">{card.rating}</span>
                     </div>
                   </div>
 
                   {/* Card Info */}
                   <div className="p-5 space-y-3">
-                    <h3 className="text-base font-bold font-serif text-foreground group-hover:text-brand transition-colors leading-snug">
+                    <h3 className="text-base font-bold text-foreground group-hover:text-brand transition-colors leading-snug">
                       {card.title}
                     </h3>
                     <div className="space-y-1.5 pt-1">
                       {card.bullets.map((b: string, bIdx: number) => (
-                        <div key={bIdx} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <div key={bIdx} className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                           <span>{b}</span>
                         </div>
                       ))}
@@ -1307,7 +1434,7 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
 
                 {/* Footer Action */}
                 <div className="p-5 pt-0">
-                  <div className="w-full py-2.5 rounded-xl border border-border bg-muted/50 group-hover:bg-brand group-hover:border-brand group-hover:text-white text-center text-xs font-bold uppercase tracking-wider text-foreground transition-colors duration-300 flex items-center justify-center gap-2">
+                  <div className="w-full py-2.5 rounded-xl border border-border bg-surface group-hover:bg-brand group-hover:border-brand group-hover:text-white text-center text-xs font-mono font-bold uppercase tracking-wider text-foreground transition-all duration-300 flex items-center justify-center gap-2">
                     <span>Explore Blueprint</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </div>
@@ -1319,14 +1446,14 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
 
         {/* Bottom Banner Stats Strip */}
         <Reveal direction="up">
-          <div className="p-6 md:p-8 rounded-3xl border border-border bg-card/80 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left shadow-xl">
-            <div className="space-y-1">
-              <h4 className="text-xl font-bold font-serif text-foreground">Ready to scale your YouTube channel to 100K+?</h4>
+          <div className="p-6 md:p-8 rounded-3xl border border-border bg-card backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left shadow-xl">
+            <div className="space-y-1.5">
+              <h4 className="text-xl font-bold font-display text-foreground">Ready to scale your YouTube channel to 100K+?</h4>
               <p className="text-xs text-muted-foreground font-medium">10,000+ Creators Trained · 100% Practical & RAW Workflows · 4.9★ Average Rating</p>
             </div>
             <Link
               href="/become-a-youtuber"
-              className="px-8 py-3.5 rounded-full bg-brand text-white hover:bg-foreground hover:text-background text-xs font-bold tracking-wider uppercase transition-all duration-300 shadow-xl shrink-0"
+              className="px-8 py-3.5 rounded-full bg-brand text-white hover:bg-foreground hover:text-background font-mono text-xs font-bold tracking-wider uppercase transition-all duration-300 shadow-[0_0_25px_rgba(235,61,38,0.4)] shrink-0"
             >
               Explore All Masterclasses →
             </Link>

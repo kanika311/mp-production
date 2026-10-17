@@ -6,7 +6,8 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { 
   Users, FolderKanban, UserCheck, Briefcase, Settings, FileText, 
   Video, Calendar, Home, DollarSign, Image as ImageIcon, 
-  Send, Award, LayoutDashboard, ShieldAlert, Sliders, Building2, Clapperboard, Shield, ArrowUpRight
+  Send, Award, LayoutDashboard, ShieldAlert, Sliders, Building2, Clapperboard, Shield, ArrowUpRight,
+  Sparkles
 } from 'lucide-react';
 import { Role } from '@mdms/types';
 import { cn } from '@/lib/utils';
@@ -35,8 +36,11 @@ export function Sidebar({ role }: SidebarProps) {
           { category: 'Executive Command', label: 'Control Center', href: '/studio-8f2k/dashboard?tab=overview', icon: <LayoutDashboard className="w-4 h-4" /> },
           { category: 'Content & Brand', label: 'Content Studio (CMS)', href: '/studio-8f2k/cms', icon: <Clapperboard className="w-4 h-4 text-brand" /> },
           { category: 'Content & Brand', label: 'Visual Site Config', href: '/studio-8f2k/cms/site-config', icon: <Sliders className="w-4 h-4 text-brand" /> },
-          { category: 'Roster & Operations', label: 'Users & RBAC', href: '/studio-8f2k/users', icon: <Users className="w-4 h-4" /> },
-          { category: 'Roster & Operations', label: 'Staff / Employees', href: '/studio-8f2k/employees', icon: <Building2 className="w-4 h-4" /> },
+          { category: 'Roster & Operations', label: 'Talent Directory', href: '/studio-8f2k/users?role=TALENT', icon: <Sparkles className="w-4 h-4 text-brand" /> },
+          { category: 'Roster & Operations', label: 'Client Accounts', href: '/studio-8f2k/users?role=CLIENT', icon: <Briefcase className="w-4 h-4 text-blue-400" /> },
+          { category: 'Roster & Operations', label: 'Employees & Staff', href: '/studio-8f2k/users?role=EMPLOYEE', icon: <Building2 className="w-4 h-4 text-amber-400" /> },
+          { category: 'Roster & Operations', label: 'Admins & Management', href: '/studio-8f2k/users?role=ADMIN', icon: <Shield className="w-4 h-4 text-emerald-400" /> },
+          { category: 'Roster & Operations', label: 'All Users (RBAC)', href: '/studio-8f2k/users', icon: <Users className="w-4 h-4" /> },
           { category: 'Roster & Operations', label: 'Talent Moderation', href: '/studio-8f2k/moderation', icon: <UserCheck className="w-4 h-4 text-amber-500" /> },
           { category: 'Production Suite', label: 'Production Projects', href: '/studio-8f2k/dashboard?tab=projects', icon: <FolderKanban className="w-4 h-4" /> },
           { category: 'Production Suite', label: 'Client Management', href: '/studio-8f2k/dashboard?tab=clients', icon: <Briefcase className="w-4 h-4" /> },
@@ -50,8 +54,11 @@ export function Sidebar({ role }: SidebarProps) {
           { category: 'Studio Management', label: 'Control Center', href: '/studio-8f2k/mgmt/dashboard?tab=overview', icon: <LayoutDashboard className="w-4 h-4" /> },
           { category: 'Content & Brand', label: 'Content Studio (CMS)', href: '/studio-8f2k/mgmt/cms', icon: <Clapperboard className="w-4 h-4 text-brand" /> },
           { category: 'Content & Brand', label: 'Visual Site Config', href: '/studio-8f2k/mgmt/cms/site-config', icon: <Sliders className="w-4 h-4 text-brand" /> },
-          { category: 'Roster & Operations', label: 'Users Management', href: '/studio-8f2k/mgmt/users', icon: <Users className="w-4 h-4" /> },
-          { category: 'Roster & Operations', label: 'Staff / Employees', href: '/studio-8f2k/mgmt/employees', icon: <Building2 className="w-4 h-4" /> },
+          { category: 'Roster & Operations', label: 'Talent Directory', href: '/studio-8f2k/mgmt/users?role=TALENT', icon: <Sparkles className="w-4 h-4 text-brand" /> },
+          { category: 'Roster & Operations', label: 'Client Accounts', href: '/studio-8f2k/mgmt/users?role=CLIENT', icon: <Briefcase className="w-4 h-4 text-blue-400" /> },
+          { category: 'Roster & Operations', label: 'Employees & Staff', href: '/studio-8f2k/mgmt/users?role=EMPLOYEE', icon: <Building2 className="w-4 h-4 text-amber-400" /> },
+          { category: 'Roster & Operations', label: 'Admins & Management', href: '/studio-8f2k/mgmt/users?role=ADMIN', icon: <Shield className="w-4 h-4 text-emerald-400" /> },
+          { category: 'Roster & Operations', label: 'All Users (RBAC)', href: '/studio-8f2k/mgmt/users', icon: <Users className="w-4 h-4" /> },
           { category: 'Roster & Operations', label: 'Talent Moderation', href: '/studio-8f2k/mgmt/moderation', icon: <UserCheck className="w-4 h-4 text-amber-500" /> },
           { category: 'Production Suite', label: 'Projects', href: '/studio-8f2k/mgmt/dashboard?tab=projects', icon: <FolderKanban className="w-4 h-4" /> },
           { category: 'Production Suite', label: 'Clients', href: '/studio-8f2k/mgmt/dashboard?tab=clients', icon: <Briefcase className="w-4 h-4" /> },

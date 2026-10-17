@@ -9,12 +9,32 @@ export function CinematicTestimonial() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
 
-  // Force muted + autoplay via ref (React doesn't reliably set the muted attribute)
+  // Viewport-aware playback: only decode & play when visible on screen
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     v.muted = true;
-    v.play().catch(() => {});
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            v.play().catch(() => {});
+            setIsPlaying(true);
+          } else {
+            v.pause();
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(v);
+
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   const togglePlay = (e: React.MouseEvent) => {
@@ -78,11 +98,11 @@ export function CinematicTestimonial() {
             <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-[var(--cinematic-border)]/50 bg-black group">
               <video
                 ref={videoRef}
-                autoPlay
                 muted
                 loop
                 playsInline
-                poster="/images/portfolio-hero.jpg"
+                preload="none"
+                poster="/images/portfolio-hero.webp"
                 className="w-full h-full object-cover object-top scale-105 group-hover:scale-100 transition-transform duration-1000"
               >
                 <source src="https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/reel_1.mp4" type="video/mp4" />

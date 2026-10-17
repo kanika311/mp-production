@@ -29,11 +29,11 @@ export default async function SetupTalentProfilePage() {
   }
 
   return (
-    <>
+    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-background">
       <PortalNavbar role="TALENT" />
-      <main className="min-h-screen bg-background pt-32 pb-16">
+      <main className="flex-1 min-h-0 overflow-hidden relative">
         <TalentRegistrationWizard />
       </main>
-    </>
+    </div>
   );
 }
