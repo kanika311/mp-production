@@ -123,6 +123,9 @@ export function PortalNavbar({ role, title, className, user, ...props }: PortalN
                   <Link href="/studio-8f2k/mgmt/cms/blog" className={`transition-colors ${pathname.includes('/cms/blog') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     CMS Content
                   </Link>
+                  <Link href="/studio-8f2k/mgmt/cms/site-config" className={`transition-colors ${pathname.includes('/site-config') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                    Site Config
+                  </Link>
                   <Link href="/studio-8f2k/mgmt/moderation" className={`transition-colors ${pathname.includes('/moderation') ? 'text-brand font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
                     Moderation
                   </Link>

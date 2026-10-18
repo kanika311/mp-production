@@ -129,7 +129,7 @@ async function main() {
       type: 'json',
       value: JSON.stringify({
         tagline: 'Crafting Cinematic Excellence & Digital Legacies.',
-        copyright: '© 2026 MP Production. All rights reserved.',
+        copyright: 'Powered By JCRM Technologies',
         socialLinks: {
           instagram: 'https://instagram.com/mpproduction',
           linkedin: 'https://linkedin.com/company/mpproduction',

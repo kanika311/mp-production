@@ -154,7 +154,7 @@ export const FooterBackgroundGradient = () => {
 export function HoverFooter() {
   const [footerConfig, setFooterConfig] = useState<any>({
     tagline: 'Crafting Cinematic Excellence & Digital Legacies.',
-    copyright: `© ${new Date().getFullYear()} MP Production. All rights reserved.`,
+    copyright: 'Powered By JCRM Technologies',
     socialLinks: {
       instagram: 'https://instagram.com/mpproduction',
       linkedin: 'https://linkedin.com/company/mpproduction',
@@ -247,43 +247,93 @@ export function HoverFooter() {
   ];
 
   return (
-    <footer className="card-awwwards bg-(--cinematic-bg) relative h-fit rounded-3xl overflow-hidden m-4 sm:m-8 border border-(--cinematic-border) shadow-2xl">
-      <div className="max-w-7xl mx-auto p-10 sm:p-16 z-40 relative">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 md:gap-8 lg:gap-12 pb-14">
+    <footer className="w-full bg-background border-t border-border relative z-10 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 pb-12">
           {/* Brand section */}
           <div className="flex flex-col space-y-6 lg:col-span-2">
-            <div className="flex items-center space-x-3">
-              <img src="/logo.webp" className="h-16 w-auto object-contain scale-110 origin-left transition-all duration-300 drop-shadow-[0_0_20px_rgba(235,61,38,0.4)]" alt={footerConfig?.companyName || "MP Production Logo"} />
-            </div>
-            <p className="text-sm sm:text-base leading-relaxed text-(--cinematic-text-muted) font-light max-w-sm">
+            <a href="/" className="inline-block shrink-0">
+              <img
+                src="/logo.webp"
+                className="h-12 md:h-14 w-auto object-contain origin-left transition-all duration-300 drop-shadow-[0_0_15px_rgba(235,61,38,0.25)]"
+                alt={footerConfig?.companyName || "MP Production Logo"}
+              />
+            </a>
+
+            <p className="text-sm leading-relaxed text-muted-foreground font-light max-w-sm">
               {footerConfig?.tagline || "MP Production is an exclusive luxury creative production house for global brands and artists. Building timeless cinema, photography, and campaigns frame by frame."}
             </p>
-            <div className="pt-2 flex items-center gap-2 text-xs font-mono tracking-widest text-brand uppercase font-bold">
-              <span className="pulse-dot inline-block h-2 w-2 rounded-full bg-brand" />
+
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-xs font-mono tracking-wider text-brand uppercase font-semibold w-fit">
+              <span className="inline-block h-2 w-2 rounded-full bg-brand animate-pulse" />
               <span>Global Production Headquarters · Mumbai</span>
+            </div>
+
+            {/* Direct Contact Details */}
+            <div className="space-y-3 pt-2">
+              <a
+                href={contactInfo[0].href}
+                className="flex items-center gap-3 text-sm text-muted-foreground hover:text-brand transition-colors group"
+              >
+                <div className="p-2 rounded-lg bg-surface border border-border text-brand group-hover:border-brand/40 transition-colors">
+                  {contactInfo[0].icon}
+                </div>
+                <span className="font-mono text-xs sm:text-sm">{contactInfo[0].text}</span>
+              </a>
+
+              <a
+                href={contactInfo[1].href}
+                className="flex items-center gap-3 text-sm text-muted-foreground hover:text-brand transition-colors group"
+              >
+                <div className="p-2 rounded-lg bg-surface border border-border text-brand group-hover:border-brand/40 transition-colors">
+                  {contactInfo[1].icon}
+                </div>
+                <span className="font-mono text-xs sm:text-sm">{contactInfo[1].text}</span>
+              </a>
+
+              <div className="flex items-center gap-3 text-sm text-muted-foreground group">
+                <div className="p-2 rounded-lg bg-surface border border-border text-brand">
+                  {contactInfo[2].icon}
+                </div>
+                <span className="font-mono text-xs sm:text-sm">{contactInfo[2].text}</span>
+              </div>
+            </div>
+
+            {/* Social media icons */}
+            <div className="flex items-center gap-2.5 pt-2">
+              {socialLinks.map(({ icon, label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-surface text-muted-foreground hover:text-brand hover:border-brand/50 hover:bg-brand/10 transition-all shadow-xs"
+                >
+                  {icon}
+                </a>
+              ))}
             </div>
           </div>
 
           {/* Footer link sections */}
-          {footerLinks.map((section: any) => (
-            <div key={section.title} className="space-y-5">
-              <h4 className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-brand">
-                ● {section.title}
+          {footerLinks.map((section: any, idx: number) => (
+            <div key={section.title || idx} className="space-y-4">
+              <h4 className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-brand flex items-center gap-1.5">
+                <span className="text-[10px]">●</span> {section.title}
               </h4>
-              <ul className="space-y-3.5">
-                {section.links.map((link: any) => (
+              <ul className="space-y-2.5">
+                {section.links?.map((link: any) => (
                   <li key={link.label} className="relative w-fit">
                     <a
                       href={link.href}
-                      data-cursor="hover"
-                      data-cursor-label="GO"
-                      className="text-(--cinematic-text-muted) font-light text-sm hover:text-(--cinematic-text) hover:translate-x-1 transition-all inline-block"
+                      className="text-muted-foreground hover:text-foreground text-sm font-light hover:translate-x-1 transition-all inline-flex items-center gap-1 group"
                     >
-                      {link.label}
+                      <span>{link.label}</span>
+                      {link.pulse && (
+                        <span className="inline-block w-2 h-2 rounded-full bg-brand animate-pulse" />
+                      )}
                     </a>
-                    {link.pulse && (
-                      <span className="absolute top-0 -right-4 w-2 h-2 rounded-full bg-brand shadow-glow animate-pulse" />
-                    )}
                   </li>
                 ))}
               </ul>
@@ -291,62 +341,23 @@ export function HoverFooter() {
           ))}
         </div>
 
-        <hr className="border-t border-(--cinematic-border)/50 my-10" />
-
-        {/* Contact section banner */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-8 mb-10 bg-(--cinematic-bg-elevated)/60 backdrop-blur-2xl rounded-3xl p-8 border border-(--cinematic-border) shadow-xl">
-          {contactInfo.map((item, i) => (
-            <div key={i} className="flex items-center space-x-4">
-              <div className="p-3 rounded-2xl bg-brand/15 border border-brand/30 text-brand">{item.icon}</div>
-              {item.href ? (
-                <a
-                  href={item.href}
-                  data-cursor="hover"
-                  data-cursor-label="CONTACT"
-                  className="text-(--cinematic-text-muted) font-mono text-xs sm:text-sm hover:text-brand transition-colors tracking-wide break-all"
-                >
-                  {item.text}
-                </a>
-              ) : (
-                <span className="text-(--cinematic-text-muted) font-mono text-xs sm:text-sm tracking-wide break-all">
-                  {item.text}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Footer bottom */}
-        <div className="flex flex-col md:flex-row justify-between items-center text-sm space-y-6 md:space-y-0 text-(--cinematic-text-muted)">
-          {/* Social icons */}
-          <div className="flex space-x-4">
-            {socialLinks.map(({ icon, label, href }) => (
-              <a
-                key={label}
-                href={href}
-                aria-label={label}
-                data-cursor="hover"
-                data-cursor-label={label.toUpperCase()}
-                className="grid h-11 w-11 place-items-center rounded-full border border-(--cinematic-border) bg-white/5 hover:border-brand hover:bg-brand hover:text-(--cinematic-text) transition-all text-(--cinematic-text-muted) shadow-lg"
-              >
-                {icon}
-              </a>
-            ))}
-          </div>
-
-          {/* Copyright */}
-          <p className="text-center md:text-left font-mono font-light tracking-widest uppercase text-[11px] text-(--cinematic-text-muted)/60">
-            {footerConfig?.copyright || footerConfig?.copyrightText || `© ${new Date().getFullYear()} MP Production. All rights reserved.`}
+        {/* Footer bottom bar */}
+        <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-mono text-muted-foreground">
+          <p className="text-center sm:text-left tracking-wide">
+            {footerConfig?.copyright || footerConfig?.copyrightText || 'Powered By JCRM Technologies'}
           </p>
+
+          <div className="flex items-center gap-6 text-[11px] tracking-wider uppercase">
+            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
+            <a href="/security" className="hover:text-foreground transition-colors">Security</a>
+            <span className="hidden md:inline-flex items-center gap-1.5 text-brand font-semibold">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Studio Online
+            </span>
+          </div>
         </div>
       </div>
-
-      {/* Text hover effect */}
-      <div className="flex h-72 md:h-96 lg:h-120 -mt-16 md:-mt-28 lg:-mt-40 pb-6 items-center justify-center w-full px-4 select-none">
-        <TextHoverEffect text={footerConfig?.companyName || "MP Production"} className="z-50" />
-      </div>
-
-      <FooterBackgroundGradient />
     </footer>
   );
 }

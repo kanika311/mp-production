@@ -2,14 +2,24 @@
 
 import { Navbar } from '@/components/ui/Navbar';
 import { Footer } from '@/components/ui/Footer';
-import { Reveal } from '@/components/ui/Reveal';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { fetchAPI } from '@/lib/api-client';
 import Image from 'next/image';
+import { 
+  MapPin, 
+  Phone, 
+  Mail, 
+  Clock, 
+  Send, 
+  Sparkles, 
+  MessageCircle, 
+  CheckCircle2, 
+  ArrowRight,
+  ShieldCheck
+} from 'lucide-react';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -21,10 +31,44 @@ export default function Contact() {
     message: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  // Synchronize contact info with footer CMS configuration
+  const [footerConfig, setFooterConfig] = useState<{
+    contactEmail?: string;
+    contactPhone?: string;
+    contactAddress?: string;
+  }>({
+    contactEmail: 'hello@mpproduction.com',
+    contactPhone: '+91 86373 73116',
+    contactAddress: 'Mumbai, India',
+  });
+
+  useEffect(() => {
+    fetchAPI('/cms/config/footer')
+      .then((json) => {
+        if (json?.success && json?.data) {
+          const val =
+            typeof json.data === 'string'
+              ? JSON.parse(json.data)
+              : typeof json.data.value === 'string'
+              ? JSON.parse(json.data.value)
+              : json.data.value || json.data;
+          setFooterConfig((prev) => ({ ...prev, ...val }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const contactPhone = footerConfig?.contactPhone || '+91 86373 73116';
+  const contactEmail = footerConfig?.contactEmail || 'hello@mpproduction.com';
+  const contactAddress = footerConfig?.contactAddress || 'Mumbai, India';
+  const cleanPhone = contactPhone.replace(/\s+/g, '');
+  const waPhone = cleanPhone.replace(/^\+/, '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.email || !formData.message) {
+    if (!formData.firstName.trim() || !formData.email.trim() || !formData.message.trim()) {
       toast.error('Please fill in required fields: First Name, Email, and Message.');
       return;
     }
@@ -35,15 +79,16 @@ export default function Contact() {
         method: 'POST',
         body: JSON.stringify({
           name: `${formData.firstName} ${formData.lastName}`.trim(),
-          email: formData.email,
-          phone: formData.phone,
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
           subject: formData.inquiryType,
-          message: formData.message
+          message: formData.message.trim()
         })
       });
 
       if (json?.success || json?.message) {
         toast.success(json?.message || 'Thank you! Your message has been sent successfully.');
+        setSubmitted(true);
         setFormData({
           firstName: '',
           lastName: '',
@@ -55,175 +100,388 @@ export default function Contact() {
       } else {
         toast.error('Failed to submit inquiry. Please try again.');
       }
-    } catch (err) {
-      toast.error('Network error while sending message. Please check your connection or contact us via email.');
+    } catch {
+      toast.error('Network error while sending message. Please try again or reach out via direct phone/email.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  // High-contrast, crystal-clear input styles
+  const inputStyle = 
+    "w-full rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900/90 px-4 py-3.5 text-sm font-medium text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 shadow-xs hover:border-neutral-400 dark:hover:border-neutral-600 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all duration-200";
+
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-background text-foreground pb-32 relative overflow-hidden">
-        {/* Header Section — Full Bleed Merged With Navbar */}
-        <section className="relative w-full h-[70vh] sm:h-[80vh] flex items-center justify-center overflow-hidden mb-20 text-center pt-28 sm:pt-36">
-          <Image 
-            src="/images/contact-studio.jpg" 
-            alt="Contact MP Production" 
-            fill 
-            className="object-cover object-center" 
-            priority sizes="100vw" />
-          
-          {/* Top Vignette Gradient for Navbar Contrast */}
-          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-1 pointer-events-none" />
-          <div className="absolute inset-0 dark:bg-black/60 bg-black/40 z-1" />
-          <div className="absolute bottom-0 left-0 right-0 h-40 dark:bg-gradient-to-t dark:from-background bg-gradient-to-t from-background to-transparent z-2" />
 
-          <Container className="relative z-10 w-full max-w-5xl mx-auto px-4">
-            <Reveal direction="up">
-              <span className="text-brand tracking-[0.2em] text-sm uppercase font-semibold mb-4 block drop-shadow-md">
-                Get in Touch
-              </span>
-              <h1 className="text-6xl sm:text-8xl font-display text-white tracking-editorial leading-[0.92] mb-8 font-light whitespace-pre-line drop-shadow-lg">
-                START A CONVERSATION.
-              </h1>
-              <p className="text-base sm:text-lg text-white/80 max-w-2xl mx-auto font-light leading-relaxed mb-12 drop-shadow">
-                Whether you're a brand seeking cinematic production, or an elite talent looking for representation, we'd love to hear from you.
-              </p>
-            </Reveal>
-          </Container>
-        </section>
+      <main className="min-h-screen bg-background text-foreground pt-28 sm:pt-36 pb-24 relative overflow-hidden">
+        {/* Background Ambient Glows */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-brand/5 blur-[120px] pointer-events-none rounded-full" />
 
-        <Container className="flex flex-col md:flex-row gap-16">
-          
-          {/* Left: Studio image + Info */}
-          <div className="w-full md:w-5/12">
-            <Reveal direction="up">
-              {/* Studio feature image */}
-              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border shadow-xl mb-10 group">
+        <Container className="relative z-10">
+          {/* Direct Clean Header */}
+          <div className="max-w-3xl mb-10 sm:mb-14">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-semibold uppercase tracking-wider mb-3">
+              <Sparkles size={13} className="text-brand" />
+              Direct Studio Contact
+            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-light text-foreground tracking-tight mb-4">
+              Start a Conversation.
+            </h1>
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+              Whether you are a brand seeking cinematic commercial production or an elite talent looking for representation, our directors and producers are ready to assist you.
+            </p>
+          </div>
+
+          {/* Main 2-Column Grid: Left Contact Info & Right Form */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            
+            {/* Left Column: Studio Visual + Official Contact Details */}
+            <div className="lg:col-span-5 space-y-6">
+              
+              {/* Studio Showcase Card */}
+              <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-border shadow-md group">
                 <Image
                   src="/images/contact-studio.jpg"
-                  alt="Inside the MP Production studio"
+                  alt="Inside MP Production studio"
                   fill
-                  className="object-cover scale-105 group-hover:scale-100 transition-transform duration-[1.5s] ease-out" sizes="100vw" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                  className="object-cover scale-105 group-hover:scale-100 transition-transform duration-[1.2s] ease-out"
+                  sizes="(max-width: 768px) 100vw, 40vw"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
                 <div className="absolute bottom-0 left-0 p-6">
-                  <span className="text-brand tracking-[0.2em] text-[11px] uppercase font-semibold mb-1 block">The Studio</span>
-                  <p className="text-white font-serif text-2xl leading-tight">Where stories<br/>are crafted.</p>
-                </div>
-              </div>
-
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-foreground font-semibold uppercase tracking-wider text-sm mb-2">Global Headquarters</h3>
-                  <p className="text-muted-foreground font-light">
-                    123 Cinematic Blvd, Suite 400<br/>
-                    Los Angeles, CA 90028<br/>
-                    United States
+                  <span className="text-brand tracking-[0.2em] text-[11px] uppercase font-bold mb-1.5 block">
+                    The Studio · Mumbai
+                  </span>
+                  <p className="text-white font-serif text-2xl font-light leading-snug">
+                    Where stories<br />are crafted.
                   </p>
                 </div>
-                <div>
-                  <h3 className="text-foreground font-semibold uppercase tracking-wider text-sm mb-2">General Inquiries</h3>
-                  <a href="mailto:hello@mpproductions.com" className="text-primary hover:underline">
-                    hello@mpproductions.com
-                  </a>
-                </div>
               </div>
-            </Reveal>
-          </div>
 
-          {/* Right: Form */}
-          <div className="w-full md:w-7/12">
-            <Reveal direction="up" delay={0.2}>
-              <Card className="shadow-md">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-2" htmlFor="firstName">First Name *</label>
-                      <input 
-                        type="text" 
-                        id="firstName" 
-                        required
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        className="input-premium" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-2" htmlFor="lastName">Last Name</label>
-                      <input 
-                        type="text" 
-                        id="lastName" 
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className="input-premium" 
-                      />
-                    </div>
+              {/* Contact Info Cards */}
+              <div className="bg-card border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 shadow-sm space-y-5">
+                
+                {/* Headquarters / Address */}
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center shrink-0 text-brand">
+                    <MapPin size={20} />
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-2" htmlFor="email">Email Address *</label>
-                      <input 
-                        type="email" 
-                        id="email" 
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="input-premium" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted-foreground mb-2" htmlFor="phone">Phone Number</label>
-                      <input 
-                        type="tel" 
-                        id="phone" 
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="input-premium" 
-                        placeholder="+1 (555) 000-0000"
-                      />
-                    </div>
-                  </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2" htmlFor="inquiryType">Inquiry Type</label>
-                    <select 
-                      id="inquiryType" 
-                      value={formData.inquiryType}
-                      onChange={(e) => setFormData({ ...formData, inquiryType: e.target.value })}
-                      className="input-premium"
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                      Global Headquarters
+                    </h3>
+                    <p className="text-foreground font-semibold text-base leading-snug">
+                      {contactAddress}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      Studio 4B, Film City Complex, Goregaon East, Mumbai, Maharashtra 400065, India
+                    </p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/60" />
+
+                {/* Direct Phone / WhatsApp */}
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center shrink-0 text-brand">
+                    <Phone size={20} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                      Direct Production Line
+                    </h3>
+                    <a
+                      href={`tel:${cleanPhone}`}
+                      className="text-foreground font-semibold text-base hover:text-brand transition-colors block"
                     >
-                      <option value="Production Services">Production Services</option>
-                      <option value="Talent Representation">Talent Representation</option>
-                      <option value="Press / Media">Press / Media</option>
-                      <option value="Other">Other</option>
-                    </select>
+                      {contactPhone}
+                    </a>
+                    <div className="flex items-center gap-3 mt-2">
+                      <a
+                        href={`https://wa.me/${waPhone}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+                      >
+                        <MessageCircle size={14} />
+                        Chat on WhatsApp
+                      </a>
+                    </div>
                   </div>
+                </div>
 
+                <div className="h-px bg-border/60" />
+
+                {/* Email Inquiries */}
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center shrink-0 text-brand">
+                    <Mail size={20} />
+                  </div>
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2" htmlFor="message">Message *</label>
-                    <textarea 
-                      id="message" 
-                      rows={5} 
-                      required
-                      value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      className="input-premium resize-none"
-                    ></textarea>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                      General & Casting Inquiries
+                    </h3>
+                    <a
+                      href={`mailto:${contactEmail}`}
+                      className="text-foreground font-semibold text-base hover:text-brand transition-colors"
+                    >
+                      {contactEmail}
+                    </a>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Expect a response within 2–4 business hours.
+                    </p>
                   </div>
+                </div>
 
-                  <Button type="submit" disabled={submitting} size="lg" className="w-full justify-center">
-                    {submitting ? "Sending Message..." : "Send Message"}
-                  </Button>
-                </form>
-              </Card>
-            </Reveal>
+                <div className="h-px bg-border/60" />
+
+                {/* Operating Timings */}
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center shrink-0 text-brand">
+                    <Clock size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                      Studio Hours
+                    </h3>
+                    <p className="text-foreground font-medium text-sm">
+                      Monday – Saturday: 10:00 AM – 7:00 PM IST
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Emergency production lines active 24/7 for active client shoots.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Client Assurance Note */}
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-xs text-muted-foreground">
+                <ShieldCheck size={18} className="text-brand shrink-0" />
+                <span>NDA & Confidentiality guaranteed for all script and brand dispatches.</span>
+              </div>
+
+            </div>
+
+            {/* Right Column: Direct Contact Form */}
+            <div className="lg:col-span-7">
+              <div className="bg-card border border-neutral-300 dark:border-neutral-800 rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl shadow-black/5">
+                
+                {submitted ? (
+                  /* Success State */
+                  <div className="py-12 text-center space-y-5">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center mx-auto">
+                      <CheckCircle2 size={36} />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-serif font-medium text-foreground">
+                        Message Dispatched Successfully!
+                      </h3>
+                      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                        Thank you for reaching out to MP Production. Our producers have received your message and will contact you via email or phone within 24 hours.
+                      </p>
+                    </div>
+                    <div className="pt-4">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => setSubmitted(false)}
+                        className="rounded-xl px-6"
+                      >
+                        Send Another Inquiry
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Active Form */
+                  <div>
+                    <div className="mb-8">
+                      <h2 className="text-2xl sm:text-3xl font-display font-light text-foreground mb-2">
+                        Send a Direct Dispatch
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Tell us about your upcoming project, creative ideas, or booking inquiry.
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      
+                      {/* Name Fields */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                          <label
+                            className="block text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 mb-2"
+                            htmlFor="firstName"
+                          >
+                            First Name <span className="text-brand">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            id="firstName"
+                            required
+                            placeholder="e.g. Rahul"
+                            value={formData.firstName}
+                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                            className={inputStyle}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            className="block text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 mb-2"
+                            htmlFor="lastName"
+                          >
+                            Last Name
+                          </label>
+                          <input
+                            type="text"
+                            id="lastName"
+                            placeholder="e.g. Sharma"
+                            value={formData.lastName}
+                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                            className={inputStyle}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Email & Phone */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                          <label
+                            className="block text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 mb-2"
+                            htmlFor="email"
+                          >
+                            Email Address <span className="text-brand">*</span>
+                          </label>
+                          <input
+                            type="email"
+                            id="email"
+                            required
+                            placeholder="you@company.com"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            className={inputStyle}
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            className="block text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 mb-2"
+                            htmlFor="phone"
+                          >
+                            Phone Number
+                          </label>
+                          <input
+                            type="tel"
+                            id="phone"
+                            placeholder="+91 86373 73116"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className={inputStyle}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Inquiry Type */}
+                      <div>
+                        <label
+                          className="block text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 mb-2"
+                          htmlFor="inquiryType"
+                        >
+                          Inquiry Type
+                        </label>
+                        <select
+                          id="inquiryType"
+                          value={formData.inquiryType}
+                          onChange={(e) => setFormData({ ...formData, inquiryType: e.target.value })}
+                          className={`${inputStyle} cursor-pointer`}
+                        >
+                          <option value="Production Services" className="bg-white dark:bg-neutral-900 text-foreground">
+                            Production Services (Commercial / Narrative / Shoot)
+                          </option>
+                          <option value="Talent Representation" className="bg-white dark:bg-neutral-900 text-foreground">
+                            Talent Representation & Casting
+                          </option>
+                          <option value="Brand Collaboration" className="bg-white dark:bg-neutral-900 text-foreground">
+                            Brand Collaboration & Influencer Campaign
+                          </option>
+                          <option value="Post-Production & VFX" className="bg-white dark:bg-neutral-900 text-foreground">
+                            Post-Production, Color Grading & VFX
+                          </option>
+                          <option value="Press / Media" className="bg-white dark:bg-neutral-900 text-foreground">
+                            Press / Media & Speaking Inquiries
+                          </option>
+                          <option value="Other" className="bg-white dark:bg-neutral-900 text-foreground">
+                            Other General Inquiries
+                          </option>
+                        </select>
+                      </div>
+
+                      {/* Message */}
+                      <div>
+                        <label
+                          className="block text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300 mb-2"
+                          htmlFor="message"
+                        >
+                          Project Details / Message <span className="text-brand">*</span>
+                        </label>
+                        <textarea
+                          id="message"
+                          rows={5}
+                          required
+                          placeholder="Tell us about your project scope, timeline, deliverables, or questions..."
+                          value={formData.message}
+                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                          className={`${inputStyle} resize-y min-h-[140px]`}
+                        />
+                      </div>
+
+                      {/* Submit CTA */}
+                      <Button
+                        type="submit"
+                        disabled={submitting}
+                        size="lg"
+                        className="w-full justify-center text-base py-4 font-semibold shadow-lg shadow-brand/20 hover:shadow-brand/35 transition-all rounded-xl"
+                      >
+                        {submitting ? (
+                          <span className="inline-flex items-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Dispatching Message...
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-2">
+                            Send Message
+                            <Send size={16} />
+                          </span>
+                        )}
+                      </Button>
+
+                      <p className="text-center text-xs text-muted-foreground mt-3">
+                        By submitting, you agree to our{' '}
+                        <a href="/privacy" className="underline hover:text-foreground">
+                          Privacy Policy
+                        </a>{' '}
+                        and{' '}
+                        <a href="/terms" className="underline hover:text-foreground">
+                          Terms of Service
+                        </a>.
+                      </p>
+
+                    </form>
+                  </div>
+                )}
+
+              </div>
+            </div>
+
           </div>
-
         </Container>
       </main>
+
+      <Footer />
     </>
   );
 }

@@ -1,49 +1,202 @@
 "use client";
 
 import { Navbar } from '@/components/ui/Navbar';
-import { Reveal } from '@/components/ui/Reveal';
-import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { fetchAPI } from '@/lib/api-client';
 import Image from 'next/image';
+import Link from 'next/link';
+import {
+  Search,
+  SlidersHorizontal,
+  X,
+  Sparkles,
+  ExternalLink,
+  CheckCircle2,
+  DollarSign,
+  ArrowRight,
+  Filter,
+  RotateCcw,
+  Tag,
+  Briefcase,
+  Layers,
+  ChevronRight,
+  ChevronLeft,
+  Star,
+  Megaphone,
+  Check
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ServiceItem {
   id: string;
+  slug: string;
   title: string;
   desc: string;
+  category: string;
   img: string;
   features: string[];
   pricing: string;
+  rawPrice: number;
 }
 
-export default function Services() {
+interface SponsoredPartner {
+  id: string;
+  title: string;
+  tagline: string;
+  description: string;
+  imageUrl: string;
+  linkUrl: string;
+  badge: string;
+  ctaText: string;
+  isPublished: boolean;
+}
+
+const DEFAULT_SPONSORED: SponsoredPartner[] = [
+  {
+    id: 'sp-1',
+    title: 'RED Digital Cinema',
+    tagline: 'Official 8K Camera Rental Partner',
+    description: 'Special 15% equipment discount for all MP Production certified shoots and creators.',
+    imageUrl: '/assets/project-commercial.webp',
+    linkUrl: 'https://www.red.com',
+    badge: 'OFFICIAL PARTNER',
+    ctaText: 'Explore Gear ↗',
+    isPublished: true,
+  },
+  {
+    id: 'sp-2',
+    title: 'DaVinci Resolve Studio',
+    tagline: 'Hollywood Grade Color Suite',
+    description: 'Industry-standard color grading and Fairlight audio post-production pipeline.',
+    imageUrl: '/assets/service_post_production.webp',
+    linkUrl: 'https://www.blackmagicdesign.com',
+    badge: 'PROMO DEAL',
+    ctaText: 'Learn More ↗',
+    isPublished: true,
+  },
+  {
+    id: 'sp-3',
+    title: 'ARRI Alexa 35 Suite',
+    tagline: 'Premium Cinema Prime Packages',
+    description: 'Full anamorphic lens kits and high-speed motion rigs available on demand.',
+    imageUrl: '/assets/service_production.webp',
+    linkUrl: 'https://www.arri.com',
+    badge: 'EXCLUSIVE GEAR',
+    ctaText: 'View Packages ↗',
+    isPublished: true,
+  },
+];
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  Production: '/assets/service_production.webp',
+  Video: '/assets/project-commercial.webp',
+  Photography: '/assets/fashion_lookbook.webp',
+  Content: '/assets/project-fashion.webp',
+  Events: '/assets/project-music.webp',
+  Talent: '/assets/service_casting.webp',
+  'Post-Production': '/assets/service_post_production.webp',
+  Marketing: '/assets/project-corporate.webp',
+};
+
+const BUDGET_OPTIONS = [
+  { label: 'All Budgets', value: 'all' },
+  { label: 'Under ₹50,000', value: 'under_50k' },
+  { label: '₹50,000 - ₹1,50,000', value: '50k_150k' },
+  { label: '₹1,50,000 - ₹3,00,000', value: '150k_300k' },
+  { label: '₹3,00,000+ (High-End)', value: 'above_300k' },
+];
+
+const SORT_OPTIONS = [
+  { label: 'Featured First', value: 'recommended' },
+  { label: 'Price: Low to High', value: 'price_asc' },
+  { label: 'Price: High to Low', value: 'price_desc' },
+  { label: 'Name (A-Z)', value: 'name_asc' },
+];
+
+export default function ServicesPage() {
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const [hero, setHero] = useState<any>(null);
+  const [sponsoredPartners, setSponsoredPartners] = useState<SponsoredPartner[]>(DEFAULT_SPONSORED);
   const [loading, setLoading] = useState(true);
+
+  // Filter & Search States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedBudget, setSelectedBudget] = useState('all');
+  const [selectedSort, setSelectedSort] = useState('recommended');
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // Sponsored Auto-Scroll Horizontal Carousel State
+  const [activeSponsorIdx, setActiveSponsorIdx] = useState(0);
+  const [direction, setDirection] = useState<number>(1);
+  const [isSponsorPaused, setIsSponsorPaused] = useState(false);
+
+  // Auto-scroll / rotate sponsored card horizontally every 4.5 seconds
+  useEffect(() => {
+    if (sponsoredPartners.length <= 1 || isSponsorPaused) return;
+    const interval = setInterval(() => {
+      setDirection(1);
+      setActiveSponsorIdx((prev) => (prev + 1) % sponsoredPartners.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [sponsoredPartners.length, isSponsorPaused]);
+
+  const handleNextSponsor = () => {
+    if (sponsoredPartners.length <= 1) return;
+    setDirection(1);
+    setActiveSponsorIdx((prev) => (prev + 1) % sponsoredPartners.length);
+  };
+
+  const handlePrevSponsor = () => {
+    if (sponsoredPartners.length <= 1) return;
+    setDirection(-1);
+    setActiveSponsorIdx((prev) => (prev - 1 + sponsoredPartners.length) % sponsoredPartners.length);
+  };
 
   useEffect(() => {
     Promise.all([
       fetchAPI('/cms/services').catch(() => null),
-      fetchAPI('/cms/hero?page=services').catch(() => null)
+      fetchAPI('/cms/config/sponsored').catch(() => null),
     ])
-      .then(([servicesRes, heroRes]) => {
+      .then(([servicesRes, sponsoredRes]) => {
         if (servicesRes?.data && Array.isArray(servicesRes.data) && servicesRes.data.length > 0) {
-          const mapped: ServiceItem[] = servicesRes.data.map((s: any) => ({
-            id: s.id || s.slug || '',
-            title: s.title || s.name || '',
-            desc: s.desc || s.description || s.shortDesc || '',
-            img: s.img || s.imageUrl || s.coverImage || '/images/services-hero.jpg',
-            features: Array.isArray(s.features)
-              ? s.features
-              : (typeof s.features === 'string' ? (() => { try { return JSON.parse(s.features); } catch { return []; } })() : []),
-            pricing: s.pricing || s.price || s.basePrice ? `₹${(s.basePrice / 100).toLocaleString('en-IN')}` : 'Custom Quote'
-          }));
+          const mapped: ServiceItem[] = servicesRes.data.map((s: any) => {
+            const rawPrice = s.basePrice ? Number(s.basePrice) / 100 : (Number(s.price) || 0);
+            const category = s.category || 'Production';
+            const fallbackImg = CATEGORY_IMAGES[category] || '/assets/service_production.webp';
+
+            return {
+              id: s.id || s.slug || '',
+              slug: s.slug || '',
+              title: s.name || s.title || '',
+              desc: s.description || s.shortDesc || s.desc || '',
+              category,
+              img: s.imageUrl || s.img || s.coverImage || fallbackImg,
+              features: Array.isArray(s.features)
+                ? s.features
+                : (typeof s.features === 'string'
+                  ? (() => { try { return JSON.parse(s.features); } catch { return []; } })()
+                  : []),
+              pricing: rawPrice > 0 ? `₹${rawPrice.toLocaleString('en-IN')}` : 'Custom Quote',
+              rawPrice,
+            };
+          });
           setServices(mapped);
         }
-        if (heroRes?.data) {
-          setHero(heroRes.data);
+
+        // Sponsored partners from CMS / Super Admin
+        if (sponsoredRes?.data) {
+          const val = typeof sponsoredRes.data === 'string'
+            ? (() => { try { return JSON.parse(sponsoredRes.data); } catch { return null; } })()
+            : sponsoredRes.data;
+          const items = Array.isArray(val?.items) ? val.items : Array.isArray(val) ? val : null;
+          if (items && items.length > 0) {
+            const published = items.filter((p: SponsoredPartner) => p.isPublished !== false);
+            if (published.length > 0) {
+              setSponsoredPartners(published);
+            }
+          }
         }
       })
       .catch(() => {
@@ -54,140 +207,590 @@ export default function Services() {
       });
   }, []);
 
+  // Compute available categories dynamically with counts
+  const categoriesWithCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: services.length };
+    services.forEach(s => {
+      counts[s.category] = (counts[s.category] || 0) + 1;
+    });
+    return counts;
+  }, [services]);
+
+  const categoryList = useMemo(() => {
+    return Object.keys(categoriesWithCounts);
+  }, [categoriesWithCounts]);
+
+  // Filtered & sorted services
+  const filteredServices = useMemo(() => {
+    return services
+      .filter((s) => {
+        // Search filter
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchTitle = s.title.toLowerCase().includes(q);
+          const matchDesc = s.desc.toLowerCase().includes(q);
+          const matchCategory = s.category.toLowerCase().includes(q);
+          const matchFeatures = s.features.some(f => f.toLowerCase().includes(q));
+          if (!matchTitle && !matchDesc && !matchCategory && !matchFeatures) {
+            return false;
+          }
+        }
+
+        // Category filter
+        if (selectedCategory !== 'All' && s.category.toLowerCase() !== selectedCategory.toLowerCase()) {
+          return false;
+        }
+
+        // Budget filter
+        if (selectedBudget === 'under_50k' && (s.rawPrice <= 0 || s.rawPrice > 50000)) return false;
+        if (selectedBudget === '50k_150k' && (s.rawPrice <= 50000 || s.rawPrice > 150000)) return false;
+        if (selectedBudget === '150k_300k' && (s.rawPrice <= 150000 || s.rawPrice > 300000)) return false;
+        if (selectedBudget === 'above_300k' && s.rawPrice <= 300000) return false;
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (selectedSort === 'price_asc') return a.rawPrice - b.rawPrice;
+        if (selectedSort === 'price_desc') return b.rawPrice - a.rawPrice;
+        if (selectedSort === 'name_asc') return a.title.localeCompare(b.title);
+        return 0;
+      });
+  }, [services, searchQuery, selectedCategory, selectedBudget, selectedSort]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+    setSelectedBudget('all');
+    setSelectedSort('recommended');
+  };
+
+  const hasActiveFilters = searchQuery !== '' || selectedCategory !== 'All' || selectedBudget !== 'all' || selectedSort !== 'recommended';
+
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-background text-foreground pb-24 relative overflow-hidden">
+
+      <main className="min-h-screen bg-background text-foreground pt-[172px] sm:pt-[180px]">
         
-        {/* Header — Full Bleed Merged With Navbar */}
-        <section className="relative w-full h-[75vh] sm:h-[85vh] flex items-center justify-center overflow-hidden mb-20 text-center pt-28 sm:pt-36">
-          <Image 
-            src="/images/services-hero.jpg" 
-            alt="Services" 
-            fill 
-            className="object-cover object-center" 
-            priority sizes="100vw" />
-          
-          {/* Top Vignette Gradient for Navbar Contrast */}
-          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-1 pointer-events-none" />
-          <div className="absolute inset-0 dark:bg-black/60 bg-black/40 z-1" />
-          <div className="absolute bottom-0 left-0 right-0 h-40 dark:bg-gradient-to-t dark:from-background bg-gradient-to-t from-background to-transparent z-2" />
-          
-          <Container className="relative z-10 w-full max-w-5xl mx-auto px-4">
-            {loading && !hero ? (
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-white/20 rounded w-28 mx-auto" />
-                <div className="h-16 bg-white/20 rounded max-w-lg mx-auto" />
+        {/* ═══════════════════════════════════════════════════════════
+            FIXED SEARCH & QUICK PILLS BAR (Pinned at top below Navbar)
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="fixed top-16 sm:top-[64px] left-0 right-0 z-40 bg-background border-b border-border shadow-xs">
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-3 space-y-2.5">
+            <div className="flex items-center gap-3">
+              {/* Search input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search services, deliverables, 4K RED, lighting, color grading..."
+                  className="w-full pl-10 pr-9 py-2 rounded-full border border-border bg-card/80 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-all shadow-xs"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-            ) : (
-              <Reveal direction="up">
-                <span className="text-brand tracking-[0.2em] text-sm uppercase font-semibold mb-4 block drop-shadow-md">
-                  {hero?.tagline || "Our Capabilities"}
-                </span>
-                <h1 className="text-5xl md:text-7xl font-serif text-white mb-6 drop-shadow-lg">
-                  {hero?.heading || "Premium Services"}
-                </h1>
-                <p className="text-lg text-white/80 max-w-2xl mx-auto text-balance font-light drop-shadow">
-                  {hero?.subheading || "From conceptualization to the final grade, MP Productions provides end-to-end media solutions tailored for global brands and elite agencies."}
-                </p>
-              </Reveal>
-            )}
-          </Container>
+
+              {/* Mobile Filter Toggle Button */}
+              <button
+                onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+                className="lg:hidden flex items-center gap-2 px-3.5 py-2 rounded-full border border-border bg-card text-foreground text-xs font-semibold hover:border-brand/60 transition-colors shrink-0"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-brand" />
+                <span>Filters</span>
+                {hasActiveFilters && (
+                  <span className="w-2 h-2 rounded-full bg-brand" />
+                )}
+              </button>
+
+              {/* Counter Pill */}
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-border text-xs font-mono font-medium text-muted-foreground shrink-0">
+                <span className="text-foreground font-bold">{filteredServices.length}</span>
+                <span>Services</span>
+              </div>
+            </div>
+
+            {/* Category Quick Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5 -mx-4 px-4 sm:mx-0 sm:px-0">
+              {categoryList.map((cat) => {
+                const isSelected = selectedCategory === cat;
+                const count = categoriesWithCounts[cat] || 0;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`shrink-0 px-3 py-1 rounded-full text-xs font-mono font-medium tracking-wide transition-all ${
+                      isSelected
+                        ? 'bg-brand text-white shadow-xs'
+                        : 'bg-surface/80 hover:bg-surface text-muted-foreground hover:text-foreground border border-border'
+                    }`}
+                  >
+                    {cat}
+                    <span className={`ml-1.5 opacity-75 text-[10px] ${isSelected ? 'text-white' : 'text-muted-foreground'}`}>
+                      ({count})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </section>
 
-        {/* Service Cards */}
-        <section className="mb-24">
-          <Container>
-            {loading ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {[1, 2, 3].map((n) => (
-                  <div key={n} className="border border-border rounded-2xl overflow-hidden aspect-[4/5] bg-muted/20 animate-pulse p-8 flex flex-col justify-between">
-                    <div className="w-full aspect-video bg-muted/40 rounded-xl mb-4" />
-                    <div className="h-6 bg-muted/40 rounded w-3/4 mb-2" />
-                    <div className="h-16 bg-muted/40 rounded w-full mb-4" />
-                    <div className="space-y-2 mb-4">
-                      <div className="h-4 bg-muted/40 rounded w-full" />
-                      <div className="h-4 bg-muted/40 rounded w-5/6" />
-                    </div>
+        {/* ═══════════════════════════════════════════════════════════
+            3-COLUMN FULL-WIDTH EDGE-TO-EDGE LAYOUT
+            Left: Attached Filters | Center: Expanded Services | Right: Attached Sponsored
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 py-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] xl:grid-cols-[300px_1fr_340px] 2xl:grid-cols-[320px_1fr_360px] gap-5 xl:gap-6 items-start">
+            
+            {/* ── COLUMN 1: LEFT FILTER PANEL (ATTACHED TO LEFT & STICKY) ────────────────── */}
+            <aside className={`w-full lg:sticky lg:top-[180px] self-start ${mobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
+              <div 
+                data-lenis-prevent
+                className="rounded-2xl border border-border bg-card/90 backdrop-blur-md p-5 space-y-5 shadow-sm max-h-[calc(100vh-200px)] overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-brand/50"
+              >
+                
+                {/* Filter Header */}
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex items-center gap-2 font-serif font-bold text-base text-foreground">
+                    <SlidersHorizontal className="w-4 h-4 text-brand" />
+                    <span>Filter Services</span>
                   </div>
-                ))}
-              </div>
-            ) : services.length === 0 ? (
-              /* Empty state — no services configured in CMS */
-              <div className="text-center py-20">
-                <Reveal direction="up">
-                  <h2 className="text-3xl font-serif text-foreground mb-4">Services Coming Soon</h2>
-                  <p className="text-muted-foreground font-light max-w-lg mx-auto mb-8">
-                    Our service offerings are being finalized. Contact us for a custom quote.
-                  </p>
-                  <Button href="/contact" variant="primary" size="lg">
-                    Contact Us
-                  </Button>
-                </Reveal>
-              </div>
-            ) : (
-              <div className={`grid grid-cols-1 ${services.length >= 3 ? 'lg:grid-cols-3' : services.length === 2 ? 'lg:grid-cols-2 max-w-4xl mx-auto' : 'max-w-lg mx-auto'} gap-8`}>
-                {services.map((svc, idx) => (
-                  <Reveal key={svc.id || idx} direction="up" delay={idx * 0.1}>
-                    <div id={svc.id} className="h-full scroll-mt-24">
-                      <div className="relative overflow-hidden flex flex-col h-full min-h-[500px] rounded-[2rem] border border-border group shadow-2xl">
-                        {/* Background Image */}
-                        <Image 
-                          src={svc.img} 
-                          alt={svc.title} 
-                          fill 
-                          className="object-cover transition-transform duration-1000 group-hover:scale-105" sizes="100vw" />
-                        {/* Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/20" />
-                        
-                        <div className="relative z-10 p-8 flex flex-col flex-grow text-white">
-                          <h3 className="text-3xl font-serif mb-4 text-white drop-shadow-md">{svc.title}</h3>
-                          <p className="text-white/80 font-light leading-relaxed mb-6 flex-grow drop-shadow-sm">
-                            {svc.desc}
-                          </p>
-                          
-                          {svc.features && Array.isArray(svc.features) && svc.features.length > 0 && (
-                            <ul className="space-y-3 mb-8 pt-6 border-t border-white/20">
-                              {svc.features.map((feature: string, i: number) => (
-                                <li key={i} className="flex items-center text-sm text-white/90 font-light">
-                                  <svg className="w-4 h-4 text-brand mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                  {feature}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
+                  {hasActiveFilters && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="text-[11px] font-mono text-brand hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reset
+                    </button>
+                  )}
+                </div>
 
-                          <div className="flex items-center justify-between border-t border-white/20 pt-6 mt-auto">
-                            <span className="text-sm font-semibold tracking-wide text-brand drop-shadow-sm">{svc.pricing}</span>
-                            <Button href="/pricing" size="sm" className="bg-white text-black hover:bg-gray-200">
-                              Book
-                            </Button>
+                {/* Categories (No nested scroll trap) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-mono font-semibold uppercase tracking-wider text-muted-foreground block">
+                    Category
+                  </label>
+                  <div className="space-y-1.5">
+                    {categoryList.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors ${
+                          selectedCategory === cat
+                            ? 'bg-brand/10 text-brand font-bold'
+                            : 'text-foreground/80 hover:bg-surface hover:text-foreground'
+                        }`}
+                      >
+                        <span>{cat}</span>
+                        <span className="text-[11px] font-mono text-muted-foreground">
+                          {categoriesWithCounts[cat] || 0}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Budget Range */}
+                <div className="space-y-2.5 border-t border-border pt-4">
+                  <label className="text-xs font-mono font-semibold uppercase tracking-wider text-muted-foreground block">
+                    Budget Tier
+                  </label>
+                  <div className="space-y-1.5">
+                    {BUDGET_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setSelectedBudget(opt.value)}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors ${
+                          selectedBudget === opt.value
+                            ? 'bg-brand/10 text-brand font-bold'
+                            : 'text-foreground/80 hover:bg-surface hover:text-foreground'
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {selectedBudget === opt.value && (
+                          <Check className="w-3.5 h-3.5 text-brand" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort Order */}
+                <div className="space-y-2.5 border-t border-border pt-4">
+                  <label className="text-xs font-mono font-semibold uppercase tracking-wider text-muted-foreground block">
+                    Sort By
+                  </label>
+                  <select
+                    value={selectedSort}
+                    onChange={(e) => setSelectedSort(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-foreground text-xs font-medium focus:outline-none focus:ring-1 focus:ring-brand"
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Direct Booking Link Note */}
+                <div className="border-t border-border pt-4 text-[11px] text-muted-foreground font-light leading-relaxed">
+                  Need a multi-camera bespoke production or live streaming rig?{' '}
+                  <Link href="/contact" className="text-brand font-medium hover:underline">
+                    Inquire directly →
+                  </Link>
+                </div>
+              </div>
+            </aside>
+
+            {/* ── COLUMN 2: CENTER EXPANDED SERVICE CARDS (1FR MAXIMIZED SPACE) ─────────────────── */}
+            <div className="w-full min-w-0 space-y-6">
+              
+              {/* Active filters summary */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-mono">
+                  Showing <strong className="text-foreground">{filteredServices.length}</strong> service{filteredServices.length === 1 ? '' : 's'}
+                </span>
+                {hasActiveFilters && (
+                  <span className="text-[11px] font-mono text-brand">
+                    Filters applied
+                  </span>
+                )}
+              </div>
+
+              {loading ? (
+                <div className="space-y-6">
+                  {[1, 2, 3].map((n) => (
+                    <div key={n} className="rounded-3xl border border-border bg-card p-6 animate-pulse space-y-4">
+                      <div className="h-44 bg-surface rounded-2xl w-full" />
+                      <div className="h-6 bg-surface rounded w-2/3" />
+                      <div className="h-12 bg-surface rounded w-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredServices.length === 0 ? (
+                /* Empty state when no service matches criteria */
+                <div className="rounded-3xl border border-dashed border-border bg-card/40 p-12 text-center space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-brand/10 text-brand flex items-center justify-center mx-auto">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-serif text-xl font-bold text-foreground">No Services Found</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    No services matched your current filters. Try resetting the search or category filters.
+                  </p>
+                  <Button onClick={handleResetFilters} variant="outline" size="sm">
+                    Reset All Filters
+                  </Button>
+                </div>
+              ) : (
+                /* Services Cards List */
+                <div className="space-y-6">
+                  {filteredServices.map((svc) => (
+                    <article
+                      key={svc.id}
+                      className="group rounded-3xl border border-border bg-card overflow-hidden hover:border-brand/60 transition-all duration-300 shadow-md hover:shadow-xl flex flex-col"
+                    >
+                      {/* Image Banner */}
+                      <div className="relative aspect-[16/9] w-full overflow-hidden bg-black/60">
+                        <Image
+                          src={svc.img}
+                          alt={svc.title}
+                          fill
+                          sizes="(max-width: 1024px) 100vw, 50vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-700 brightness-95 group-hover:brightness-100"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+
+                        {/* Top Category Badge */}
+                        <div className="absolute top-4 left-4 z-10">
+                          <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-brand text-white shadow-md">
+                            {svc.category}
+                          </span>
+                        </div>
+
+                        {/* Bottom Title on Image */}
+                        <div className="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between gap-3">
+                          <h3 className="font-serif text-2xl font-bold text-white leading-tight drop-shadow-md">
+                            {svc.title}
+                          </h3>
+                          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-black/70 backdrop-blur-md text-amber-400 border border-white/10 shrink-0">
+                            {svc.pricing}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Content Body */}
+                      <div className="p-6 space-y-5 flex-1 flex flex-col justify-between">
+                        <p className="text-sm text-muted-foreground font-normal leading-relaxed">
+                          {svc.desc}
+                        </p>
+
+                        {/* Key Features Bullets */}
+                        {svc.features && svc.features.length > 0 && (
+                          <div className="space-y-2 pt-2 border-t border-border">
+                            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
+                              What&apos;s Included:
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {svc.features.map((f, i) => (
+                                <div key={i} className="flex items-start gap-2 text-xs text-foreground/90">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                  <span>{f}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex items-center justify-between pt-4 border-t border-border">
+                          <div className="text-xs text-muted-foreground font-mono">
+                            <span>Base Rate: </span>
+                            <strong className="text-foreground font-bold">{svc.pricing}</strong>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/contact?service=${encodeURIComponent(svc.title)}`}
+                              className="px-4 py-2 rounded-full border border-border bg-surface text-foreground text-xs font-semibold hover:border-brand/60 transition-colors"
+                            >
+                              Inquire
+                            </Link>
+                            <Link
+                              href="/login"
+                              className="px-4 py-2 rounded-full bg-brand text-white text-xs font-semibold hover:bg-brand/90 transition-all shadow-xs flex items-center gap-1.5"
+                            >
+                              <span>Book Service</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </Reveal>
-                ))}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── COLUMN 3: RIGHT SPONSORED PANEL (ATTACHED TO RIGHT & STICKY FULL-HEIGHT AUTO-SCROLL) ────────────────── */}
+            <aside className="w-full lg:sticky lg:top-[180px] self-start h-[calc(100vh-195px)] min-h-[480px] max-h-[660px] flex flex-col space-y-2.5">
+              {/* Header */}
+              <div className="flex items-center justify-between px-1 shrink-0">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-mono font-bold tracking-wider uppercase">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>Sponsored</span>
+                </div>
+
+                {/* Pagination Dots with active indicator */}
+                {sponsoredPartners.length > 1 && (
+                  <div className="flex items-center gap-1.5">
+                    {sponsoredPartners.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setDirection(i > activeSponsorIdx ? 1 : -1);
+                          setActiveSponsorIdx(i);
+                        }}
+                        className={`transition-all rounded-full ${
+                          i === activeSponsorIdx
+                            ? 'w-4 h-1.5 bg-amber-500 shadow-xs'
+                            : 'w-1.5 h-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60'
+                        }`}
+                        title={`Slide ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </Container>
+
+              {/* Full Height Auto-Scrolling Card */}
+              <div
+                className="relative flex-1 w-full rounded-3xl border border-border bg-card overflow-hidden shadow-lg group select-none"
+                onMouseEnter={() => setIsSponsorPaused(true)}
+                onMouseLeave={() => setIsSponsorPaused(false)}
+              >
+                {/* Horizontal Auto-Scroll Progress Line Indicator */}
+                {sponsoredPartners.length > 1 && (
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-white/10 z-30 overflow-hidden">
+                    <motion.div
+                      key={`${activeSponsorIdx}-${isSponsorPaused}`}
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{
+                        duration: isSponsorPaused ? 0 : 4.5,
+                        ease: 'linear',
+                      }}
+                      className={`h-full ${isSponsorPaused ? 'bg-amber-400/40' : 'bg-amber-500'}`}
+                    />
+                  </div>
+                )}
+
+                <AnimatePresence initial={false} custom={direction}>
+                  {sponsoredPartners.length > 0 && (
+                    <motion.div
+                      key={activeSponsorIdx}
+                      custom={direction}
+                      variants={{
+                        enter: (dir: number) => ({
+                          x: dir > 0 ? 320 : -320,
+                          opacity: 0,
+                          scale: 0.96,
+                        }),
+                        center: {
+                          x: 0,
+                          opacity: 1,
+                          scale: 1,
+                          transition: {
+                            x: { type: 'spring', stiffness: 280, damping: 28 },
+                            opacity: { duration: 0.25 },
+                            scale: { duration: 0.25 },
+                          },
+                        },
+                        exit: (dir: number) => ({
+                          x: dir > 0 ? -320 : 320,
+                          opacity: 0,
+                          scale: 0.96,
+                          transition: {
+                            x: { type: 'spring', stiffness: 280, damping: 28 },
+                            opacity: { duration: 0.25 },
+                            scale: { duration: 0.25 },
+                          },
+                        }),
+                      }}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      className="absolute inset-0 flex flex-col justify-between"
+                    >
+                      {/* Full Bleed Background Image / Banner */}
+                      <div className="absolute inset-0 z-0">
+                        {sponsoredPartners[activeSponsorIdx]?.imageUrl ? (
+                          <Image
+                            src={sponsoredPartners[activeSponsorIdx].imageUrl}
+                            alt={sponsoredPartners[activeSponsorIdx].title}
+                            fill
+                            sizes="(max-width: 1024px) 100vw, 25vw"
+                            className="object-cover brightness-[0.65] group-hover:brightness-[0.75] group-hover:scale-105 transition-all duration-700"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-amber-950/40 via-card to-background" />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/30 z-10" />
+                      </div>
+
+                      {/* Top Overlay Badge & Index */}
+                      <div className="relative z-20 p-5 flex items-center justify-between">
+                        <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-amber-500 text-black shadow-md">
+                          {sponsoredPartners[activeSponsorIdx]?.badge || 'OFFICIAL PARTNER'}
+                        </span>
+
+                        <span className="text-[10px] font-mono text-white/70 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/10">
+                          {activeSponsorIdx + 1} / {sponsoredPartners.length}
+                        </span>
+                      </div>
+
+                      {/* Manual Next / Prev arrows on hover */}
+                      {sponsoredPartners.length > 1 && (
+                        <div className="absolute inset-y-0 left-0 right-0 z-20 flex items-center justify-between px-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePrevSponsor();
+                            }}
+                            className="pointer-events-auto h-8 w-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-colors shadow-md"
+                            title="Previous Sponsor"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleNextSponsor();
+                            }}
+                            className="pointer-events-auto h-8 w-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-colors shadow-md"
+                            title="Next Sponsor"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Bottom Overlay Content */}
+                      <div className="relative z-20 p-6 space-y-3 mt-auto">
+                        <div className="space-y-1">
+                          <h4 className="font-serif font-bold text-2xl text-white leading-tight drop-shadow-md">
+                            {sponsoredPartners[activeSponsorIdx]?.title}
+                          </h4>
+                          {sponsoredPartners[activeSponsorIdx]?.tagline && (
+                            <p className="text-xs font-semibold text-amber-400">
+                              {sponsoredPartners[activeSponsorIdx].tagline}
+                            </p>
+                          )}
+                        </div>
+
+                        <p className="text-xs text-white/80 font-normal leading-relaxed line-clamp-3">
+                          {sponsoredPartners[activeSponsorIdx]?.description}
+                        </p>
+
+                        {/* CTA Link */}
+                        {sponsoredPartners[activeSponsorIdx]?.linkUrl && (
+                          <a
+                            href={sponsoredPartners[activeSponsorIdx].linkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full mt-2 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all"
+                          >
+                            <span>{sponsoredPartners[activeSponsorIdx]?.ctaText || 'Visit Partner'}</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Advertise With Us link */}
+              <div className="shrink-0 flex items-center justify-between px-2 pt-0.5 text-[11px] font-mono text-muted-foreground">
+                <span>Want to feature here?</span>
+                <Link href="/contact" className="text-brand font-bold hover:underline">
+                  Advertise →
+                </Link>
+              </div>
+            </aside>
+
+          </div>
         </section>
 
-        {/* Booking CTA */}
-        <section className="py-20">
-          <Container size="sm">
-            <div className="cta-section">
-              <Reveal direction="up">
-                <h2 className="text-3xl md:text-5xl font-serif text-foreground mb-6">Ready to start your project?</h2>
-                <p className="text-foreground/80 max-w-xl mx-auto font-light mb-10 text-lg">
-                  Log into the client portal to generate a custom quote, view availability, and secure your production dates instantly.
-                </p>
-                <Button href="/login" size="lg" variant="accent">
-                  Launch Client Portal
-                </Button>
-              </Reveal>
+        {/* ═══════════════════════════════════════════════════════════
+            BOTTOM COMPACT BOOKING BAR (Fixes Second Screenshot Space Wastage)
+            Single line inline layout: Question + Text + Button
+            ═══════════════════════════════════════════════════════════ */}
+        <section className="w-full max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 pb-14 pt-4">
+          <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-md p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm hover:border-brand/40 transition-colors">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-center sm:text-left">
+              <span className="font-serif text-lg sm:text-xl font-bold text-foreground shrink-0">
+                Ready to start your project?
+              </span>
+              <span className="hidden sm:inline text-muted-foreground/30 font-light text-xl">|</span>
+              <span className="text-xs sm:text-sm text-muted-foreground font-normal leading-relaxed">
+                Log into the client portal to generate a custom quote, view availability, and secure your production dates instantly.
+              </span>
             </div>
-          </Container>
+            <Button href="/login" size="sm" variant="accent" className="shrink-0 whitespace-nowrap shadow-md font-semibold">
+              Launch Client Portal →
+            </Button>
+          </div>
         </section>
 
       </main>

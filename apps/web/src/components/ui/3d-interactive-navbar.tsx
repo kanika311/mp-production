@@ -151,10 +151,11 @@ export function Navbar() {
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          "bg-white/95 dark:bg-background/95 backdrop-blur-md shadow-xs border-b border-border",
           scrolled || pathname?.startsWith('/talent')
-            ? "py-2.5 dark:bg-background bg-background shadow-xs border-b border-border"
-            : "py-4 bg-transparent border-b border-transparent"
+            ? "py-2.5"
+            : "py-3 md:py-3.5"
         )}
       >
         <nav className="mx-auto max-w-7xl px-5 sm:px-8 flex items-center justify-between">
@@ -163,8 +164,8 @@ export function Navbar() {
             <img
               src="/logo.webp"
               className={cn(
-                "w-auto object-contain transition-all duration-500",
-                scrolled || pathname?.startsWith('/talent') ? "h-10 md:h-11" : "h-12 md:h-14"
+                "w-auto object-contain transition-all duration-300",
+                scrolled || pathname?.startsWith('/talent') ? "h-10 md:h-11" : "h-11 md:h-12"
               )}
               alt="MP Production"
             />
@@ -217,12 +218,7 @@ export function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className={cn(
-                  "inline-flex items-center text-xs font-bold tracking-widest uppercase transition-all px-3 py-1.5 rounded-full border shadow-sm backdrop-blur-md hidden sm:inline-flex",
-                  scrolled 
-                    ? "text-foreground hover:text-brand bg-surface/80 border-border" 
-                    : "text-white hover:text-brand bg-black/50 border-white/20 drop-shadow"
-                )}
+                className="inline-flex items-center text-xs font-bold tracking-widest uppercase transition-all px-3 py-1.5 rounded-full border shadow-sm text-foreground hover:text-brand bg-surface/80 hover:bg-surface border-border hidden sm:inline-flex"
               >
                 Sign In
               </Link>
@@ -242,12 +238,7 @@ export function Navbar() {
             {/* ── Mobile Toggle ── */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className={cn(
-                "relative z-50 p-2.5 rounded-full transition-all backdrop-blur-md border shadow-sm",
-                scrolled 
-                  ? "text-foreground bg-surface/80 hover:bg-surface border-border" 
-                  : "text-white bg-black/50 border-white/20 hover:bg-black/70 drop-shadow"
-              )}
+              className="relative z-50 p-2.5 rounded-full transition-all border shadow-sm text-foreground bg-surface/80 hover:bg-surface border-border"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -259,7 +250,7 @@ export function Navbar() {
       {/* ── Slide-Out Navigation Drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="fixed inset-0 z-[100] flex justify-end">
+          <div data-lenis-prevent className="fixed inset-0 z-[100] flex justify-end">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -277,6 +268,7 @@ export function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              data-lenis-prevent
               className="relative z-10 w-full sm:w-[420px] max-w-[92vw] h-full bg-background border-l border-border shadow-2xl flex flex-col justify-between overflow-hidden"
               aria-label="Navigation Drawer"
             >
@@ -307,7 +299,11 @@ export function Navbar() {
               </div>
 
               {/* Drawer Navigation Links */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-1.5">
+              <div 
+                data-lenis-prevent
+                onWheel={(e) => e.stopPropagation()}
+                className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 py-4 space-y-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-brand/50"
+              >
                 <div className="px-3 pb-2 text-[11px] font-bold tracking-wider uppercase text-muted-foreground">
                   Navigation Menu
                 </div>
@@ -366,23 +362,6 @@ export function Navbar() {
                   );
                 })}
 
-                {/* Creator Promotion Card */}
-                <div className="mt-5 p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-rose-500/10 to-brand/15 border border-amber-500/25">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold uppercase tracking-wider mb-2">
-                    <Sparkles className="w-3 h-3" /> Creator Program
-                  </div>
-                  <h4 className="font-bold text-sm text-foreground">Become a YouTuber</h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Personalized mentorship, studio shoots, and viral video editing to scale your audience.
-                  </p>
-                  <Link
-                    href="/become-a-youtuber"
-                    onClick={() => setMobileOpen(false)}
-                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-brand hover:underline"
-                  >
-                    Learn More <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
               </div>
 
               {/* Drawer Bottom Actions & User Profile */}

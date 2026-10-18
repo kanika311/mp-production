@@ -5,9 +5,6 @@ import { requireAdmin } from '@/lib/cms/server/guard';
 type Ctx = { params: Promise<{ key: string }> };
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
-  if (!(await requireAdmin())) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  }
   const { key } = await ctx.params;
   // config reads are public on the API
   const result = await backendFetch(`/cms/config/${encodeURIComponent(key)}`);

@@ -11,7 +11,7 @@ const openPositions = [
   {
     title: "Senior Cinematographer",
     department: "Production",
-    location: "Los Angeles, CA",
+    location: "Mumbai, India",
     type: "Full-time",
     description: "Lead camera operations on commercial and narrative shoots. Must be proficient with RED, ARRI, and Sony cinema systems."
   },
@@ -39,7 +39,7 @@ const openPositions = [
   {
     title: "Production Assistant",
     department: "Production",
-    location: "Los Angeles, CA",
+    location: "Mumbai Studio, India",
     type: "Full-time",
     description: "On-set support including equipment management, crew coordination, and logistics. Entry-level position — passion for filmmaking is a must."
   },

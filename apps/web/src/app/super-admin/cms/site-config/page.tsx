@@ -11,12 +11,13 @@ import { toast } from 'sonner';
 import { Loader2, Save, Plus, Trash2, X, Image as ImageIcon } from 'lucide-react';
 import { MediaLibrary } from '@/components/admin/MediaLibrary';
 
-type Tab = 'hero' | 'stats' | 'pricing' | 'navbar' | 'footer' | 'seo' | 'showreels';
+type Tab = 'hero' | 'stats' | 'pricing' | 'navbar' | 'footer' | 'seo' | 'showreels' | 'sponsored';
 
 function SiteConfigContent() {
   const searchParams = useSearchParams();
   const tabParam = searchParams ? searchParams.get('tab') : null;
-  const initialTab: Tab = tabParam && ['hero', 'stats', 'pricing', 'navbar', 'footer', 'seo', 'showreels'].includes(tabParam) 
+  const validTabs: Tab[] = ['hero', 'stats', 'pricing', 'navbar', 'footer', 'seo', 'showreels', 'sponsored'];
+  const initialTab: Tab = tabParam && validTabs.includes(tabParam as Tab) 
     ? (tabParam as Tab) 
     : 'hero';
 
@@ -25,7 +26,7 @@ function SiteConfigContent() {
   const [saving, setSaving] = useState(false);
   
   useEffect(() => {
-    if (tabParam && ['hero', 'stats', 'pricing', 'navbar', 'footer', 'seo', 'showreels'].includes(tabParam)) {
+    if (tabParam && validTabs.includes(tabParam as Tab)) {
       setActiveTab(tabParam as Tab);
     }
   }, [tabParam]);
@@ -66,14 +67,14 @@ function SiteConfigContent() {
   const [footer, setFooter] = useState({
     companyName: 'MP Production',
     tagline: 'Crafting Cinematic Excellence & Digital Legacies.',
-    copyrightText: `© ${new Date().getFullYear()} MP Production. All rights reserved.`,
-    contactEmail: 'contact@mpproductions.com',
-    contactPhone: '+1 (555) 123-4567',
-    contactAddress: 'Los Angeles / New York / Paris / Tokyo',
+    copyrightText: 'Powered By JCRM Technologies',
+    contactEmail: 'hello@mpproduction.com',
+    contactPhone: '+91 86373 73116',
+    contactAddress: 'Mumbai, India',
     socialLinks: [
-      { platform: 'instagram', url: 'https://instagram.com/mpproductions' },
-      { platform: 'linkedin', url: 'https://linkedin.com/company/mpproductions' },
-      { platform: 'youtube', url: 'https://youtube.com/mpproductions' }
+      { platform: 'instagram', url: 'https://instagram.com/mpproduction' },
+      { platform: 'linkedin', url: 'https://linkedin.com/company/mpproduction' },
+      { platform: 'youtube', url: 'https://youtube.com/mpproduction' }
     ] as Array<{ platform: string; url: string }>,
     sections: [
       {
@@ -132,6 +133,18 @@ function SiteConfigContent() {
     camera: string;
     lenses: string;
     colorGrade: string;
+  }>>([]);
+
+  const [sponsored, setSponsored] = useState<Array<{
+    id: string;
+    title: string;
+    tagline: string;
+    description: string;
+    imageUrl: string;
+    linkUrl: string;
+    badge: string;
+    ctaText: string;
+    isPublished: boolean;
   }>>([]);
 
   const loadConfig = async (tab: Tab) => {
@@ -197,6 +210,9 @@ function SiteConfigContent() {
           });
         } else if (tab === 'showreels') {
           setShowreels(Array.isArray(val) ? val : []);
+        } else if (tab === 'sponsored') {
+          const list = Array.isArray(val?.items) ? val.items : Array.isArray(val) ? val : [];
+          setSponsored(list);
         }
       }
     } catch {
@@ -236,6 +252,7 @@ function SiteConfigContent() {
     }
     else if (activeTab === 'seo') payload = seo;
     else if (activeTab === 'showreels') payload = showreels;
+    else if (activeTab === 'sponsored') payload = { items: sponsored };
 
     try {
       const res = await cms.setConfig(configKey, payload);
@@ -268,6 +285,11 @@ function SiteConfigContent() {
       const copy = [...showreels];
       copy[idx].coverImage = url;
       setShowreels(copy);
+    } else if (mediaTarget?.startsWith('sponsorImg-')) {
+      const idx = parseInt(mediaTarget.split('-')[1]);
+      const copy = [...sponsored];
+      copy[idx].imageUrl = url;
+      setSponsored(copy);
     }
     setMediaOpen(false);
     setMediaTarget(null);
@@ -285,7 +307,7 @@ function SiteConfigContent() {
 
       {/* Tabs list */}
       <div className="flex border-b border-border overflow-x-auto gap-4 scrollbar-none">
-        {(['hero', 'stats', 'pricing', 'navbar', 'footer', 'seo', 'showreels'] as Tab[]).map((tab) => (
+        {(['hero', 'stats', 'pricing', 'navbar', 'footer', 'seo', 'showreels', 'sponsored'] as Tab[]).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -296,7 +318,7 @@ function SiteConfigContent() {
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            {tab}
+            {tab === 'sponsored' ? 'Sponsored Partners' : tab}
           </button>
         ))}
       </div>
@@ -756,7 +778,7 @@ function SiteConfigContent() {
                       id="footer-email"
                       value={footer.contactEmail}
                       onChange={(e) => setFooter(prev => ({ ...prev, contactEmail: e.target.value }))}
-                      placeholder="contact@mpproductions.com"
+                      placeholder="hello@mpproduction.com"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -765,7 +787,7 @@ function SiteConfigContent() {
                       id="footer-phone"
                       value={footer.contactPhone}
                       onChange={(e) => setFooter(prev => ({ ...prev, contactPhone: e.target.value }))}
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="+91 86373 73116"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -774,7 +796,7 @@ function SiteConfigContent() {
                       id="footer-address"
                       value={footer.contactAddress}
                       onChange={(e) => setFooter(prev => ({ ...prev, contactAddress: e.target.value }))}
-                      placeholder="Los Angeles / New York / Tokyo"
+                      placeholder="Mumbai, India"
                     />
                   </div>
                 </div>
@@ -1175,6 +1197,193 @@ function SiteConfigContent() {
                               setShowreels(copy);
                             }}
                             placeholder="Enter details about this showreel..."
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'sponsored' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-foreground">Sponsored Partners &amp; Ads</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Manage sponsored cards displayed in the right sidebar panel on the Services page.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSponsored(prev => [
+                        ...prev,
+                        {
+                          id: `sp-${Date.now()}`,
+                          title: '',
+                          tagline: '',
+                          description: '',
+                          imageUrl: '',
+                          linkUrl: '',
+                          badge: 'SPONSORED',
+                          ctaText: 'Visit Partner ↗',
+                          isPublished: true,
+                        }
+                      ]);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Add Partner
+                  </Button>
+                </div>
+
+                {sponsored.length === 0 ? (
+                  <div className="p-8 border border-dashed border-border rounded-xl text-center text-muted-foreground text-sm">
+                    No sponsored partners added yet. Click &quot;Add Partner&quot; to create one.
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {sponsored.map((item, idx) => (
+                      <div key={item.id || idx} className="p-5 border border-border rounded-xl space-y-4 bg-card/40 relative">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-mono font-bold tracking-wider uppercase text-primary">
+                            Partner #{idx + 1}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={item.isPublished}
+                                onChange={(e) => {
+                                  const copy = [...sponsored];
+                                  copy[idx].isPublished = e.target.checked;
+                                  setSponsored(copy);
+                                }}
+                                className="rounded border-border accent-primary w-4 h-4"
+                              />
+                              <span>Published on Site</span>
+                            </label>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                setSponsored(prev => prev.filter((_, i) => i !== idx));
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <Label>Partner / Brand Name</Label>
+                            <Input
+                              value={item.title}
+                              onChange={(e) => {
+                                const copy = [...sponsored];
+                                copy[idx].title = e.target.value;
+                                setSponsored(copy);
+                              }}
+                              placeholder="e.g. RED Digital Cinema"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <Label>Tagline / Promo Headline</Label>
+                            <Input
+                              value={item.tagline}
+                              onChange={(e) => {
+                                const copy = [...sponsored];
+                                copy[idx].tagline = e.target.value;
+                                setSponsored(copy);
+                              }}
+                              placeholder="e.g. Official 8K Camera Rental Partner"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <Label>Badge Text</Label>
+                            <Input
+                              value={item.badge}
+                              onChange={(e) => {
+                                const copy = [...sponsored];
+                                copy[idx].badge = e.target.value;
+                                setSponsored(copy);
+                              }}
+                              placeholder="e.g. SPONSORED, OFFICIAL PARTNER, PROMO"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <Label>CTA Button Text</Label>
+                            <Input
+                              value={item.ctaText}
+                              onChange={(e) => {
+                                const copy = [...sponsored];
+                                copy[idx].ctaText = e.target.value;
+                                setSponsored(copy);
+                              }}
+                              placeholder="e.g. Visit Partner ↗"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <Label>Destination Link URL</Label>
+                            <Input
+                              value={item.linkUrl}
+                              onChange={(e) => {
+                                const copy = [...sponsored];
+                                copy[idx].linkUrl = e.target.value;
+                                setSponsored(copy);
+                              }}
+                              placeholder="e.g. https://www.red.com"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <Label>Banner / Logo Image URL</Label>
+                            <div className="flex gap-2">
+                              <Input
+                                value={item.imageUrl}
+                                onChange={(e) => {
+                                  const copy = [...sponsored];
+                                  copy[idx].imageUrl = e.target.value;
+                                  setSponsored(copy);
+                                }}
+                                placeholder="/assets/project-commercial.webp"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => triggerMediaPicker(`sponsorImg-${idx}`)}
+                              >
+                                <ImageIcon className="w-4 h-4 mr-1" /> Browse
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <Label>Description / Offer Details</Label>
+                          <Textarea
+                            value={item.description}
+                            onChange={(e) => {
+                              const copy = [...sponsored];
+                              copy[idx].description = e.target.value;
+                              setSponsored(copy);
+                            }}
+                            placeholder="e.g. Special 15% equipment discount for all MP Production certified shoots and creators."
                             rows={2}
                           />
                         </div>

@@ -28,7 +28,7 @@ async function main() {
     footer: {
       companyName: 'MP Production',
       tagline: 'Crafting Cinematic Excellence & Digital Legacies.',
-      copyright: `© ${new Date().getFullYear()} MP Production. All rights reserved.`,
+      copyright: 'Powered By JCRM Technologies',
       contactEmail: 'hello@mpproduction.com',
       contactPhone: '+91 86373 73116',
       contactAddress: 'Mumbai, India',

@@ -267,17 +267,10 @@ export default function Home() {
         hero={hero} 
         onOpenModal={setActiveModalProject} 
       />
-      <ScrollyTelling />
-      <Intro intro={intro} />
       <Services services={services} loading={loading} />
       <BecomeAYouTuberSection courses={courses} />
-      <FeaturedProjects portfolio={portfolio} loading={loading} onOpenModal={setActiveModalProject} />
       <FeaturedTalent talent={talent} loading={loading} />
-      <Stats stats={stats} />
-      <Process />
-      <CinematicTestimonial />
       <Faq faqs={faqs} loading={loading} />
-      <ContactCta />
 
 
       {/* Theatrical Production Reel & Spec Sheet Lightbox Modal */}
@@ -671,123 +664,214 @@ const DEFAULT_SERVICES = [
   }
 ];
 
+const SERVICE_IMAGE_MAP: Record<string, string> = {
+  'premium-brand-film': '/assets/service_production.webp',
+  'product-launch-video': '/assets/commercial_car_shoot.webp',
+  'social-media-reels-package': '/assets/project-fashion.webp',
+  'real-estate-cinematic-tour': '/assets/cinematic-16-9.webp',
+  'wedding-film': '/assets/project-music.webp',
+  'brand-commercial-(tvc)': '/assets/project-commercial.webp',
+  'lookbook-&-e-commerce-shoot': '/assets/fashion_lookbook.webp',
+  'lookbook-e-commerce-shoot': '/assets/fashion_lookbook.webp',
+  'automotive-ad-film': '/assets/commercial_car_shoot.webp',
+  'event-coverage-&-aftermovie': '/assets/project-music.webp',
+  'event-coverage-aftermovie': '/assets/project-music.webp',
+  'casting-&-roster': '/assets/service_casting.webp',
+  'casting-roster': '/assets/service_casting.webp',
+  'digital-campaigns': '/assets/project-corporate.webp',
+  'commercial-cinema': '/assets/hero_cinematic_dark.webp',
+  'corporate-documentary': '/assets/project-corporate.webp',
+  'high-fashion-lookbooks': '/assets/fashion_lookbook.webp',
+  'post-&-color-grade': '/assets/service_post_production.webp',
+  'post-color-grade': '/assets/service_post_production.webp',
+};
+
+const CATEGORY_IMAGE_MAP: Record<string, string> = {
+  production: '/assets/service_production.webp',
+  video: '/assets/project-commercial.webp',
+  photography: '/assets/fashion_lookbook.webp',
+  content: '/assets/project-fashion.webp',
+  events: '/assets/project-music.webp',
+  talent: '/assets/service_casting.webp',
+  'post-production': '/assets/service_post_production.webp',
+  marketing: '/assets/project-corporate.webp',
+};
+
+function getServiceImage(s: any): string {
+  const rawImg = s.imageUrl || s.coverImage || s.img || s.image;
+  if (rawImg && typeof rawImg === 'string' && rawImg.length > 5 && rawImg !== '/images/services-lighting.webp') {
+    return rawImg;
+  }
+  const slug = String(s.slug || s.id || '').toLowerCase().replace(/_/g, '-');
+  if (SERVICE_IMAGE_MAP[slug]) return SERVICE_IMAGE_MAP[slug];
+
+  const nameSlug = String(s.title || s.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  if (SERVICE_IMAGE_MAP[nameSlug]) return SERVICE_IMAGE_MAP[nameSlug];
+
+  const cat = String(s.category || '').toLowerCase();
+  if (CATEGORY_IMAGE_MAP[cat]) return CATEGORY_IMAGE_MAP[cat];
+
+  return '/assets/service_production.webp';
+}
+
 function Services({ services = [], loading }: { services?: any[]; loading?: boolean }) {
-  const sourceServices = services && services.length > 0 ? services : DEFAULT_SERVICES;
-  const displayServices = sourceServices.slice(0, 4);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Only display section if services actually exist in CMS / DB
+  if (!services || services.length === 0) {
+    return null;
+  }
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const w = scrollRef.current.offsetWidth * 0.75;
+      scrollRef.current.scrollBy({ left: dir === 'left' ? -w : w, behavior: 'smooth' });
+    }
+  };
 
   return (
-    <section className="py-24 sm:py-32 bg-background border-t border-border">
+    <section className="py-12 sm:py-16 bg-background border-t border-border overflow-hidden">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
-        {/* Header */}
-        <Reveal direction="up" className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-16">
+        
+        {/* Header with Title and Scroll Controls */}
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="h-[2px] w-12 bg-brand shadow-[0_0_8px_#eb3d26]" />
-              <span className="text-xs sm:text-sm font-bold tracking-[0.25em] uppercase text-brand">Capabilities</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-display text-foreground font-bold leading-tight">
-              <DecryptedText text="Our Creative" animateOn="view" speed={50} sequential={true} revealDirection="start" /><br />
-              <DecryptedText text="Disciplines" animateOn="view" speed={50} sequential={true} revealDirection="start" />
+            <h2 className="text-3xl sm:text-5xl font-display text-foreground font-bold tracking-tight">
+              Our Services
             </h2>
           </div>
-          <Link
-            href="/services"
-            className="group inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border bg-surface hover:bg-brand hover:border-brand text-foreground hover:text-white font-bold text-sm tracking-wide transition-all duration-300 shadow-md cursor-pointer shrink-0 backdrop-blur-md"
-          >
-            <span>View All Services</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </Reveal>
 
-        {/* Disciplines Grid */}
-        <div className="flex flex-col gap-6">
-          {loading && services.length === 0 ? (
-            <div className="h-64 rounded-3xl bg-surface/50 animate-pulse border border-border" />
-          ) : (
-            displayServices.map((s, idx) => {
-              const serviceName = s.title || s.name || `Service 0${idx + 1}`;
-              const desc = s.description || s.desc || "High-end production discipline designed for maximum brand impact.";
-              const rawTags = s.tags || s.features || ["Cinematic", "Global", "Luxury"];
-              const tags = Array.isArray(rawTags)
-                ? rawTags
-                : (typeof rawTags === 'string' ? (() => { try { return JSON.parse(rawTags); } catch { return ["Cinematic", "Global"]; } })() : ["Cinematic"]);
-              const FALLBACK_POOL = [
-                "/images/services-lighting.webp",
-                "/images/portfolio-equipment.webp",
-                "/images/about-bts.webp",
-                "/images/projects-outdoor.webp"
-              ];
-              const rawImg = s.imageUrl || s.coverImage || s.img || s.image;
-              const imageSrc = (rawImg && typeof rawImg === 'string' && rawImg.length > 5)
-                ? rawImg
-                : FALLBACK_POOL[idx % FALLBACK_POOL.length];
-
-              return (
-                <Reveal key={s.id || idx} direction="up" delay={idx * 0.05}>
-                  <div className="group relative rounded-[2rem] border border-border bg-card dark:bg-gradient-to-b dark:from-[#101117]/90 dark:to-[#090a0e]/95 hover:border-brand/50 transition-all duration-500 overflow-hidden shadow-xl p-6 sm:p-10 transform-gpu">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                      
-                      {/* Left: Metadata & Titles */}
-                      <div className="lg:col-span-7 flex flex-col justify-between h-full order-2 lg:order-1">
-                        <div>
-                          <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                            <span className="text-sm font-bold text-brand tracking-widest font-mono">/ 0{idx + 1}</span>
-                            <span className="h-1 w-1 rounded-full bg-border" />
-                            <span className="text-xs font-mono font-medium text-muted-foreground tracking-widest uppercase">Verified Discipline</span>
-                          </div>
-
-                          <h3 className="font-display text-2xl sm:text-4xl lg:text-5xl text-foreground font-bold group-hover:text-brand transition-colors leading-tight mb-4">
-                            {serviceName}
-                          </h3>
-
-                          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-normal mb-6 max-w-xl">
-                            {desc}
-                          </p>
-                        </div>
-
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-2 pt-5 border-t border-border">
-                          {tags.map((tag: string, tIdx: number) => (
-                            <span
-                              key={tIdx}
-                              className="px-3.5 py-1.5 rounded-full bg-surface text-[11px] sm:text-xs font-mono font-medium uppercase tracking-wider text-foreground border border-border"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Right: Cinematic Image */}
-                      <div className="lg:col-span-5 relative min-h-[200px] sm:min-h-[260px] lg:min-h-[280px] rounded-2xl overflow-hidden border border-border group-hover:border-brand/40 transition-colors duration-500 order-1 lg:order-2">
-                        <Image
-                          src={imageSrc}
-                          alt={serviceName}
-                          fill
-                          sizes="(max-width: 1024px) 100vw, 40vw"
-                          className="object-cover scale-105 group-hover:scale-100 transition-transform duration-[1.5s] ease-out brightness-[0.75] group-hover:brightness-100"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80 group-hover:opacity-30 transition-opacity duration-500" />
-                      </div>
-
-                    </div>
-                  </div>
-                </Reveal>
-              );
-            })
-          )}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => scroll('left')}
+              className="h-10 w-10 rounded-full border border-border bg-surface grid place-items-center text-foreground hover:text-brand hover:border-brand transition-colors cursor-pointer"
+              title="Previous Services"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              className="h-10 w-10 rounded-full border border-border bg-surface grid place-items-center text-foreground hover:text-brand hover:border-brand transition-colors cursor-pointer"
+              title="Next Services"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <Link
+              href="/services"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-brand transition-colors ml-2"
+            >
+              <span>Explore All ({services.length})</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
 
-        {/* Bottom View All CTA */}
-        <Reveal direction="up" className="mt-12 text-center">
-          <Link
-            href="/services"
-            className="inline-flex items-center gap-3 px-9 py-4 rounded-full bg-brand text-white hover:bg-foreground hover:text-background font-bold text-sm sm:text-base tracking-wide transition-all duration-300 shadow-[0_0_35px_rgba(235,61,38,0.4)] group cursor-pointer"
-          >
-            <span>View All Services & Disciplines</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </Reveal>
+        {/* Horizontal Scrolling Cards */}
+        <div
+          ref={scrollRef}
+          className="flex gap-6 overflow-x-auto pb-6 pt-2 scrollbar-none snap-x snap-mandatory -mx-6 px-6 sm:-mx-10 sm:px-10"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {services.map((s, idx) => {
+            const serviceName = s.title || s.name || `Service 0${idx + 1}`;
+            const desc = s.description || s.shortDesc || s.desc || "";
+            const category = s.category || "Production";
+            const rawTags = s.features || s.tags || [];
+            const tags = Array.isArray(rawTags)
+              ? rawTags
+              : typeof rawTags === 'string'
+              ? (() => { try { return JSON.parse(rawTags); } catch { return []; } })()
+              : [];
+            
+            const rawPrice = s.basePrice ? Number(s.basePrice) / 100 : (Number(s.price) || 0);
+            const priceText = rawPrice > 0 ? `₹${rawPrice.toLocaleString('en-IN')}` : (s.pricing || "Custom Quote");
+            const imageSrc = getServiceImage(s);
+
+            return (
+              <div
+                key={s.id || idx}
+                className="shrink-0 w-[290px] sm:w-[360px] md:w-[400px] snap-start rounded-[2rem] border border-border bg-card hover:border-brand/60 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl flex flex-col justify-between group"
+              >
+                {/* Image Banner */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/60">
+                  <Image
+                    src={imageSrc}
+                    alt={serviceName}
+                    fill
+                    sizes="(max-width: 768px) 300px, 400px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-700 brightness-95 group-hover:brightness-100"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                  
+                  {/* Category Pill */}
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-brand text-white shadow-md">
+                      {category}
+                    </span>
+                  </div>
+
+                  {/* Index Pill */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-black/60 text-white/80 backdrop-blur-md border border-white/10">
+                      #{idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Info */}
+                <div className="p-6 flex flex-col justify-between flex-1 space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground group-hover:text-brand transition-colors leading-snug">
+                      {serviceName}
+                    </h3>
+                    {desc && (
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed font-normal">
+                        {desc}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Key Features Bullets */}
+                  {tags.length > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t border-border">
+                      {tags.slice(0, 3).map((f: string, fIdx: number) => (
+                        <div key={fIdx} className="flex items-center gap-2 text-xs text-foreground/80">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span className="truncate">{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Bottom Rate & Book Button */}
+                  <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-muted-foreground block">Rate</span>
+                      <strong className="text-sm sm:text-base font-mono font-bold text-brand">
+                        {priceText}
+                      </strong>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/contact?service=${encodeURIComponent(serviceName)}`}
+                        className="px-3.5 py-1.5 rounded-full border border-border bg-surface text-foreground text-xs font-semibold hover:border-brand/60 transition-colors"
+                      >
+                        Inquire
+                      </Link>
+                      <Link
+                        href="/login"
+                        className="px-4 py-1.5 rounded-full bg-foreground text-background font-mono text-xs font-bold hover:bg-brand hover:text-white transition-all shadow-md"
+                      >
+                        Book
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -949,10 +1033,10 @@ function FeaturedTalent({ talent = [], loading }: { talent?: any[]; loading?: bo
   };
 
   return (
-    <section className="py-24 sm:py-32 overflow-hidden bg-background border-t border-border">
+    <section className="py-12 sm:py-16 overflow-hidden bg-background border-t border-border">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
         {/* Header */}
-        <Reveal direction="up" className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
+        <Reveal direction="up" className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-8">
           <div>
             <div className="flex items-center gap-3 mb-4">
               <span className="h-[2px] w-12 bg-brand shadow-[0_0_8px_#eb3d26]" />
@@ -1169,14 +1253,10 @@ function Faq({ faqs = [], loading }: { faqs?: any[]; loading?: boolean }) {
   const displayFaqs = sourceFaqs;
 
   return (
-    <section className="py-24 sm:py-32 bg-background border-t border-border">
-      <div className="mx-auto max-w-3xl px-6 sm:px-10">
-        <Reveal direction="up" className="text-center mb-16">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <span className="h-[2px] w-12 bg-brand shadow-[0_0_8px_#eb3d26]" />
-            <span className="text-xs sm:text-sm font-bold tracking-[0.25em] uppercase text-brand">Answers</span>
-          </div>
-          <h2 className="font-display text-3xl sm:text-5xl text-foreground font-bold leading-tight">
+    <section className="py-12 sm:py-16 bg-background border-t border-border">
+      <div className="mx-auto max-w-4xl px-6 sm:px-10">
+        <Reveal direction="up" className="text-center mb-8">
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-foreground font-bold tracking-tight sm:whitespace-nowrap">
             Frequently Asked Questions
           </h2>
         </Reveal>
@@ -1343,84 +1423,56 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
       : fallbackCards;
 
   return (
-    <section className="relative py-24 sm:py-32 px-6 sm:px-10 overflow-hidden bg-surface/40 dark:bg-[#07070a] text-foreground isolate border-t border-b border-border">
-      {/* Ambient Radial Lights */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[90vw] h-[60vh] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand/15 via-brand/5 to-transparent rounded-full pointer-events-none transform-gpu -z-10" />
-      <div className="absolute bottom-0 right-0 w-[45vw] h-[45vh] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-amber-500/2 to-transparent rounded-full pointer-events-none transform-gpu -z-10" />
+    <section className="relative py-12 sm:py-16 px-6 sm:px-10 overflow-hidden bg-background text-foreground isolate border-t border-border">
+      <div className="mx-auto max-w-7xl">
+        {/* Simple Title Only */}
+        <div className="mb-6">
+          <h2 className="font-display text-3xl sm:text-5xl font-bold text-foreground tracking-tight">
+            Become a{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand via-rose-500 to-amber-400">
+              YouTuber
+            </span>
+          </h2>
+        </div>
 
-      <div className="mx-auto max-w-7xl space-y-16">
-        {/* Top Header & Eyebrow */}
-        <Reveal direction="up">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-border pb-10">
-            <div className="space-y-4 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/15 border border-brand/40 text-brand text-xs font-bold uppercase tracking-[0.25em] shadow-[0_0_20px_rgba(229,9,20,0.25)]">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>GenZ Creator Lab</span>
-              </div>
-
-              <h2 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold text-foreground tracking-tight leading-[1.02]">
-                Become a{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand via-rose-500 to-amber-400">
-                  YouTuber
-                </span>
-              </h2>
-
-              <p className="text-base sm:text-lg text-muted-foreground font-normal leading-relaxed max-w-2xl">
-                Stop guessing the algorithm. Access MP Production&apos;s battle-tested Creator Masterclasses — 4K camera setups, viral retention hooks, DaVinci color grading, and 6-figure sponsor deal playbooks.
-              </p>
-            </div>
-
-            <div className="shrink-0">
-              <MagneticButton strength={20}>
-                <Link
-                  href="/become-a-youtuber"
-                  className="group inline-flex items-center gap-3 rounded-full bg-brand hover:bg-[#d63520] px-9 py-4 text-sm sm:text-base font-bold tracking-wide text-white transition-all duration-300 shadow-[0_0_35px_rgba(235,61,38,0.45)] cursor-pointer"
-                >
-                  <span>Explore Courses</span>
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </MagneticButton>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* 4-Card Masterclass Showcase Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Cards */}
+        <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-none snap-x snap-mandatory -mx-6 px-6 sm:-mx-10 sm:px-10 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-4">
           {cards.map((card, idx) => (
-            <Reveal key={idx} direction="up" delay={idx * 0.1}>
-              <Link
-                href="/become-a-youtuber"
-                className="group border border-border rounded-3xl overflow-hidden bg-card hover:border-brand/60 transition-all duration-300 shadow-xl flex flex-col justify-between h-full transform-gpu"
-              >
-                <div>
-                  {/* Thumbnail Image */}
-                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/40">
-                    <Image
-                      src={card.image}
-                      alt={card.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                    
-                    <div className="absolute top-3 left-3 z-10">
-                      <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-brand text-white shadow-md">
-                        {card.category}
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] font-mono text-white/90 z-10">
-                      <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10">{card.duration}</span>
-                      <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10 font-bold text-amber-400">{card.rating}</span>
-                    </div>
+            <Link
+              key={idx}
+              href="/become-a-youtuber"
+              className="shrink-0 w-[280px] sm:w-[320px] lg:w-auto snap-start border border-border rounded-3xl overflow-hidden bg-card hover:border-brand/60 transition-all duration-300 shadow-xl flex flex-col justify-between h-full transform-gpu group"
+            >
+              <div>
+                {/* Thumbnail Image */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-black/40">
+                  <Image
+                    src={card.image}
+                    alt={card.title}
+                    fill
+                    sizes="(max-width: 768px) 280px, 25vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                  
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-brand text-white shadow-md">
+                      {card.category}
+                    </span>
                   </div>
 
-                  {/* Card Info */}
-                  <div className="p-5 space-y-3">
-                    <h3 className="text-base font-bold text-foreground group-hover:text-brand transition-colors leading-snug">
-                      {card.title}
-                    </h3>
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] font-mono text-white/90 z-10">
+                    <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10">{card.duration}</span>
+                    <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm border border-white/10 font-bold text-amber-400">{card.rating}</span>
+                  </div>
+                </div>
+
+                {/* Card Info */}
+                <div className="p-5 space-y-3">
+                  <h3 className="text-base font-bold text-foreground group-hover:text-brand transition-colors leading-snug">
+                    {card.title}
+                  </h3>
+                  {card.bullets && card.bullets.length > 0 && (
                     <div className="space-y-1.5 pt-1">
                       {card.bullets.map((b: string, bIdx: number) => (
                         <div key={bIdx} className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1429,36 +1481,12 @@ function BecomeAYouTuberSection({ courses = [] }: { courses?: any[] }) {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  )}
                 </div>
-
-                {/* Footer Action */}
-                <div className="p-5 pt-0">
-                  <div className="w-full py-2.5 rounded-xl border border-border bg-surface group-hover:bg-brand group-hover:border-brand group-hover:text-white text-center text-xs font-mono font-bold uppercase tracking-wider text-foreground transition-all duration-300 flex items-center justify-center gap-2">
-                    <span>Explore Blueprint</span>
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-              </Link>
-            </Reveal>
+              </div>
+            </Link>
           ))}
         </div>
-
-        {/* Bottom Banner Stats Strip */}
-        <Reveal direction="up">
-          <div className="p-6 md:p-8 rounded-3xl border border-border bg-card backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left shadow-xl">
-            <div className="space-y-1.5">
-              <h4 className="text-xl font-bold font-display text-foreground">Ready to scale your YouTube channel to 100K+?</h4>
-              <p className="text-xs text-muted-foreground font-medium">10,000+ Creators Trained · 100% Practical & RAW Workflows · 4.9★ Average Rating</p>
-            </div>
-            <Link
-              href="/become-a-youtuber"
-              className="px-8 py-3.5 rounded-full bg-brand text-white hover:bg-foreground hover:text-background font-mono text-xs font-bold tracking-wider uppercase transition-all duration-300 shadow-[0_0_25px_rgba(235,61,38,0.4)] shrink-0"
-            >
-              Explore All Masterclasses →
-            </Link>
-          </div>
-        </Reveal>
       </div>
     </section>
   );
