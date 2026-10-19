@@ -84,15 +84,13 @@ export default async function EditTalentProfilePage() {
                 </h1>
               </div>
               <div className="flex items-center gap-3">
-                {profile.status === 'ACTIVE' && (
-                  <Link
-                    href={`/talent/${profile.slug || profile.id}`}
-                    target="_blank"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-border bg-card hover:bg-surface text-foreground transition-all shadow-xs"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-brand" /> View Public Profile
-                  </Link>
-                )}
+                <Link
+                  href={`/talent/${profile.slug || profile.id || 'me'}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-border bg-card hover:bg-surface text-foreground transition-all shadow-xs cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5 text-brand" /> View Profile Preview
+                </Link>
                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                   profile.status === 'ACTIVE'
                     ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'

@@ -64,9 +64,19 @@ export class TalentService {
   }
 
   async findOnePublic(idOrSlug: string) {
+    const trimmed = (idOrSlug || '').trim();
+    const slugHyphen = trimmed.replace(/\s+/g, '-');
+    const slugSpace = trimmed.replace(/-/g, ' ');
+
     const profile = await this.prisma.talentProfile.findFirst({
       where: {
-        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+        OR: [
+          { id: trimmed },
+          { slug: trimmed },
+          { slug: slugHyphen },
+          { slug: slugSpace },
+          { userId: trimmed },
+        ],
       },
       include: {
         user: {
@@ -108,28 +118,61 @@ export class TalentService {
       throw new NotFoundException('Talent profile not found');
     }
 
-    // Merge draftData if available for missing fields
+    // Merge draftData if available with highest priority for freshly updated profile fields
     if (profile.draftData && typeof profile.draftData === 'object') {
       const draft = profile.draftData as any;
-      if (!profile.bio && draft.bio) {
+      if (draft.bio) {
         profile.bio = draft.bio;
       }
-      if (!profile.stageName && (draft.stageName || draft.fullName)) {
+      if (draft.stageName || draft.fullName) {
         profile.stageName = draft.stageName || draft.fullName;
       }
-      if (!profile.experienceLevel && (draft.experienceLevel || draft.experience)) {
+      if (draft.experienceLevel || draft.experience) {
         profile.experienceLevel = draft.experienceLevel || draft.experience;
       }
-      if ((!profile.coverBannerUrl || profile.coverBannerUrl.startsWith('blob:')) && draft.coverBannerPreview && !draft.coverBannerPreview.startsWith('blob:')) {
+      if (draft.coverBannerPreview && typeof draft.coverBannerPreview === 'string' && !draft.coverBannerPreview.startsWith('blob:')) {
         profile.coverBannerUrl = draft.coverBannerPreview;
       }
-      if (profile.user && (!profile.user.avatarUrl || profile.user.avatarUrl.startsWith('blob:')) && draft.profilePhotoPreview && !draft.profilePhotoPreview.startsWith('blob:')) {
+      if (draft.profilePhotoPreview && typeof draft.profilePhotoPreview === 'string' && !draft.profilePhotoPreview.startsWith('blob:')) {
+        if (!profile.user) (profile as any).user = {};
         profile.user.avatarUrl = draft.profilePhotoPreview;
+        (profile as any).avatarUrl = draft.profilePhotoPreview;
       }
-      if ((!profile.userTalents || profile.userTalents.length === 0) && (draft.category || draft.primaryCategory)) {
+      if (draft.resumeUrl || draft.resumeName) {
+        profile.resumeUrl = draft.resumeUrl || profile.resumeUrl || (draft.resumeName ? `documents/${draft.resumeName}` : null);
+        (profile as any).resumeName = draft.resumeName;
+      }
+      if (draft.compCardUrl || draft.compCardName) {
+        profile.compCardUrl = draft.compCardUrl || profile.compCardUrl || (draft.compCardName ? `documents/${draft.compCardName}` : null);
+        (profile as any).compCardName = draft.compCardName;
+      }
+      if (draft.achievements && Array.isArray(draft.achievements) && draft.achievements.length > 0) {
+        profile.achievements = draft.achievements;
+      }
+      if (draft.education && Array.isArray(draft.education) && draft.education.length > 0) {
+        profile.education = draft.education;
+      }
+      if (draft.brandsWorkedWith && Array.isArray(draft.brandsWorkedWith) && draft.brandsWorkedWith.length > 0) {
+        profile.brandsWorkedWith = draft.brandsWorkedWith;
+      }
+      if (draft.galleryImages && Array.isArray(draft.galleryImages) && draft.galleryImages.length > 0) {
+        const draftGallery = draft.galleryImages
+          .map((img: any, i: number) => ({
+            id: img.id || `draft-img-${i}`,
+            url: typeof img === 'string' ? img : (img.url || img.fileUrl || ''),
+            type: 'PORTFOLIO_IMAGE',
+            order: i,
+          }))
+          .filter((m: any) => Boolean(m.url) && !m.url.startsWith('blob:'));
+        
+        if (draftGallery.length > 0) {
+          profile.portfolioMedia = draftGallery;
+        }
+      }
+      if (draft.category || draft.primaryCategory) {
         (profile as any).inferredCategory = draft.category || draft.primaryCategory;
       }
-      if (!profile.pricing && draft.pricingAmount) {
+      if (draft.pricingAmount) {
         const rate = parseInt(String(draft.pricingAmount).replace(/\D/g, ''), 10);
         if (rate) {
           (profile as any).pricing = {
@@ -237,8 +280,8 @@ export class TalentService {
         onboardingCompleted: true,
         ...(sanitizedCover && { coverBannerUrl: sanitizedCover }),
         introductionVideoUrl: introductionVideoPreview && !introductionVideoPreview.startsWith('blob:') ? introductionVideoPreview : null,
-        resumeUrl: resumeName ? `documents/${resumeName}` : null,
-        compCardUrl: compCardName ? `documents/${compCardName}` : null,
+        resumeUrl: (data.resumeUrl && !data.resumeUrl.startsWith('blob:')) ? data.resumeUrl : (resumeName ? `documents/${resumeName}` : null),
+        compCardUrl: (data.compCardUrl && !data.compCardUrl.startsWith('blob:')) ? data.compCardUrl : (compCardName ? `documents/${compCardName}` : null),
         achievements: achievements ? (achievements as any) : Prisma.DbNull,
         education: education ? (education as any) : Prisma.DbNull,
         brandsWorkedWith,
@@ -255,8 +298,8 @@ export class TalentService {
         onboardingCompleted: true,
         coverBannerUrl: sanitizedCover,
         introductionVideoUrl: introductionVideoPreview && !introductionVideoPreview.startsWith('blob:') ? introductionVideoPreview : null,
-        resumeUrl: resumeName ? `documents/${resumeName}` : null,
-        compCardUrl: compCardName ? `documents/${compCardName}` : null,
+        resumeUrl: (data.resumeUrl && !data.resumeUrl.startsWith('blob:')) ? data.resumeUrl : (resumeName ? `documents/${resumeName}` : null),
+        compCardUrl: (data.compCardUrl && !data.compCardUrl.startsWith('blob:')) ? data.compCardUrl : (compCardName ? `documents/${compCardName}` : null),
         achievements: achievements ? (achievements as any) : Prisma.DbNull,
         education: education ? (education as any) : Prisma.DbNull,
         brandsWorkedWith,

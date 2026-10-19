@@ -9,7 +9,7 @@ export default async function ProjectDetails({ params }: { params: { slug: strin
   let project = null;
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mp-backend-api.onrender.com/api/v1';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
     const res = await fetch(`${apiUrl}/cms/portfolio/${slug}`, {
       next: { revalidate: 60 },
     });

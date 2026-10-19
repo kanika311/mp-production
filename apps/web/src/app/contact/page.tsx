@@ -1,13 +1,11 @@
 "use client";
 
 import { Navbar } from '@/components/ui/Navbar';
-import { Footer } from '@/components/ui/Footer';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { fetchAPI } from '@/lib/api-client';
-import Image from 'next/image';
 import { 
   MapPin, 
   Phone, 
@@ -120,47 +118,13 @@ export default function Contact() {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-brand/5 blur-[120px] pointer-events-none rounded-full" />
 
         <Container className="relative z-10">
-          {/* Direct Clean Header */}
-          <div className="max-w-3xl mb-10 sm:mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-semibold uppercase tracking-wider mb-3">
-              <Sparkles size={13} className="text-brand" />
-              Direct Studio Contact
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-light text-foreground tracking-tight mb-4">
-              Start a Conversation.
-            </h1>
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Whether you are a brand seeking cinematic commercial production or an elite talent looking for representation, our directors and producers are ready to assist you.
-            </p>
-          </div>
+          
 
           {/* Main 2-Column Grid: Left Contact Info & Right Form */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             
-            {/* Left Column: Studio Visual + Official Contact Details */}
-            <div className="lg:col-span-5 space-y-6">
-              
-              {/* Studio Showcase Card */}
-              <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-border shadow-md group">
-                <Image
-                  src="/images/contact-studio.jpg"
-                  alt="Inside MP Production studio"
-                  fill
-                  className="object-cover scale-105 group-hover:scale-100 transition-transform duration-[1.2s] ease-out"
-                  sizes="(max-width: 768px) 100vw, 40vw"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-6">
-                  <span className="text-brand tracking-[0.2em] text-[11px] uppercase font-bold mb-1.5 block">
-                    The Studio · Mumbai
-                  </span>
-                  <p className="text-white font-serif text-2xl font-light leading-snug">
-                    Where stories<br />are crafted.
-                  </p>
-                </div>
-              </div>
-
+            {/* Left Column: Official Contact Details */}
+            <div className="order-2 lg:order-1 lg:col-span-5 space-y-6">
               {/* Contact Info Cards */}
               <div className="bg-card border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 shadow-sm space-y-5">
                 
@@ -267,7 +231,7 @@ export default function Contact() {
             </div>
 
             {/* Right Column: Direct Contact Form */}
-            <div className="lg:col-span-7">
+            <div className="order-1 lg:order-2 lg:col-span-7">
               <div className="bg-card border border-neutral-300 dark:border-neutral-800 rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl shadow-black/5">
                 
                 {submitted ? (
@@ -480,8 +444,6 @@ export default function Contact() {
           </div>
         </Container>
       </main>
-
-      <Footer />
     </>
   );
 }

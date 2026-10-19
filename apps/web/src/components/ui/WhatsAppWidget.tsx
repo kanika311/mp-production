@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
 
@@ -11,12 +12,26 @@ interface WhatsAppWidgetProps {
 export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({
   phoneNumber: initialPhoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '919876543210',
 }) => {
+  const pathname = usePathname() || '';
   const [isOpen, setIsOpen] = useState(false);
   const [customMessage, setCustomMessage] = useState('');
   const [enabled, setEnabled] = useState<boolean>(true);
   const [phoneNumber, setPhoneNumber] = useState<string>(initialPhoneNumber);
 
+  const isAdminOrPortal =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/super-admin') ||
+    pathname.startsWith('/sushant') ||
+    pathname.startsWith('/sushnat') ||
+    pathname.startsWith('/studio-8f2k') ||
+    pathname.startsWith('/talent-dashboard') ||
+    pathname.startsWith('/client-portal') ||
+    pathname.startsWith('/editor-portal') ||
+    pathname.startsWith('/employee-portal') ||
+    pathname.startsWith('/project-manager');
+
   useEffect(() => {
+    if (isAdminOrPortal) return;
     const checkStatus = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mp-backend-api.onrender.com/api/v1';
@@ -36,9 +51,9 @@ export const WhatsAppWidget: React.FC<WhatsAppWidgetProps> = ({
     };
 
     checkStatus();
-  }, []);
+  }, [isAdminOrPortal]);
 
-  if (!enabled) {
+  if (!enabled || isAdminOrPortal) {
     return null;
   }
 

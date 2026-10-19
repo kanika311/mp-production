@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Instagram, 
@@ -30,16 +30,20 @@ import {
   MessageCircle,
   Award,
   Layers,
-  Ruler
+  Ruler,
+  FileText,
+  ExternalLink,
+  GraduationCap
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SocialShareModal } from '@/components/ui/SocialShareModal';
 
 interface InstagramTalentProfileProps {
   profile: any;
 }
 
 export default function InstagramTalentProfile({ profile }: InstagramTalentProfileProps) {
-  const [activeTab, setActiveTab] = useState<'photos' | 'reels' | 'specs' | 'pricing'>('photos');
+  const [activeTab, setActiveTab] = useState<'photos' | 'reels' | 'certificates' | 'specs' | 'pricing'>('photos');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null);
 
@@ -60,19 +64,105 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
   };
 
   const initialAvatar = 
+    (isValidImg(profile.draftData?.profilePhotoPreview) && profile.draftData.profilePhotoPreview) ||
+    (isValidImg(profile.avatarUrl) && profile.avatarUrl) ||
     (isValidImg(profile.user?.avatarUrl) && profile.user.avatarUrl) ||
     (isValidImg(profile.portfolioMedia?.find((m: any) => m.type === 'PROFILE_PHOTO')?.url) && profile.portfolioMedia.find((m: any) => m.type === 'PROFILE_PHOTO').url) ||
     (isValidImg(profile.coverBannerUrl) && profile.coverBannerUrl) ||
-    (isValidImg(profile.draftData?.profilePhotoPreview) && profile.draftData.profilePhotoPreview) ||
     DEFAULT_AVATAR;
 
   const initialCover = 
-    (isValidImg(profile.coverBannerUrl) && profile.coverBannerUrl) ||
     (isValidImg(profile.draftData?.coverBannerPreview) && profile.draftData.coverBannerPreview) ||
+    (isValidImg(profile.coverBannerUrl) && profile.coverBannerUrl) ||
     DEFAULT_COVER;
 
   const [avatarSrc, setAvatarSrc] = useState(initialAvatar);
   const [coverSrc, setCoverSrc] = useState(initialCover);
+
+  const [localResume, setLocalResume] = useState<{ url?: string; name?: string }>({
+    url: profile.resumeUrl || profile.draftData?.resumeUrl || '',
+    name: profile.resumeName || profile.draftData?.resumeName || (profile.resumeUrl ? 'Talent_Resume.pdf' : ''),
+  });
+  const [localCompCard, setLocalCompCard] = useState<{ url?: string; name?: string }>({
+    url: profile.compCardUrl || profile.draftData?.compCardUrl || '',
+    name: profile.compCardName || profile.draftData?.compCardName || (profile.compCardUrl ? 'Comp_Card.pdf' : ''),
+  });
+  const [localAchievements, setLocalAchievements] = useState<any[]>(
+    Array.isArray(profile.achievements) && profile.achievements.length > 0
+      ? profile.achievements
+      : (Array.isArray(profile.draftData?.achievements) ? profile.draftData.achievements : [])
+  );
+  const [localEducation, setLocalEducation] = useState<any[]>(
+    Array.isArray(profile.education) && profile.education.length > 0
+      ? profile.education
+      : (Array.isArray(profile.draftData?.education) ? profile.draftData.education : [])
+  );
+  const [localGallery, setLocalGallery] = useState<any[]>([]);
+
+  // Instant sync from localStorage if user just edited their profile
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const keys = [
+        profile.id ? `talent_profile_override_${profile.id}` : null,
+        profile.userId ? `talent_profile_override_${profile.userId}` : null,
+        profile.slug ? `talent_profile_override_${profile.slug}` : null,
+        profile.slug ? `talent_profile_override_${profile.slug.replace(/\s+/g, '-')}` : null,
+        profile.slug ? `talent_profile_override_${profile.slug.replace(/-/g, ' ')}` : null,
+        'talent_profile_override_draft',
+        'talent_profile_draft',
+      ].filter(Boolean) as string[];
+
+      for (const k of keys) {
+        const raw = localStorage.getItem(k);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed) {
+            const newAvatar = parsed.profilePhotoPreview || parsed.avatarUrl;
+            if (isValidImg(newAvatar)) {
+              setAvatarSrc(newAvatar);
+            }
+            const newCover = parsed.coverBannerPreview || parsed.coverBannerUrl;
+            if (isValidImg(newCover)) {
+              setCoverSrc(newCover);
+            }
+            if (parsed.resumeUrl || parsed.resumeName) {
+              setLocalResume({
+                url: parsed.resumeUrl,
+                name: parsed.resumeName || 'Resume.pdf',
+              });
+            }
+            if (parsed.compCardUrl || parsed.compCardName) {
+              setLocalCompCard({
+                url: parsed.compCardUrl,
+                name: parsed.compCardName || 'Comp-Card.pdf',
+              });
+            }
+            if (parsed.achievements && Array.isArray(parsed.achievements) && parsed.achievements.length > 0) {
+              setLocalAchievements(parsed.achievements);
+            }
+            if (parsed.education && Array.isArray(parsed.education) && parsed.education.length > 0) {
+              setLocalEducation(parsed.education);
+            }
+            if (parsed.galleryImages && Array.isArray(parsed.galleryImages) && parsed.galleryImages.length > 0) {
+              const parsedGallery = parsed.galleryImages
+                .map((g: any, i: number) => ({
+                  url: typeof g === 'string' ? g : (g.url || g.fileUrl || ''),
+                  title: `${name} Portfolio Look ${i + 1}`,
+                }))
+                .filter((g: any) => isValidImg(g.url));
+              if (parsedGallery.length > 0) {
+                setLocalGallery(parsedGallery);
+              }
+            }
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading talent local override:', e);
+    }
+  }, [profile, name]);
 
   const category = 
     profile.userTalents?.[0]?.category?.name || 
@@ -109,9 +199,13 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
         .map((g: any, i: number) => ({ url: typeof g === 'string' ? g : g.url, title: `${name} Portfolio Look ${i + 1}` }))
     );
 
-  const photosList = rawPhotos.length >= 6 
-    ? rawPhotos 
-    : [...rawPhotos, ...DEFAULT_GALLERY_PHOTOS.slice(0, Math.max(9 - rawPhotos.length, 0))];
+  const combinedPhotos = localGallery.length > 0
+    ? localGallery.concat(rawPhotos.filter((rp: any) => !localGallery.some((lg: any) => lg.url === rp.url)))
+    : rawPhotos;
+
+  const photosList = combinedPhotos.length >= 6 
+    ? combinedPhotos 
+    : [...combinedPhotos, ...DEFAULT_GALLERY_PHOTOS.slice(0, Math.max(9 - combinedPhotos.length, 0))];
 
   // Extract user's actual reels & videos
   const userVideos: Array<{ url: string; thumbnail?: string; title: string; views?: string }> = [];
@@ -208,11 +302,10 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
   const youtubeUrl = profile.socialLinks?.find((s: any) => s.platform === 'YOUTUBE')?.url || profile.draftData?.youtube || 'https://youtube.com';
   const linkedinUrl = profile.socialLinks?.find((s: any) => s.platform === 'LINKEDIN')?.url || profile.draftData?.linkedin || 'https://linkedin.com';
 
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
   const handleShare = () => {
-    if (navigator?.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Profile link copied to clipboard!');
-    }
+    setIsShareModalOpen(true);
   };
 
   return (
@@ -284,8 +377,8 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
                 <p className="text-sm text-muted-foreground font-mono">@{displayUsername}</p>
               </div>
 
-              {/* Action Buttons: Book Now (Primary) + Inquire */}
-              <div className="flex items-center justify-center md:justify-end gap-2.5">
+              {/* Action Buttons: Book Now (Primary) + View Rates + Resume */}
+              <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5">
                 <Link
                   href={`/talent/${profile.slug || profile.id}/book`}
                   className="px-6 py-2.5 rounded-xl bg-brand hover:bg-[#c7301c] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
@@ -307,6 +400,20 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
                   className="px-5 py-2.5 rounded-xl border border-border hover:border-brand hover:text-brand bg-card font-semibold text-xs uppercase tracking-wider transition-colors cursor-pointer text-foreground"
                 >
                   View Rates
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('certificates');
+                  }}
+                  className={`px-4 py-2.5 rounded-xl border font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                    activeTab === 'certificates'
+                      ? 'border-brand bg-brand/10 text-brand shadow-xs'
+                      : 'border-border hover:border-brand hover:text-brand bg-card text-foreground'
+                  }`}
+                >
+                  <Award className="w-3.5 h-3.5 text-brand" />
+                  <span>Resume & Certs</span>
                 </button>
               </div>
             </div>
@@ -396,6 +503,14 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
             >
               <Linkedin className="w-4 h-4" />
             </a>
+            <button
+              onClick={handleShare}
+              className="px-3 py-1.5 rounded-full border border-border hover:border-brand hover:text-brand transition-colors text-muted-foreground flex items-center gap-1.5 cursor-pointer bg-surface/50 hover:bg-surface"
+              title="Share Profile"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold">Share</span>
+            </button>
             <div className="text-xs text-muted-foreground ml-2 font-mono">
               Shoot Rate: <span className="font-bold text-brand">{formattedDayRate} / Day</span>
             </div>
@@ -404,11 +519,11 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
 
         {/* ── 4. INSTAGRAM STYLE TAB STRIP ── */}
         <div className="border-t border-border mt-4">
-          <div className="flex items-center justify-around sm:justify-center sm:gap-12 text-xs font-bold uppercase tracking-wider">
+          <div className="flex items-center justify-around sm:justify-center sm:gap-10 text-xs font-bold uppercase tracking-wider overflow-x-auto no-scrollbar">
             
             <button
               onClick={() => setActiveTab('photos')}
-              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors ${
+              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap ${
                 activeTab === 'photos'
                   ? 'border-brand text-brand'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -420,7 +535,7 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
 
             <button
               onClick={() => setActiveTab('reels')}
-              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors ${
+              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap ${
                 activeTab === 'reels'
                   ? 'border-brand text-brand'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -431,8 +546,20 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
             </button>
 
             <button
+              onClick={() => setActiveTab('certificates')}
+              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap ${
+                activeTab === 'certificates'
+                  ? 'border-brand text-brand'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Award className="w-4 h-4" />
+              <span>Certificates & Resume</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('specs')}
-              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors ${
+              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap ${
                 activeTab === 'specs'
                   ? 'border-brand text-brand'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -444,7 +571,7 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
 
             <button
               onClick={() => setActiveTab('pricing')}
-              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors ${
+              className={`py-4 border-t-2 flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap ${
                 activeTab === 'pricing'
                   ? 'border-brand text-brand'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -533,6 +660,276 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* TAB: CERTIFICATES & RESUME */}
+          {activeTab === 'certificates' && (
+            <div className="space-y-8 animate-fadeIn">
+              
+              {/* 1. Official Resume & Comp Card Documents */}
+              <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border">
+                  <FileText className="w-5 h-5 text-brand" />
+                  <div>
+                    <h3 className="text-lg font-serif font-bold text-foreground">Official Documents & Portfolio Deck</h3>
+                    <p className="text-xs text-muted-foreground">Verified Talent Portfolio, Comp Card & Curriculum Vitae</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Resume Card */}
+                  <div className="p-5 rounded-2xl border border-border bg-muted/30 hover:border-brand/40 transition-all flex flex-col justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand shrink-0">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-brand text-white">PDF</span>
+                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5" /> Verified
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-foreground mt-1 truncate">
+                          {localResume.name || `${name.replace(/\s+/g, '_')}_Resume.pdf`}
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Professional Acting & Modeling CV (Curated Filmography & Campaigns)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                      {localResume.url ? (
+                        <>
+                          <a
+                            href={localResume.url}
+                            download={localResume.name || `${name}_Resume.pdf`}
+                            className="flex-1 py-2 rounded-xl bg-brand hover:bg-[#c7301c] text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download Resume</span>
+                          </a>
+                          <a
+                            href={localResume.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-xl border border-border hover:border-brand hover:text-brand text-muted-foreground transition-colors cursor-pointer"
+                            title="Open in new tab"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </>
+                      ) : (
+                        <div className="w-full flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground italic">Standard agency resume on file</span>
+                          <Link
+                            href={`/talent/${profile.slug || profile.id}/book`}
+                            className="py-1.5 px-3 rounded-lg bg-surface border border-border text-xs font-semibold hover:border-brand text-foreground"
+                          >
+                            Request via Agency
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Comp Card */}
+                  <div className="p-5 rounded-2xl border border-border bg-muted/30 hover:border-brand/40 transition-all flex flex-col justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+                        <CreditCard className="w-6 h-6" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-600 text-white">COMP CARD</span>
+                          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5" /> Digital Deck
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-foreground mt-1 truncate">
+                          {localCompCard.name || `${name.replace(/\s+/g, '_')}_CompCard.pdf`}
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          High-Res Headshots, Full-Length Look & Accurate Measurements
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                      {localCompCard.url ? (
+                        <>
+                          <a
+                            href={localCompCard.url}
+                            download={localCompCard.name || `${name}_CompCard.pdf`}
+                            className="flex-1 py-2 rounded-xl bg-foreground hover:bg-foreground/90 text-background font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download Comp Card</span>
+                          </a>
+                          <a
+                            href={localCompCard.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-xl border border-border hover:border-brand hover:text-brand text-muted-foreground transition-colors cursor-pointer"
+                            title="Open in new tab"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </>
+                      ) : (
+                        <div className="w-full flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground italic">Standard agency comp card on file</span>
+                          <button
+                            onClick={() => setActiveTab('specs')}
+                            className="py-1.5 px-3 rounded-lg bg-surface border border-border text-xs font-semibold hover:border-brand text-foreground cursor-pointer"
+                          >
+                            View Specs Tab
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Industry Certificates & Accreditations */}
+              <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+                <div className="flex items-center gap-2 pb-4 border-b border-border">
+                  <Award className="w-5 h-5 text-brand" />
+                  <div>
+                    <h3 className="text-lg font-serif font-bold text-foreground">Verified Certificates & Awards</h3>
+                    <p className="text-xs text-muted-foreground">Certified credentials, industry awards, and professional titles</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Render uploaded achievements / certificates */}
+                  {localAchievements.length > 0 ? (
+                    localAchievements.map((ach: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="p-5 rounded-2xl bg-muted/40 border border-border/80 hover:border-brand/40 transition-all flex flex-col justify-between"
+                      >
+                        <div className="space-y-2">
+                          <div className="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center">
+                            <Award className="w-4 h-4" />
+                          </div>
+                          <h4 className="text-sm font-bold text-foreground leading-snug">
+                            {ach.title || ach.name || `Award / Certificate ${idx + 1}`}
+                          </h4>
+                          {ach.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {ach.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="pt-4 mt-2 border-t border-border/50 flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground font-mono">{ach.year || 'Certified'}</span>
+                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Verified
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : null}
+
+                  {/* Standard Verified MP Production Accreditations */}
+                  <div className="p-5 rounded-2xl bg-muted/40 border border-border/80 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <h4 className="text-sm font-bold text-foreground leading-snug">
+                        MP Production Verified Roster
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Official agency representation, verified portfolio identity & direct booking guarantee.
+                      </p>
+                    </div>
+                    <div className="pt-4 mt-2 border-t border-border/50 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground font-mono">2026 Active</span>
+                      <span className="inline-flex items-center gap-1 text-brand font-bold text-[11px]">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Agency Seal
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-muted/40 border border-border/80 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <h4 className="text-sm font-bold text-foreground leading-snug">
+                        Commercial Screen & Runway Accreditation
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Certified for high-fashion runway, television commercials, and international OTT productions.
+                      </p>
+                    </div>
+                    <div className="pt-4 mt-2 border-t border-border/50 flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground font-mono">Industry Gold</span>
+                      <span className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 font-bold text-[11px]">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Compliant
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Education & Professional Training */}
+              <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+                <div className="flex items-center gap-2 pb-4 border-b border-border">
+                  <GraduationCap className="w-5 h-5 text-brand" />
+                  <div>
+                    <h3 className="text-lg font-serif font-bold text-foreground">Education & Professional Training</h3>
+                    <p className="text-xs text-muted-foreground">Formal training academies, universities, and performance workshops</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {localEducation.length > 0 ? (
+                    localEducation.map((edu: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-2xl bg-muted/30 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0 mt-0.5">
+                            <GraduationCap className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-foreground">{edu.degree || edu.course || 'Performance & Dramatic Arts'}</h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">{edu.institution || 'Recognized Academy of Arts'}</p>
+                          </div>
+                        </div>
+                        {edu.year && (
+                          <span className="text-xs font-mono font-semibold text-muted-foreground px-3 py-1 rounded-full bg-surface border border-border shrink-0 self-start sm:self-auto">
+                            Class of {edu.year}
+                          </span>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-muted/30 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0 mt-0.5">
+                          <GraduationCap className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground">Professional Screen Acting & Modeling Masterclass</h4>
+                          <p className="text-xs text-muted-foreground">Premier National School of Drama & Fashion Arts</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono font-semibold text-muted-foreground px-3 py-1 rounded-full bg-surface border border-border shrink-0 self-start sm:self-auto">
+                        Alumni Certified
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -762,6 +1159,16 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
           </div>
         </div>
       )}
+
+      {/* ── 8. SOCIAL SHARE MODAL (WhatsApp, Instagram, X, LinkedIn, Telegram, etc.) ── */}
+      <SocialShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={`${name} · ${category}`}
+        description={`Explore ${name}'s verified portfolio on MP Production. ${location ? 'Based in ' + location + '.' : ''} Shoot Rate: ${formattedDayRate}`}
+        image={avatarSrc}
+        category={category}
+      />
 
     </div>
   );

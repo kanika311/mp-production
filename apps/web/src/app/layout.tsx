@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
-import { Outfit, Cormorant_Garamond } from 'next/font/google';
+import { Outfit, Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 import './tw-animate.css';
 import './globals.css';
 import { Footer } from '@/components/ui/Footer';
 
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
 
 const outfit = Outfit({ 
   subsets: ['latin'], 
@@ -48,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${outfit.variable} ${cormorant.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${plusJakarta.variable} ${outfit.variable} ${cormorant.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased selection:bg-[#eb3d26] selection:text-white" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <AuthProvider>

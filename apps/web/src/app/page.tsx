@@ -181,6 +181,7 @@ const DEFAULT_TALENT = [
    ═══════════════════════════════════════════════════════════ */
 export default function Home() {
   const [hero, setHero] = useState<any>(null);
+  const [announcement, setAnnouncement] = useState<any>(null);
   const [intro, setIntro] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
@@ -203,6 +204,7 @@ export default function Home() {
 
     Promise.all([
       safeFetch("/cms/hero?page=home"),
+      safeFetch("/cms/config/home-page"),
       safeFetch("/cms/config/intro"),
       safeFetch("/cms/stats"),
       safeFetch("/cms/services?active=true"),
@@ -212,11 +214,18 @@ export default function Home() {
       safeFetch("/cms/faq?limit=8"),
       safeFetch("/cms/courses?limit=4"),
     ])
-      .then(([heroRes, introRes, statsRes, servRes, portRes, talentRes, testRes, faqRes, courseRes]) => {
+      .then(([heroRes, homePageRes, introRes, statsRes, servRes, portRes, talentRes, testRes, faqRes, courseRes]) => {
         if (!isMounted) return;
-        if (heroRes) setHero(heroRes.data || heroRes);
+        const homeData = homePageRes?.data || homePageRes;
+        if (homeData) {
+          if (homeData.announcement) setAnnouncement(homeData.announcement);
+          if (homeData.hero) setHero((prev: any) => ({ ...prev, ...homeData.hero }));
+          if (Array.isArray(homeData.stats) && homeData.stats.length > 0) setStats(homeData.stats);
+          if (Array.isArray(homeData.faqs) && homeData.faqs.length > 0) setFaqs(homeData.faqs);
+        }
+        if (!homeData?.hero && heroRes) setHero(heroRes.data || heroRes);
         if (introRes) setIntro(introRes.data || introRes);
-        if (statsRes) setStats(statsRes.data || statsRes);
+        if (!homeData?.stats && statsRes) setStats(statsRes.data || statsRes);
         if (servRes) {
           const rows = Array.isArray(servRes) ? servRes : (servRes.data || []);
           if (rows.length > 0) setServices(rows);
@@ -230,7 +239,7 @@ export default function Home() {
           if (rows.length > 0) setTalent(rows);
         }
         if (testRes) setTestimonials(Array.isArray(testRes) ? testRes : (testRes.data || []));
-        if (faqRes) {
+        if (!homeData?.faqs && faqRes) {
           const rows = Array.isArray(faqRes) ? faqRes : (faqRes.data || []);
           if (rows.length > 0) setFaqs(rows);
         }
@@ -263,8 +272,35 @@ export default function Home() {
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-brand selection:text-white overflow-x-clip font-sans transition-colors duration-300">
       <Navbar />
+
+      {/* Dynamic Top Announcement Banner Strip */}
+      {announcement?.enabled && announcement?.text && (
+        <div className="relative z-40 bg-gradient-to-r from-red-600 via-[#eb3d26] to-amber-600 text-white text-xs py-2 px-4 shadow-md">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-center sm:text-left">
+            <div className="flex items-center gap-2.5 mx-auto sm:mx-0 flex-wrap justify-center">
+              {announcement.badge && (
+                <span className="px-2 py-0.5 rounded-full bg-white/20 text-white font-mono font-bold text-[10px] tracking-wider uppercase backdrop-blur-xs">
+                  {announcement.badge}
+                </span>
+              )}
+              <span className="font-medium tracking-wide">{announcement.text}</span>
+            </div>
+            {announcement.link && (
+              <Link
+                href={announcement.link}
+                className="hidden sm:inline-flex items-center gap-1 font-bold underline underline-offset-4 hover:text-white/80 transition-colors text-xs shrink-0"
+              >
+                <span>Learn More</span>
+                <ArrowRight size={12} />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       <Hero 
         hero={hero} 
+        stats={stats}
         onOpenModal={setActiveModalProject} 
       />
       <Services services={services} loading={loading} />
@@ -286,7 +322,7 @@ export default function Home() {
 /* ═══════════════════════════════════════════════════════════
    HERO — Cinematic split layout
    ═══════════════════════════════════════════════════════════ */
-function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: ProjectSpec) => void }) {
+function Hero({ hero, stats, onOpenModal }: { hero?: any; stats?: any[]; onOpenModal?: (project: ProjectSpec) => void }) {
   const containerRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -300,6 +336,10 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
     "MP Production is a full-service creative house — high-fashion campaigns, cinematic commercials, and exclusive talent representation.";
   const ctaText = hero?.ctaText || "Explore Portfolio";
   const ctaUrl = hero?.ctaUrl || "/portfolio";
+  const eyebrowText = hero?.eyebrow || "Cinematic Studio · Est. 2018";
+  const mediaType = hero?.mediaType || "video";
+  const posterSrc = hero?.posterUrl || "/assets/hero_cinematic_dark.webp";
+  const videoSrc = hero?.videoUrl || "https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/hero.mp4";
 
   const headingWords = headingText.split(/(\s+)/);
 
@@ -308,17 +348,25 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
       {/* Background layer — Full Bleed Merged With Navbar */}
       <div className="absolute inset-0 top-0 bottom-0 -z-10 bg-[#050507] overflow-hidden select-none">
         <motion.div style={{ y }} className="absolute inset-0 h-[120%] w-full -top-[10%] transform-gpu">
-          <video
-            className="absolute inset-0 h-full w-full object-cover object-center transform-gpu"
-            autoPlay={true}
-            muted={true}
-            loop={true}
-            playsInline={true}
-            preload="auto"
-            poster="/assets/hero_cinematic_dark.webp"
-          >
-            <source src="https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/hero.mp4" type="video/mp4" />
-          </video>
+          {mediaType === "image" ? (
+            <img
+              src={posterSrc}
+              alt="MP Production Hero"
+              className="absolute inset-0 h-full w-full object-cover object-center transform-gpu"
+            />
+          ) : (
+            <video
+              className="absolute inset-0 h-full w-full object-cover object-center transform-gpu"
+              autoPlay={true}
+              muted={true}
+              loop={true}
+              playsInline={true}
+              preload="auto"
+              poster={posterSrc}
+            >
+              <source src={videoSrc} type="video/mp4" />
+            </video>
+          )}
         </motion.div>
 
         {/* Top Vignette Gradient for Navbar Contrast */}
@@ -341,7 +389,7 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
           <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.08] border border-white/15 backdrop-blur-md">
             <span className="h-2 w-2 rounded-full bg-brand animate-pulse shadow-[0_0_10px_#eb3d26]" />
             <span className="text-[11px] sm:text-xs font-mono font-medium tracking-[0.25em] uppercase text-white/90">
-              Cinematic Studio · Est. 2018
+              {eyebrowText}
             </span>
           </div>
         </motion.div>
@@ -396,15 +444,17 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
             </Link>
           </MagneticButton>
 
-          <MagneticButton strength={20}>
-            <Link
-              href="/become-a-youtuber"
-              className="group inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] hover:border-white/30 text-white px-7 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold tracking-wide backdrop-blur-md transition-all cursor-pointer shadow-lg"
-            >
-              <Sparkles className="h-4 w-4 text-brand fill-brand" />
-              <span>Become a YouTuber</span>
-            </Link>
-          </MagneticButton>
+          {hero?.secondaryCtaText && (
+            <MagneticButton strength={20}>
+              <Link
+                href={hero?.secondaryCtaUrl || "/become-a-youtuber"}
+                className="group inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] hover:border-white/30 text-white px-7 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold tracking-wide backdrop-blur-md transition-all cursor-pointer shadow-lg"
+              >
+                <Sparkles className="h-4 w-4 text-brand fill-brand" />
+                <span>{hero.secondaryCtaText}</span>
+              </Link>
+            </MagneticButton>
+          )}
 
           <MagneticButton strength={20}>
             <Link
@@ -423,15 +473,15 @@ function Hero({ hero, onOpenModal }: { hero?: any; onOpenModal?: (project: Proje
           transition={{ duration: 0.8, delay: 0.8 }}
           className="mt-14 sm:mt-16 pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8"
         >
-          {[
+          {(stats && Array.isArray(stats) && stats.length > 0 ? stats : [
             { n: 500, s: "+", label: "Productions Delivered" },
             { n: 1200, s: "+", label: "Talent Roster" },
             { n: 40, s: "+", label: "Brand Partners" },
             { n: 18, s: "M+", label: "Audience Reach" },
-          ].map(({ n, s, label }) => (
+          ]).map(({ n, s, label }: any) => (
             <div key={label} className="flex flex-col gap-1 border-l border-white/10 pl-4">
               <span className="text-2xl sm:text-4xl font-display font-bold text-white drop-shadow-sm">
-                <Counter n={n} suffix={s} />
+                <Counter n={Number(n) || 0} suffix={s || "+"} />
               </span>
               <span className="text-[10px] sm:text-xs text-white/60 font-mono tracking-widest uppercase">
                 {label}

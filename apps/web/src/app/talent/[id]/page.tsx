@@ -7,7 +7,12 @@ export const dynamic = 'force-dynamic';
 
 async function getTalentProfile(id: string) {
   try {
-    const res = await serverFetchAPI(`/talent/${id}`, { cache: 'no-store' });
+    const encodedId = encodeURIComponent(id.trim());
+    let res = await serverFetchAPI(`/talent/${encodedId}`, { cache: 'no-store' }).catch(() => null);
+    if (!res?.data && id.includes(' ')) {
+      const hyphenId = encodeURIComponent(id.trim().replace(/\s+/g, '-'));
+      res = await serverFetchAPI(`/talent/${hyphenId}`, { cache: 'no-store' }).catch(() => null);
+    }
     if (!res || res.status === 404 || !res.success) return null;
     return res.data;
   } catch (error) {

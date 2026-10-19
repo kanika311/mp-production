@@ -178,47 +178,61 @@ export function HoverFooter() {
   }, []);
 
   // Footer link data - dynamic if provided by CMS, otherwise fallback defaults
-  const footerLinks = footerConfig?.sections || [
-    {
-      title: "Company",
-      links: [
-        { label: "About Us", href: "/about" },
-        { label: "Services", href: "/services" },
-        { label: "Meet the Team", href: "/team" },
-        { label: "Testimonials", href: "/testimonials" },
-        { label: "Careers", href: "/careers" },
-        { label: "Blog", href: "/blog" },
-      ],
-    },
-    {
-      title: "Network & Work",
-      links: [
-        { label: "Portfolio", href: "/portfolio" },
-        { label: "Showreels", href: "/reel" },
-        { label: "Pricing", href: "/pricing" },
-        { label: "Talent Directory", href: "/talent/directory" },
-        { label: "Join as Talent", href: "/join/talent" },
-        { label: "Client Portal", href: "/client-portal" },
-        { label: "Editor Portal", href: "/editor-portal" },
-      ],
-    },
-    {
-      title: "Support & Legal",
-      links: [
-        { label: "Contact Us", href: "/contact" },
-        { label: "FAQs", href: "/faq" },
-        {
-          label: "Live Chat",
-          href: "/contact",
-          pulse: true,
-        },
-        { label: "Privacy Policy", href: "/privacy" },
-        { label: "Terms of Service", href: "/terms" },
-        { label: "Security & Compliance", href: "/security" },
-        { label: "Help Center", href: "/help" },
-      ],
-    },
-  ];
+  const footerLinks = React.useMemo(() => {
+    if (footerConfig?.sections && Array.isArray(footerConfig.sections) && footerConfig.sections.length > 0) {
+      return footerConfig.sections;
+    }
+    if (footerConfig?.quickLinks && Array.isArray(footerConfig.quickLinks) && footerConfig.quickLinks.length > 0) {
+      const groupsMap: Record<string, any[]> = {};
+      footerConfig.quickLinks.forEach((item: any) => {
+        const groupName = item.group || 'Quick Links';
+        if (!groupsMap[groupName]) groupsMap[groupName] = [];
+        groupsMap[groupName].push({ label: item.label, href: item.href });
+      });
+      return Object.entries(groupsMap).map(([title, links]) => ({ title, links }));
+    }
+    return [
+      {
+        title: "Company",
+        links: [
+          { label: "About Us", href: "/about" },
+          { label: "Services", href: "/services" },
+          { label: "Meet the Team", href: "/team" },
+          { label: "Testimonials", href: "/testimonials" },
+          { label: "Careers", href: "/careers" },
+          { label: "Blog", href: "/blog" },
+        ],
+      },
+      {
+        title: "Network & Work",
+        links: [
+          { label: "Projects", href: "/projects" },
+          { label: "Showreels", href: "/reel" },
+          { label: "Pricing", href: "/pricing" },
+          { label: "Talent Directory", href: "/talent/directory" },
+          { label: "Join as Talent", href: "/join/talent" },
+          { label: "Client Portal", href: "/client-portal" },
+          { label: "Editor Portal", href: "/editor-portal" },
+        ],
+      },
+      {
+        title: "Support & Legal",
+        links: [
+          { label: "Contact Us", href: "/contact" },
+          { label: "FAQs", href: "/faq" },
+          {
+            label: "Live Chat",
+            href: "/contact",
+            pulse: true,
+          },
+          { label: "Privacy Policy", href: "/privacy" },
+          { label: "Terms of Service", href: "/terms" },
+          { label: "Security & Compliance", href: "/security" },
+          { label: "Help Center", href: "/help" },
+        ],
+      },
+    ];
+  }, [footerConfig?.sections, footerConfig?.quickLinks]);
 
   // Contact info data
   const contactInfo = [
@@ -240,67 +254,72 @@ export function HoverFooter() {
 
   // Social media icons
   const socialLinks = [
-    { icon: <Facebook size={20} />, label: "Facebook", href: footerConfig?.socialLinks?.facebook || "https://facebook.com" },
-    { icon: <Instagram size={20} />, label: "Instagram", href: footerConfig?.socialLinks?.instagram || "https://instagram.com" },
-    { icon: <Twitter size={20} />, label: "Twitter", href: footerConfig?.socialLinks?.twitter || "https://twitter.com" },
-    { icon: <Globe size={20} />, label: "Globe", href: footerConfig?.socialLinks?.youtube || "https://youtube.com" },
+    { icon: <Facebook size={15} />, label: "Facebook", href: footerConfig?.socialLinks?.facebook || "https://facebook.com" },
+    { icon: <Instagram size={15} />, label: "Instagram", href: footerConfig?.socialLinks?.instagram || "https://instagram.com" },
+    { icon: <Twitter size={15} />, label: "Twitter", href: footerConfig?.socialLinks?.twitter || "https://twitter.com" },
+    { icon: <Globe size={15} />, label: "Globe", href: footerConfig?.socialLinks?.youtube || "https://youtube.com" },
   ];
 
   return (
     <footer className="w-full bg-background border-t border-border relative z-10 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 pb-12">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-8 sm:pt-10 pb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-8 pb-6 sm:pb-8">
           {/* Brand section */}
-          <div className="flex flex-col space-y-6 lg:col-span-2">
+          <div className="flex flex-col space-y-3.5 lg:col-span-2">
             <a href="/" className="inline-block shrink-0">
               <img
                 src="/logo.webp"
-                className="h-12 md:h-14 w-auto object-contain origin-left transition-all duration-300 drop-shadow-[0_0_15px_rgba(235,61,38,0.25)]"
+                className="h-9 md:h-10 w-auto object-contain origin-left transition-all duration-300 drop-shadow-[0_0_12px_rgba(235,61,38,0.2)]"
                 alt={footerConfig?.companyName || "MP Production Logo"}
               />
             </a>
 
-            <p className="text-sm leading-relaxed text-muted-foreground font-light max-w-sm">
-              {footerConfig?.tagline || "MP Production is an exclusive luxury creative production house for global brands and artists. Building timeless cinema, photography, and campaigns frame by frame."}
+            {footerConfig?.tagline && (
+              <p className="text-xs font-semibold text-foreground/90 tracking-wide">
+                {footerConfig.tagline}
+              </p>
+            )}
+            <p className="text-xs leading-relaxed text-muted-foreground font-light max-w-sm">
+              {footerConfig?.brandDescription || "MP Production is an exclusive luxury creative production house for global brands and artists. Building timeless cinema, photography, and campaigns frame by frame."}
             </p>
 
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-xs font-mono tracking-wider text-brand uppercase font-semibold w-fit">
-              <span className="inline-block h-2 w-2 rounded-full bg-brand animate-pulse" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/10 border border-brand/20 text-[10px] font-mono tracking-wider text-brand uppercase font-semibold w-fit">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
               <span>Global Production Headquarters · Mumbai</span>
             </div>
 
             {/* Direct Contact Details */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-1.5 pt-0.5">
               <a
                 href={contactInfo[0].href}
-                className="flex items-center gap-3 text-sm text-muted-foreground hover:text-brand transition-colors group"
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-brand transition-colors group"
               >
-                <div className="p-2 rounded-lg bg-surface border border-border text-brand group-hover:border-brand/40 transition-colors">
-                  {contactInfo[0].icon}
+                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/40 transition-colors">
+                  <Mail size={12} />
                 </div>
-                <span className="font-mono text-xs sm:text-sm">{contactInfo[0].text}</span>
+                <span className="font-mono text-xs">{contactInfo[0].text}</span>
               </a>
 
               <a
                 href={contactInfo[1].href}
-                className="flex items-center gap-3 text-sm text-muted-foreground hover:text-brand transition-colors group"
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-brand transition-colors group"
               >
-                <div className="p-2 rounded-lg bg-surface border border-border text-brand group-hover:border-brand/40 transition-colors">
-                  {contactInfo[1].icon}
+                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/40 transition-colors">
+                  <Phone size={12} />
                 </div>
-                <span className="font-mono text-xs sm:text-sm">{contactInfo[1].text}</span>
+                <span className="font-mono text-xs">{contactInfo[1].text}</span>
               </a>
 
-              <div className="flex items-center gap-3 text-sm text-muted-foreground group">
-                <div className="p-2 rounded-lg bg-surface border border-border text-brand">
-                  {contactInfo[2].icon}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground group">
+                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0">
+                  <MapPin size={12} />
                 </div>
-                <span className="font-mono text-xs sm:text-sm">{contactInfo[2].text}</span>
+                <span className="font-mono text-xs">{contactInfo[2].text}</span>
               </div>
             </div>
 
             {/* Social media icons */}
-            <div className="flex items-center gap-2.5 pt-2">
+            <div className="flex items-center gap-2 pt-0.5">
               {socialLinks.map(({ icon, label, href }) => (
                 <a
                   key={label}
@@ -308,7 +327,7 @@ export function HoverFooter() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-surface text-muted-foreground hover:text-brand hover:border-brand/50 hover:bg-brand/10 transition-all shadow-xs"
+                  className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-surface text-muted-foreground hover:text-brand hover:border-brand/50 hover:bg-brand/10 transition-all shadow-xs"
                 >
                   {icon}
                 </a>
@@ -318,20 +337,20 @@ export function HoverFooter() {
 
           {/* Footer link sections */}
           {footerLinks.map((section: any, idx: number) => (
-            <div key={section.title || idx} className="space-y-4">
-              <h4 className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-brand flex items-center gap-1.5">
-                <span className="text-[10px]">●</span> {section.title}
+            <div key={section.title || idx} className="space-y-2.5">
+              <h4 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand flex items-center gap-1.5">
+                <span className="text-[9px]">●</span> {section.title}
               </h4>
-              <ul className="space-y-2.5">
+              <ul className="space-y-1.5">
                 {section.links?.map((link: any) => (
                   <li key={link.label} className="relative w-fit">
                     <a
                       href={link.href}
-                      className="text-muted-foreground hover:text-foreground text-sm font-light hover:translate-x-1 transition-all inline-flex items-center gap-1 group"
+                      className="text-muted-foreground hover:text-foreground text-xs font-light hover:translate-x-0.5 transition-all inline-flex items-center gap-1 group"
                     >
                       <span>{link.label}</span>
                       {link.pulse && (
-                        <span className="inline-block w-2 h-2 rounded-full bg-brand animate-pulse" />
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
                       )}
                     </a>
                   </li>
@@ -342,12 +361,12 @@ export function HoverFooter() {
         </div>
 
         {/* Footer bottom bar */}
-        <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-mono text-muted-foreground">
+        <div className="pt-4 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] font-mono text-muted-foreground">
           <p className="text-center sm:text-left tracking-wide">
             {footerConfig?.copyright || footerConfig?.copyrightText || 'Powered By JCRM Technologies'}
           </p>
 
-          <div className="flex items-center gap-6 text-[11px] tracking-wider uppercase">
+          <div className="flex items-center gap-5 text-[10px] tracking-wider uppercase">
             <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
             <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
             <a href="/security" className="hover:text-foreground transition-colors">Security</a>

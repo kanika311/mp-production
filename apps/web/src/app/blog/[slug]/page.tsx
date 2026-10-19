@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useParams, useSearchParams, notFound } from 'next/navigation';
 import { ArrowLeft, Calendar, User, Clock, Share2 } from 'lucide-react';
+import { SocialShareModal } from '@/components/ui/SocialShareModal';
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -20,6 +21,7 @@ export default function BlogPostPage() {
   const previewToken = rawPreview && rawPreview !== 'null' && rawPreview !== 'undefined' ? rawPreview : null;
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -125,10 +127,7 @@ export default function BlogPostPage() {
                     <p className="text-sm text-muted-foreground font-light">Share it with your production network or team.</p>
                   </div>
                   <Button
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href);
-                      toast.success("Link copied to clipboard!");
-                    }}
+                    onClick={() => setIsShareOpen(true)}
                     variant="outline"
                     className="gap-2"
                   >
@@ -141,6 +140,15 @@ export default function BlogPostPage() {
           )}
         </Container>
       </main>
+
+      <SocialShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        title={post?.title || 'MP Production Article'}
+        description={post?.excerpt || 'Read this article on MP Production'}
+        image={post?.coverImage}
+        category={post?.category || 'Editorial'}
+      />
     </>
   );
 }

@@ -31,12 +31,10 @@ import { fetchAPI } from "@/lib/api-client";
 /* ─── Default nav items (structural fallback while CMS loads) ─── */
 const DEFAULT_NAV_ITEMS = [
   { title: "Home", href: "/" },
-  { title: "Become a YouTuber", href: "/become-a-youtuber" },
-  { title: "Showreels", href: "/reel" },
-  { title: "Portfolio", href: "/portfolio" },
+  { title: "Projects", href: "/projects" },
   { title: "Services", href: "/services" },
   { title: "Talent", href: "/talent" },
-  { title: "About", href: "/about" },
+  { title: "Become a YouTuber", href: "/become-a-youtuber" },
   { title: "Blog", href: "/blog" },
   { title: "Contact", href: "/contact" },
 ];
@@ -44,9 +42,10 @@ const DEFAULT_NAV_ITEMS = [
 /* Nav icons mapping */
 const NAV_ITEM_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "/": Home,
+  "/projects": Briefcase,
+  "/portfolio": Briefcase,
   "/become-a-youtuber": Sparkles,
   "/reel": Film,
-  "/portfolio": Briefcase,
   "/services": Layers,
   "/talent": Users,
   "/about": Info,
@@ -135,10 +134,29 @@ export function Navbar() {
           // Support: { links: [{ label, href }] } or direct array [{ label, href }]
           const links = Array.isArray(val) ? val : (val.links && Array.isArray(val.links)) ? val.links : null;
           if (links && links.length > 0) {
-            setNavItems(links.map((item: any) => ({
-              title: item.title || item.label || item.text || '',
-              href: item.href || item.url || item.link || '/',
-            })));
+            const seen = new Set<string>();
+            const cleaned: { title: string; href: string }[] = [];
+
+            for (const item of links) {
+              let title = (item.title || item.label || item.text || '').trim();
+              let href = (item.href || item.url || item.link || '/').trim();
+
+              // Unify Portfolio and Projects
+              if (title.toUpperCase() === 'PORTFOLIO' || href === '/portfolio') {
+                title = 'PROJECTS';
+                href = '/projects';
+              }
+
+              // Deduplicate by href
+              if (!seen.has(href)) {
+                seen.add(href);
+                cleaned.push({ title, href });
+              }
+            }
+
+            if (cleaned.length > 0) {
+              setNavItems(cleaned);
+            }
           }
         }
       })
@@ -158,7 +176,7 @@ export function Navbar() {
             : "py-3 md:py-3.5"
         )}
       >
-        <nav className="mx-auto max-w-7xl px-5 sm:px-8 flex items-center justify-between">
+        <nav className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* ── Logo ── */}
           <Link href="/" className="relative z-10 shrink-0" data-cursor="hover">
             <img
@@ -171,11 +189,35 @@ export function Navbar() {
             />
           </Link>
 
+          {/* ── Desktop Center Navigation Links (Laptop / Desktop View Without Hamburger) ── */}
+          <div className="hidden md:flex items-center gap-1 lg:gap-1.5 xl:gap-2 shrink-0">
+            {navItems
+              .filter((item) => item.href !== "/become-a-youtuber")
+              .map((item) => {
+                const isActive = pathname === item.href || (item.href === '/projects' && pathname === '/portfolio');
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "relative px-2.5 py-1.5 lg:px-3 rounded-full text-xs lg:text-[13px] xl:text-sm font-extrabold uppercase tracking-wide transition-all duration-200 flex items-center gap-1.5 shrink-0",
+                      isActive
+                        ? "text-brand bg-brand/10 dark:bg-brand/20 ring-1 ring-brand/30 shadow-xs"
+                        : "text-foreground/90 hover:text-brand hover:bg-muted/70 active:scale-95"
+                    )}
+                  >
+                    <span>{item.title}</span>
+                  </Link>
+                );
+              })}
+          </div>
+
           {/* ── Right Side ── */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 shrink-0">
             <Link
               href="/become-a-youtuber"
-              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-xs font-extrabold tracking-wider uppercase rounded-full transition-all duration-300 bg-gradient-to-r from-amber-500 via-rose-500 to-brand text-white hover:opacity-95 shadow-md shrink-0 border border-amber-300/40"
+              className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 text-[10px] lg:text-xs font-extrabold tracking-wider uppercase rounded-full transition-all duration-300 bg-gradient-to-r from-amber-500 via-rose-500 to-brand text-white hover:opacity-95 shadow-md shrink-0 border border-amber-300/40"
               data-cursor="hover"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
@@ -186,7 +228,7 @@ export function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 text-emerald-500 text-xs font-bold shadow-sm hover:bg-emerald-500/25 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 text-emerald-500 text-xs font-bold shadow-sm hover:bg-emerald-500/25 transition-all cursor-pointer"
                 >
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span>👤 {studentUser.name}</span>
@@ -218,7 +260,7 @@ export function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center text-xs font-bold tracking-widest uppercase transition-all px-3 py-1.5 rounded-full border shadow-sm text-foreground hover:text-brand bg-surface/80 hover:bg-surface border-border hidden sm:inline-flex"
+                className="inline-flex items-center text-[11px] lg:text-xs font-bold tracking-widest uppercase transition-all px-2.5 py-1.5 lg:px-3 rounded-full border shadow-sm text-foreground hover:text-brand bg-surface/80 hover:bg-surface border-border hidden sm:inline-flex"
               >
                 Sign In
               </Link>
@@ -226,19 +268,18 @@ export function Navbar() {
 
             <Link
               href="/join/talent"
-              className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold tracking-wider uppercase rounded-full transition-all duration-300 bg-brand text-white hover:bg-brand/90 hover:shadow-[0_0_15px_rgba(235,61,38,0.4)] shadow-md shrink-0 border border-brand/30"
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 lg:px-3.5 lg:py-2 text-[10px] lg:text-xs font-bold tracking-wider uppercase rounded-full transition-all duration-300 bg-brand text-white hover:bg-brand/90 hover:shadow-[0_0_15px_rgba(235,61,38,0.4)] shadow-md shrink-0 border border-brand/30"
               data-cursor="hover"
             >
               Talent Register
             </Link>
 
-
             <ThemeToggle />
 
-            {/* ── Mobile Toggle ── */}
+            {/* ── Mobile Drawer Toggle (Only on Mobile screens < md) ── */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="relative z-50 p-2.5 rounded-full transition-all border shadow-sm text-foreground bg-surface/80 hover:bg-surface border-border"
+              className="md:hidden relative z-50 p-2.5 rounded-full transition-all border shadow-sm text-foreground bg-surface/80 hover:bg-surface border-border cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -310,7 +351,7 @@ export function Navbar() {
 
                 {navItems.map((item) => {
                   const Icon = NAV_ITEM_ICONS[item.href] || Sparkles;
-                  const isActive = pathname === item.href;
+                  const isActive = pathname === item.href || (item.href === '/projects' && pathname === '/portfolio');
                   const isYoutuber = item.href === "/become-a-youtuber";
 
                   return (
@@ -319,9 +360,9 @@ export function Navbar() {
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
                       className={cn(
-                        "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all group",
+                        "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all group",
                         isActive
-                          ? "bg-brand text-white shadow-sm font-bold"
+                          ? "bg-brand text-white shadow-sm font-extrabold"
                           : "text-foreground hover:bg-muted/80"
                       )}
                     >
@@ -343,11 +384,6 @@ export function Navbar() {
                         {isYoutuber && (
                           <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
                             Popular
-                          </span>
-                        )}
-                        {item.href === "/talent" && (
-                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-brand/15 text-brand">
-                            Casting
                           </span>
                         )}
                       </div>
