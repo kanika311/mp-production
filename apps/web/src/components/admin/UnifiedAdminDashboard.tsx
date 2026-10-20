@@ -22,6 +22,7 @@ import {
   Eye,
   Check,
   X,
+  Menu,
   RefreshCw,
   Bell,
   ExternalLink,
@@ -92,6 +93,7 @@ export function UnifiedAdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Dedicated Page Modes: 'list' | 'edit' | 'view' | 'create' (NO cramped modal for edit/view)
   const [pageMode, setPageMode] = useState<PageMode>('list');
@@ -259,7 +261,7 @@ export function UnifiedAdminDashboard() {
       heading: 'Stories built\nframe by frame.',
       subheading: 'MP Production is a full-service creative house — high-fashion campaigns, cinematic commercials, and exclusive talent representation.',
       mediaType: 'video',
-      videoUrl: 'https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/hero.mp4',
+      videoUrl: 'https://res.cloudinary.com/dd29usied/video/upload/v1785067564/banners/apy8yqvmj3nbdq4gvikp.mp4',
       posterUrl: '/assets/hero_cinematic_dark.webp',
       ctaText: 'Explore Portfolio',
       ctaUrl: '/projects',
@@ -1367,38 +1369,46 @@ export function UnifiedAdminDashboard() {
     t.label.toLowerCase().includes(tabSearch.toLowerCase())
   );
 
-  return (
-    <div className="admin-scope min-h-screen bg-[#f8fafc] text-slate-900 antialiased font-sans selection:bg-[#eb3d26] selection:text-white">
-      
-      {/* ═══════════════════════════════════════════════════════════
-          LEFT SIDEBAR (FIXED to Viewport: Never scrolls away!)
-          ═══════════════════════════════════════════════════════════ */}
-      <aside className="w-64 lg:w-72 fixed inset-y-0 left-0 h-screen bg-white border-r border-slate-200 flex flex-col z-50 shadow-sm">
-        
-        {/* Brand Header with Official Site Logo */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between gap-3 bg-white">
-          <Link href="/sushant-super-admin" className="flex items-center gap-2.5 group">
-            <div className="p-1.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 shadow-2xs">
-              <img
-                src="/logo.png"
-                alt="MP Production Logo"
-                className="h-7 w-auto object-contain group-hover:scale-105 transition-transform"
-              />
+  const renderSidebarContent = (isMobile = false) => (
+    <>
+      {/* Brand Header with Official Site Logo */}
+      <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between gap-3 bg-white">
+        <Link
+          href="/super-admin"
+          onClick={() => isMobile && setIsMobileNavOpen(false)}
+          className="flex items-center gap-2.5 group"
+        >
+          <div className="p-1.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 shadow-2xs">
+            <img
+              src="/logo.png"
+              alt="MP Production Logo"
+              className="h-7 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-[15px] tracking-tight text-slate-900 group-hover:text-[#eb3d26] transition-colors">
+                MP Production
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-red-50 text-[#eb3d26] border border-red-200 text-xs font-mono font-bold uppercase tracking-wide">
+                Root
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-[15px] tracking-tight text-slate-900 group-hover:text-[#eb3d26] transition-colors">
-                  MP Production
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-red-50 text-[#eb3d26] border border-red-200 text-xs font-mono font-bold uppercase tracking-wide">
-                  Root
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 font-medium tracking-tight">Super Admin Atelier</p>
-            </div>
-          </Link>
+            <p className="text-xs text-slate-400 font-medium tracking-tight">Super Admin Atelier</p>
+          </div>
+        </Link>
 
-          {/* Notification Alert Bell */}
+        {isMobile ? (
+          <button
+            type="button"
+            onClick={() => setIsMobileNavOpen(false)}
+            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
+        ) : (
+          /* Notification Alert Bell */
           <button
             type="button"
             onClick={() => setIsNotificationDrawerOpen(true)}
@@ -1412,149 +1422,219 @@ export function UnifiedAdminDashboard() {
               </span>
             )}
           </button>
-        </div>
+        )}
+      </div>
 
-        {/* Tab Search Bar */}
-        <div className="p-3 border-b border-slate-200 bg-white">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              value={tabSearch}
-              onChange={(e) => setTabSearch(e.target.value)}
-              placeholder="Search tabs..."
-              className="w-full pl-9 pr-7 py-2 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition-all font-sans"
-            />
-            {tabSearch && (
-              <button
-                onClick={() => setTabSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Navigation Tabs List (Red Active Pill + Dynamic Counts Matching Table Exactly!) */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto bg-white">
-          {filteredTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            const count = getTabCount(tab.id);
-
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  setPageMode('list');
-                  setSearchQuery('');
-                  setStatusFilter('all');
-                  if (typeof window !== 'undefined') {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('tab', tab.id);
-                    url.searchParams.delete('mode');
-                    url.searchParams.delete('id');
-                    window.history.pushState(null, '', url.toString());
-                  }
-                }}
-                className={cn(
-                  "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13.5px] transition-all duration-200 cursor-pointer group text-left tracking-tight",
-                  isActive
-                    ? "bg-red-600 text-white shadow-md shadow-red-600/20 font-bold scale-[1.01]"
-                    : "text-slate-600 hover:text-red-600 hover:bg-red-50/70 font-medium"
-                )}
-              >
-                <div className="flex items-center gap-3 truncate">
-                  <Icon
-                    className={cn(
-                      "w-4 h-4 shrink-0 transition-colors",
-                      isActive ? "text-white" : "text-slate-400 group-hover:text-red-500"
-                    )}
-                  />
-                  <span className="truncate">{tab.label}</span>
-                </div>
-
-                {/* Dynamic Badge Indicator (Syncs 100% with exact items count) */}
-                {tab.id !== 'dashboard' && (
-                  <span
-                    className={cn(
-                      "px-2 py-0.5 rounded-full text-xs font-mono font-semibold shrink-0",
-                      isActive
-                        ? "bg-white/25 text-white"
-                        : "bg-slate-100 text-slate-600 group-hover:bg-red-100 group-hover:text-red-700"
-                    )}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Sidebar Footer Controls */}
-        <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 text-xs">
-          <div className="flex items-center justify-between px-2 py-1 text-slate-600">
-            <span className="flex items-center gap-1.5 text-xs font-medium">
-              <Globe size={14} className="text-red-600" />
-              <span className="text-slate-500">Language: EN</span>
-            </span>
-            <Link
-              href="/"
-              target="_blank"
-              className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-semibold"
+      {/* Tab Search Bar */}
+      <div className="p-3 border-b border-slate-200 bg-white">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={tabSearch}
+            onChange={(e) => setTabSearch(e.target.value)}
+            placeholder="Search tabs..."
+            className="w-full pl-9 pr-7 py-2 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition-all font-sans"
+          />
+          {tabSearch && (
+            <button
+              onClick={() => setTabSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
             >
-              <span>Live Site</span>
-              <ExternalLink size={12} />
-            </Link>
-          </div>
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      </div>
 
-          <button
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('token');
-                localStorage.removeItem('mdms_auth_token');
-              }
-              toast.info('Signed out of admin dashboard.');
-              router.push('/login');
-            }}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-700 hover:text-red-600 font-semibold transition-all cursor-pointer shadow-2xs text-xs"
+      {/* Navigation Tabs List */}
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto bg-white">
+        {filteredTabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          const count = getTabCount(tab.id);
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setPageMode('list');
+                setSearchQuery('');
+                setStatusFilter('all');
+                if (isMobile) setIsMobileNavOpen(false);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', tab.id);
+                  url.searchParams.delete('mode');
+                  url.searchParams.delete('id');
+                  window.history.pushState(null, '', url.toString());
+                }
+              }}
+              className={cn(
+                "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13.5px] transition-all duration-200 cursor-pointer group text-left tracking-tight",
+                isActive
+                  ? "bg-red-600 text-white shadow-md shadow-red-600/20 font-bold scale-[1.01]"
+                  : "text-slate-600 hover:text-red-600 hover:bg-red-50/70 font-medium"
+              )}
+            >
+              <div className="flex items-center gap-3 truncate">
+                <Icon
+                  className={cn(
+                    "w-4 h-4 shrink-0 transition-colors",
+                    isActive ? "text-white" : "text-slate-400 group-hover:text-red-500"
+                  )}
+                />
+                <span className="truncate">{tab.label}</span>
+              </div>
+
+              {tab.id !== 'dashboard' && (
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-xs font-mono font-semibold shrink-0",
+                    isActive
+                      ? "bg-white/25 text-white"
+                      : "bg-slate-100 text-slate-600 group-hover:bg-red-100 group-hover:text-red-700"
+                  )}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Sidebar Footer Controls */}
+      <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 text-xs">
+        <div className="flex items-center justify-between px-2 py-1 text-slate-600">
+          <span className="flex items-center gap-1.5 text-xs font-medium">
+            <Globe size={14} className="text-red-600" />
+            <span className="text-slate-500">Language: EN</span>
+          </span>
+          <Link
+            href="/"
+            target="_blank"
+            className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-semibold"
           >
-            <LogOut size={14} />
-            <span>Logout</span>
-          </button>
+            <span>Live Site</span>
+            <ExternalLink size={12} />
+          </Link>
         </div>
 
+        <button
+          onClick={async () => {
+            try {
+              await fetch('/api/auth/logout', { method: 'POST' });
+            } catch {}
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('token');
+              localStorage.removeItem('mdms_auth_token');
+              document.cookie = 'token=; Max-Age=0; path=/;';
+              document.cookie = 'mdms_auth_token=; Max-Age=0; path=/;';
+            }
+            toast.info('Signed out of admin dashboard.');
+            router.push('/sushant-super-admin');
+            router.refresh();
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-700 hover:text-red-600 font-semibold transition-all cursor-pointer shadow-2xs text-xs"
+        >
+          <LogOut size={14} />
+          <span>Logout</span>
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="admin-scope min-h-screen bg-[#f8fafc] text-slate-900 antialiased font-sans selection:bg-[#eb3d26] selection:text-white">
+      
+      {/* ═══════════════════════════════════════════════════════════
+          DESKTOP SIDEBAR (Visible on md and above)
+          ═══════════════════════════════════════════════════════════ */}
+      <aside className="hidden md:flex w-64 lg:w-72 fixed inset-y-0 left-0 h-screen bg-white border-r border-slate-200 flex-col z-40 shadow-sm">
+        {renderSidebarContent(false)}
       </aside>
 
       {/* ═══════════════════════════════════════════════════════════
-          RIGHT MAIN CONTENT AREA (Offset by sidebar width: 64 / 72)
+          MOBILE SLIDE-OVER DRAWER (HAMBURGER ACTIVATED)
+          ═══════════════════════════════════════════════════════════ */}
+      {/* Backdrop */}
+      {isMobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 md:hidden transition-opacity"
+          onClick={() => setIsMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Drawer */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 w-72 max-w-[85vw] h-full bg-white border-r border-slate-200 flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-in-out md:hidden",
+          isMobileNavOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
+        )}
+      >
+        {renderSidebarContent(true)}
+      </aside>
+
+      {/* ═══════════════════════════════════════════════════════════
+          RIGHT MAIN CONTENT AREA (Offset by sidebar width: 64 / 72 on desktop)
           ═══════════════════════════════════════════════════════════ */}
       <div className="md:pl-64 lg:pl-72 flex-1 flex flex-col min-w-0 bg-[#f8fafc] min-h-screen">
         <main className="flex-1 flex flex-col min-w-0 bg-[#f8fafc]">
         
         {/* Top Control Header Bar */}
-        <header className="px-5 sm:px-8 py-5 border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <header className="px-4 sm:px-8 py-3.5 sm:py-5 border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           {pageMode === 'list' ? (
             <>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono uppercase tracking-wider text-red-600 font-bold">
-                    MP PRODUCTION · CMS &amp; OPERATIONS
-                  </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-xs font-medium text-slate-500">
-                    Tab: {activeTabDef.label}
-                  </span>
+              <div className="flex items-start sm:items-center justify-between gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-2.5">
+                  {/* Mobile Hamburger Menu Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileNavOpen(true)}
+                    className="md:hidden p-2 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600 border border-slate-200 transition-colors cursor-pointer shrink-0"
+                    aria-label="Open Navigation Menu"
+                    title="Open Tabs Menu"
+                  >
+                    <Menu size={20} />
+                  </button>
+
+                  <div>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-red-600 font-bold">
+                        MP PRODUCTION · CMS &amp; OPERATIONS
+                      </span>
+                      <span className="text-slate-300 hidden sm:inline">•</span>
+                      <span className="text-xs font-medium text-slate-500 hidden sm:inline">
+                        Tab: {activeTabDef.label}
+                      </span>
+                    </div>
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 mt-0.5 sm:mt-1">
+                      {activeTabDef.label}
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5 hidden sm:block">
+                      {activeTabDef.description}
+                    </p>
+                  </div>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mt-1">
-                  {activeTabDef.label}
-                </h1>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  {activeTabDef.description}
-                </p>
+
+                {/* Mobile Notification Alert Bell */}
+                <button
+                  type="button"
+                  onClick={() => setIsNotificationDrawerOpen(true)}
+                  className="md:hidden relative p-2 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600 border border-slate-200 transition-colors cursor-pointer shrink-0"
+                  aria-label="Open Notifications"
+                  title="Alerts & Notifications"
+                >
+                  <Bell size={18} />
+                  {unreadNotificationsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center animate-pulse shadow-xs">
+                      {unreadNotificationsCount}
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Action Row */}
@@ -3761,7 +3841,7 @@ export function UnifiedAdminDashboard() {
                                     <div className="flex items-center justify-end gap-1.5">
                                       {/* 1. VIEW ACTION (New Page) */}
                                       <a
-                                        href={`/sushant-super-admin?tab=${activeTab}&mode=view&id=${item.id}`}
+                                        href={`/super-admin?tab=${activeTab}&mode=view&id=${item.id}`}
                                         onClick={(e) => {
                                           e.preventDefault();
                                           openViewPage(item);
@@ -3774,7 +3854,7 @@ export function UnifiedAdminDashboard() {
 
                                       {/* 2. EDIT ACTION (New Page) */}
                                       <a
-                                        href={`/sushant-super-admin?tab=${activeTab}&mode=edit&id=${item.id}`}
+                                        href={`/super-admin?tab=${activeTab}&mode=edit&id=${item.id}`}
                                         onClick={(e) => {
                                           e.preventDefault();
                                           openEditPage(item);

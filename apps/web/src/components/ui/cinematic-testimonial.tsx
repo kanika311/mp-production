@@ -105,7 +105,7 @@ export function CinematicTestimonial() {
                 poster="/images/portfolio-hero.webp"
                 className="w-full h-full object-cover object-top scale-105 group-hover:scale-100 transition-transform duration-1000"
               >
-                <source src="https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/reel_1.mp4" type="video/mp4" />
+                <source src="https://res.cloudinary.com/dd29usied/video/upload/v1785067585/banners/wgxkr2c7lnnc2gr1jyyx.mp4" type="video/mp4" />
               </video>
 
               {/* Controls overlay */}

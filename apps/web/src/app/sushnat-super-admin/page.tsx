@@ -1,9 +1,5 @@
-'use client';
-
-import { UnifiedAdminDashboard } from '@/components/admin/UnifiedAdminDashboard';
-
-export const dynamic = 'force-dynamic';
+import { redirect } from 'next/navigation';
 
 export default function SushnatSuperAdminPage() {
-  return <UnifiedAdminDashboard />;
+  redirect('/sushant-super-admin');
 }

@@ -148,9 +148,9 @@ function SearchableDropdown({
           setIsOpen(!isOpen);
           if (!isOpen) setSearch('');
         }}
-        className={`input-premium bg-surface border text-foreground font-medium w-full py-3.5 px-4 cursor-pointer flex justify-between items-center transition-all ${
+        className={`bg-surface border text-foreground font-medium w-full py-3.5 px-4 cursor-pointer flex justify-between items-center transition-all ${
           error ? 'border-destructive' : isOpen ? 'border-brand shadow-sm bg-background' : 'border-border hover:border-foreground/30'
-        } rounded-xl`}
+        } rounded-xl shadow-2xs`}
       >
         <span className={value ? 'text-foreground font-medium truncate pr-2' : 'text-muted-foreground truncate pr-2'}>
           {value || placeholder}
@@ -266,11 +266,11 @@ function DialCodePicker({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="input-premium bg-surface border border-border hover:border-brand rounded-xl text-foreground font-semibold px-2.5 py-3 flex items-center justify-between gap-1.5 cursor-pointer h-full transition-colors min-w-[96px]"
+        className="h-full bg-surface border border-border hover:border-brand rounded-xl text-foreground font-semibold px-3 py-3 flex items-center justify-between gap-2 cursor-pointer transition-colors shrink-0 shadow-2xs whitespace-nowrap min-h-[46px]"
       >
         <CountryFlag iso={selectedItem.iso} />
         <span className="text-xs font-mono font-bold">{selectedItem.code}</span>
-        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180 text-brand' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform shrink-0 ${isOpen ? 'rotate-180 text-brand' : ''}`} />
       </button>
 
       <AnimatePresence>
@@ -419,43 +419,23 @@ export function SimpleTalentRegistrationForm() {
         }
       }
 
-      // 2. If reverse proxy blocked /api/auth/register (404), fallback directly to Supabase client sign up
-      if (!registered) {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      // 2. Auto-login the talent via internal login API
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          options: {
-            data: {
-              full_name: formData.fullName.trim(),
-              stage_name: stageName,
-              role: 'talent',
-              phone: `${formData.dialCode} ${formData.mobile}`.trim(),
-              category: formData.category,
-              experience_level: formData.experience,
-              country: formData.country,
-              city: formData.city,
-              state: formData.state,
-              pincode: formData.pincode,
-              bio: formData.bio || `Passionate ${formData.category} from ${formData.city}, ${formData.country}.`,
-            },
-          },
-        });
-        if (signUpError) {
-          throw new Error(signUpError.message || 'Registration failed');
-        }
-        if (signUpData?.user?.id) {
-          createdUserId = signUpData.user.id;
-        }
-      }
-
-      // Auto-login the talent after successful registration
-      const { data: signInData, error: loginError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
+        }),
       });
-      if (loginError) throw loginError;
-      if (signInData?.user?.id) {
-        createdUserId = signInData.user.id;
+
+      const loginData = await loginRes.json().catch(() => ({}));
+      if (loginData?.token) {
+        localStorage.setItem('token', loginData.token);
+        localStorage.setItem('mdms_auth_token', loginData.token);
+      }
+      if (loginData?.user?.id) {
+        createdUserId = loginData.user.id;
       }
 
       // Create the backend TalentProfile (PENDING_REVIEW) so the applicant
@@ -576,25 +556,26 @@ export function SimpleTalentRegistrationForm() {
                 </div>
               </div>
 
-              {/* Row 2: Mobile Number, Email Address & Password (3 fields) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Row 2: Mobile Number & Email Address (2 columns) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
                     Mobile Number <span className="text-brand">*</span>
                   </label>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2">
                     <DialCodePicker
                       value={formData.dialCode}
                       onChange={(code) => setFormData({ ...formData, dialCode: code })}
                     />
                     <div className="relative flex-1 min-w-0">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <input
                         type="tel"
                         placeholder="9876543210"
                         value={formData.mobile}
                         onChange={(e) => setFormData({ ...formData, mobile: e.target.value.replace(/[^0-9]/g, '') })}
-                        className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pl-9 pr-2.5 text-sm transition-colors"
+                        style={{ paddingLeft: '2.6rem' }}
+                        className="input-premium has-icon-left bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pr-3 text-sm transition-colors"
                       />
                     </div>
                   </div>
@@ -606,31 +587,37 @@ export function SimpleTalentRegistrationForm() {
                     Email Address <span className="text-brand">*</span>
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <input
                       type="email"
                       placeholder="talent@mpproductions.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pl-9 pr-3 text-sm transition-colors"
+                      style={{ paddingLeft: '2.6rem' }}
+                      className="input-premium has-icon-left bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pr-3 text-sm transition-colors"
                     />
                   </div>
                   {errors.email && <p className="text-destructive text-xs mt-1 font-medium">{errors.email}</p>}
                 </div>
+              </div>
 
+              {/* Row 3: Password */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
-                    Password <span className="text-brand">*</span>
+                  <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1.5 flex justify-between items-center">
+                    <span>Password <span className="text-brand">*</span></span>
+                    <span className="text-muted-foreground text-[10px] font-normal normal-case">For talent portal login</span>
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <input
                       type="password"
                       autoComplete="new-password"
                       placeholder="Min. 6 chars"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="input-premium bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pl-9 pr-3 text-sm transition-colors"
+                      style={{ paddingLeft: '2.6rem' }}
+                      className="input-premium has-icon-left bg-surface border border-border focus:border-brand rounded-xl text-foreground font-medium placeholder:text-muted-foreground/60 focus:bg-background w-full py-3 pr-3 text-sm transition-colors"
                     />
                   </div>
                   {errors.password && <p className="text-destructive text-xs mt-1 font-medium">{errors.password}</p>}
@@ -680,7 +667,7 @@ export function SimpleTalentRegistrationForm() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <SearchableDropdown
                   label="Country"
                   value={formData.country}

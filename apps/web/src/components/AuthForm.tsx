@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, ArrowRight, Lock, Mail, User, Shield } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -13,7 +12,6 @@ interface AuthFormProps {
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const isLogin = mode === 'login';
-  const supabase = createClient();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,29 +38,10 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError('');
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setIsGoogleLoading(true);
-      setError('');
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (err: any) {
-      console.error('Google Sign-In Error:', err);
-      setError(err?.message || 'Failed to sign in with Google.');
-      setIsGoogleLoading(false);
-    }
+  const handleGoogleLogin = () => {
+    setIsGoogleLoading(true);
+    setError('');
+    window.location.href = '/api/auth/google';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,80 +72,49 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (!isLogin) {
-        let registered = false;
-        try {
-          // 1. Try Server-Side Auth API (which bypasses SMTP verification limits)
-          const registerRes = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: fullName,
-              email,
-              password,
-              role: 'client',
-            }),
-          });
-
-          if (registerRes.ok) {
-            registered = true;
-          } else if (registerRes.status !== 404) {
-            const registerData = await registerRes.json().catch(() => ({}));
-            throw new Error(registerData.message || 'Registration failed');
-          }
-        } catch (bffErr: any) {
-          if (!bffErr.message?.includes('Registration failed')) {
-            console.warn('Server-side registration route unreachable, using direct Supabase Auth:', bffErr);
-          } else {
-            throw bffErr;
-          }
-        }
-
-        // 2. Direct fallback to Supabase Client signUp if reverse proxy blocks /api/auth/register (404)
-        if (!registered) {
-          const { error: signUpError } = await supabase.auth.signUp({
+        // 1. Internal Registration API
+        const registerRes = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: fullName,
             email,
             password,
-            options: {
-              data: {
-                full_name: fullName,
-                role: 'client',
-              },
-            },
-          });
-          if (signUpError) throw signUpError;
+            role: 'client',
+          }),
+        });
+
+        const registerData = await registerRes.json().catch(() => ({}));
+        if (!registerRes.ok) {
+          throw new Error(registerData.message || registerData.error || 'Registration failed');
         }
 
-        // Auto-login the client after successful registration
-        const { error: loginError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (loginError) throw loginError;
-        
-        // After successful registration, clients land on their portal.
+        if (registerData.token) {
+          localStorage.setItem('token', registerData.token);
+          localStorage.setItem('mdms_auth_token', registerData.token);
+        }
+
+        // After successful registration, clients land on their portal
         router.push('/client-portal');
       } else {
-        // Login using Supabase Auth
-        const { error, data } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        // Internal Login API
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         });
 
-        if (error) throw error;
-
-        if (data?.session?.access_token) {
-          localStorage.setItem('token', data.session.access_token);
-          localStorage.setItem('mdms_auth_token', data.session.access_token);
+        const loginData = await loginRes.json().catch(() => ({}));
+        if (!loginRes.ok) {
+          throw new Error(loginData.error || loginData.message || 'Login failed');
         }
 
-        const role = (
-          data.user?.user_metadata?.role ||
-          data.user?.app_metadata?.role ||
-          ''
-        )
-          .toString()
-          .toLowerCase()
-          .replace(/-/g, '_');
+        if (loginData?.token) {
+          localStorage.setItem('token', loginData.token);
+          localStorage.setItem('mdms_auth_token', loginData.token);
+        }
+
+        const role = (loginData.user?.role || '').toString().toLowerCase().replace(/-/g, '_');
 
         // RESTRICTION: Admin, Super Admin, and Employees cannot log in through the public /login page
         if (
@@ -176,16 +124,18 @@ export function AuthForm({ mode }: AuthFormProps) {
           role === 'editor' ||
           role === 'project_manager'
         ) {
-          await supabase.auth.signOut();
           localStorage.removeItem('token');
           localStorage.removeItem('mdms_auth_token');
           throw new Error('Access Denied. Admins and internal employees cannot log in from this public page. Please use your designated private portal.');
         }
 
-        if (role === 'model' || role === 'talent') router.push('/talent-dashboard/edit');
-        else router.push('/client-portal');
+        if (role === 'model' || role === 'talent') {
+          router.push('/talent-dashboard/edit');
+        } else {
+          router.push('/client-portal');
+        }
       }
-      
+
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');

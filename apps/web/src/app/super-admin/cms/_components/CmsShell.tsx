@@ -209,6 +209,11 @@ export function CmsShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // When on root /super-admin or /studio-8f2k, UnifiedAdminDashboard is self-contained with its own shell
+  if (pathname === '/super-admin' || pathname === '/studio-8f2k') {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       {/* Desktop sidebar — single smooth scrollable container */}

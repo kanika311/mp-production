@@ -339,7 +339,7 @@ function Hero({ hero, stats, onOpenModal }: { hero?: any; stats?: any[]; onOpenM
   const eyebrowText = hero?.eyebrow || "Cinematic Studio · Est. 2018";
   const mediaType = hero?.mediaType || "video";
   const posterSrc = hero?.posterUrl || "/assets/hero_cinematic_dark.webp";
-  const videoSrc = hero?.videoUrl || "https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/hero.mp4";
+  const videoSrc = hero?.videoUrl || "https://res.cloudinary.com/dd29usied/video/upload/v1785067564/banners/apy8yqvmj3nbdq4gvikp.mp4";
 
   const headingWords = headingText.split(/(\s+)/);
 

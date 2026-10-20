@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { createAdminClient } from '@/utils/supabase/admin';
-import { API_URL } from '@/lib/api-client';
+import { prisma } from '@/lib/prisma';
+
+const bcrypt = eval("require('bcryptjs')");
 
 const ROLES = ['GUEST', 'CLIENT', 'TALENT', 'EDITOR', 'EMPLOYEE', 'PROJECT_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
 
 export async function POST(req: Request) {
   const session = await auth();
   const actorRole = (session as any)?.user?.role;
-  const token = (session as any)?.accessToken;
 
-  if (!session || !token) {
+  if (!session) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
   if (actorRole !== 'SUPER_ADMIN' && actorRole !== 'ADMIN') {
@@ -33,39 +33,31 @@ export async function POST(req: Request) {
   }
 
   const [firstName, ...rest] = String(name).trim().split(' ');
-  const lastName = rest.join(' ');
+  const lastName = rest.join(' ') || '';
 
-  // 1. Create the Supabase Auth user (so they can log in).
-  let authUserId: string;
   try {
-    const supabaseAdmin = createAdminClient();
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: name, role: role.toLowerCase() },
+    const existing = await prisma.user.findFirst({
+      where: { email: { equals: email.trim(), mode: 'insensitive' } },
     });
-    if (error || !data?.user) {
-      return NextResponse.json({ ok: false, error: error?.message || 'Failed to create auth user' }, { status: 400 });
+    if (existing) {
+      return NextResponse.json({ ok: false, error: 'User with this email already exists' }, { status: 409 });
     }
-    authUserId = data.user.id;
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'Auth provider error' }, { status: 500 });
-  }
 
-  // 2. Persist the Prisma record with the same id (so it appears immediately).
-  try {
-    const res = await fetch(`${API_URL}/admin/users`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id: authUserId, email, firstName, lastName, role }),
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email: email.trim().toLowerCase(),
+        passwordHash,
+        firstName,
+        lastName,
+        role: role as any,
+        isActive: true,
+      },
     });
-    const json = await res.json().catch(() => null);
-    if (!res.ok) {
-      return NextResponse.json({ ok: false, error: json?.message || 'Failed to persist user record' }, { status: res.status });
-    }
-    return NextResponse.json({ ok: true, data: json?.data ?? json });
+
+    return NextResponse.json({ ok: true, data: user });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || 'Backend unreachable' }, { status: 502 });
+    console.error('Error creating user:', e);
+    return NextResponse.json({ ok: false, error: e?.message || 'Failed to create user' }, { status: 500 });
   }
 }

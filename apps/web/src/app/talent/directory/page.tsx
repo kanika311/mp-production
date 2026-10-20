@@ -21,7 +21,7 @@ export default async function TalentDirectory() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-background text-foreground pt-24 pb-32 relative overflow-x-clip">
+      <main className="min-h-screen bg-background text-foreground pb-20 relative overflow-x-clip">
         <TalentDirectoryClient initialTalents={talents} />
       </main>
     </>

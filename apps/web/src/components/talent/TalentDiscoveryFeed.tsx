@@ -499,11 +499,11 @@ export default function TalentDiscoveryFeed({ initialTalents }: TalentDiscoveryF
           3-COLUMN FULL-WIDTH EDGE-TO-EDGE LAYOUT
           Left: Attached Filters | Center: 3 Profiles Per Row + Pagination | Right: Attached Sponsored
           ═══════════════════════════════════════════════════════════ */}
-      <section className="w-full max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 py-5 pt-[172px] sm:pt-[180px]">
+      <section className="w-full max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 pb-8 pt-[164px] sm:pt-[170px]">
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] xl:grid-cols-[300px_1fr_340px] 2xl:grid-cols-[320px_1fr_360px] gap-5 xl:gap-6 items-start">
           
           {/* ── COLUMN 1: LEFT FILTER PANEL (ATTACHED TO LEFT & STICKY) ── */}
-          <aside className={`w-full lg:sticky lg:top-[180px] self-start ${mobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
+          <aside className={`w-full lg:sticky lg:top-[172px] self-start ${mobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
             <div 
               data-lenis-prevent
               className="rounded-2xl border border-border bg-card/90 backdrop-blur-md p-5 space-y-5 shadow-sm max-h-[calc(100vh-200px)] overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-brand/50"
@@ -866,7 +866,7 @@ export default function TalentDiscoveryFeed({ initialTalents }: TalentDiscoveryF
           </div>
 
           {/* ── COLUMN 3: RIGHT SPONSORED PANEL (ADMIN-CONFIGURED SPONSORED CARD) ── */}
-          <aside className="w-full lg:sticky lg:top-[180px] self-start h-[calc(100vh-195px)] min-h-[480px] max-h-[660px]">
+          <aside className="w-full lg:sticky lg:top-[172px] self-start h-[calc(100vh-185px)] min-h-[480px] max-h-[660px]">
             <SponsoredSidebarCard context="talent" className="h-full" />
           </aside>
 

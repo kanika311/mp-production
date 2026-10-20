@@ -55,43 +55,46 @@ export function useRealtimeRefresh(
     };
 
     const subscribe = async () => {
-      // Authenticate the Realtime socket as the logged-in admin. Without a
-      // session token the connection would fall back to the anon role, which
-      // must NOT be allowed to read admin data.
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        // Not logged in with a Supabase session — do not open an anon channel.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          setConnected(false);
+          return;
+        }
+        supabase.realtime.setAuth(session.access_token);
+
+        if (cancelled) return;
+
+        channel = supabase.channel(`realtime-refresh:${tablesKey}`);
+
+        for (const table of tables) {
+          channel.on(
+            'postgres_changes' as never,
+            { event: '*', schema: 'public', table } as never,
+            scheduleRefresh as never,
+          );
+        }
+
+        channel.subscribe((status: string) => {
+          setConnected(status === 'SUBSCRIBED');
+        });
+      } catch (err) {
+        console.warn('Realtime subscription degraded:', err);
         setConnected(false);
-        return;
       }
-      supabase.realtime.setAuth(session.access_token);
-
-      if (cancelled) return;
-
-      // Postgres Changes delivery is gated by each table's RLS SELECT policy
-      // evaluated against this authenticated socket, so an admin-scoped policy
-      // is what keeps non-admins from receiving events.
-      channel = supabase.channel(`realtime-refresh:${tablesKey}`);
-
-      for (const table of tables) {
-        channel.on(
-          'postgres_changes' as never,
-          { event: '*', schema: 'public', table } as never,
-          scheduleRefresh as never,
-        );
-      }
-
-      channel.subscribe((status: string) => {
-        setConnected(status === 'SUBSCRIBED');
-      });
     };
 
-    // Keep the socket auth fresh when Supabase rotates the access token.
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'TOKEN_REFRESHED' && session?.access_token) {
-        supabase.realtime.setAuth(session.access_token);
-      }
-    });
+    let authListener: any = null;
+    try {
+      const listener = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'TOKEN_REFRESHED' && session?.access_token) {
+          try {
+            supabase.realtime.setAuth(session.access_token);
+          } catch {}
+        }
+      });
+      authListener = listener?.data;
+    } catch {}
 
     subscribe();
 

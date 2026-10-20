@@ -1,15 +1,7 @@
 import { Role } from '@mdms/types';
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-
-// Same public defaults as utils/supabase/client.ts — middleware runs on the
-// Edge and will not see apps/web/.env.production in local `next dev`.
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zmpeiobdilrgtuzggzuj.supabase.co';
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptcGVpb2JkaWxyZ3R1emdnenVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1NTc2MTUsImV4cCI6MjA5OTEzMzYxNX0.GRniMpKh5WW65JOmQl8znK_dme06iE8o_nIaGBV7-BI';
+import { verifySessionToken } from '@/lib/jwt';
 
 const ROLE_ROUTES: Record<string, Role[]> = {
   // Secret admin base paths (served via next.config rewrites). The more
@@ -51,45 +43,37 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/talent-dashboard', req.url));
   }
 
-  let response = NextResponse.next({ request: req });
+  const response = NextResponse.next({ request: req });
   let userRole: Role | null = null;
 
-  // 1. Try NextAuth token first
-  try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (token) {
-      userRole = normalizeRole(token.role as string);
-    }
-  } catch {
-    // NextAuth check ignored
-  }
+  // 1. Try internal JWT session cookies (token, mdms_auth_token, etc.)
+  const rawToken =
+    req.cookies.get('token')?.value ||
+    req.cookies.get('mdms_auth_token')?.value ||
+    req.cookies.get('next-auth.session-token')?.value ||
+    req.cookies.get('__Secure-next-auth.session-token')?.value;
 
-  // 2. Try Supabase session fallback if NextAuth is null
-  if (!userRole) {
+  if (rawToken) {
     try {
-      const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        cookies: {
-          getAll() {
-            return req.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
-            response = NextResponse.next({ request: req });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options),
-            );
-          },
-        },
-      });
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        userRole = normalizeRole(
-          (user.user_metadata?.role as string) ||
-            (user.app_metadata?.role as string),
-        );
+      const payload = await verifySessionToken(rawToken);
+      if (payload?.role) {
+        userRole = normalizeRole(payload.role as string);
       }
     } catch {
-      // Supabase fallback check ignored
+      // Token verify failed
+    }
+  }
+
+  // 2. Try NextAuth token fallback if not resolved
+  if (!userRole) {
+    try {
+      const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+      const token = await getToken({ req, secret });
+      if (token?.role) {
+        userRole = normalizeRole(token.role as string);
+      }
+    } catch {
+      // NextAuth check ignored
     }
   }
 
@@ -108,7 +92,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  // Authenticated — check role
+  // Authenticated — check role permissions
   if (isProtected && userRole) {
     const matchedPrefix = Object.keys(ROLE_ROUTES).find(p => pathname.startsWith(p));
     if (matchedPrefix) {

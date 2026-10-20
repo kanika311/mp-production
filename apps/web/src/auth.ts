@@ -1,20 +1,34 @@
-import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
+import { verifySessionToken } from '@/lib/jwt';
 
 export const auth = async () => {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session || !user) return null;
+  try {
+    const cookieStore = await cookies();
+    const token =
+      cookieStore.get('token')?.value ||
+      cookieStore.get('mdms_auth_token')?.value ||
+      cookieStore.get('next-auth.session-token')?.value ||
+      cookieStore.get('__Secure-next-auth.session-token')?.value;
 
-  return {
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.user_metadata?.full_name,
-      role: user.user_metadata?.role?.toUpperCase(),
-      user_metadata: user.user_metadata,
-    },
-    accessToken: session.access_token,
-  };
+    if (!token) return null;
+
+    const payload = await verifySessionToken(token);
+    if (!payload || !payload.sub) return null;
+
+    return {
+      user: {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        role: payload.role?.toString().toUpperCase(),
+      },
+      accessToken: token,
+    };
+  } catch (err: any) {
+    if (err?.digest === 'DYNAMIC_SERVER_USAGE') {
+      throw err;
+    }
+    console.error('Error in auth() helper:', err);
+    return null;
+  }
 };

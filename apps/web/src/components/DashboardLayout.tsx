@@ -152,8 +152,17 @@ export function DashboardLayout({ children, user, title }: DashboardLayoutProps)
 
           <button
             onClick={async () => {
-              const supabase = createClient();
-              await supabase.auth.signOut();
+              try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+              } catch {}
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('token');
+                localStorage.removeItem('mdms_auth_token');
+                localStorage.removeItem('accessToken');
+                document.cookie = 'token=; Max-Age=0; path=/;';
+                document.cookie = 'mdms_auth_token=; Max-Age=0; path=/;';
+                document.cookie = 'next-auth.session-token=; Max-Age=0; path=/;';
+              }
               router.push('/login');
               router.refresh();
             }}

@@ -25,21 +25,28 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     try {
-      const { error, data } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) throw error;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || 'Authentication failed');
 
       // Ensure the user actually has admin privileges
-      const role = data.user?.user_metadata?.role;
+      const role = data.user?.role;
       const lowerRole = typeof role === 'string' ? role.toLowerCase() : '';
 
       if (lowerRole !== 'admin' && lowerRole !== 'super_admin') {
-        // Automatically sign them out if they try to log into the admin portal without privileges
-        await supabase.auth.signOut();
+        localStorage.removeItem('token');
+        localStorage.removeItem('mdms_auth_token');
         throw new Error('Access Denied. You do not have administrative privileges.');
+      }
+
+      if (data?.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('mdms_auth_token', data.token);
       }
 
       router.push('/studio-8f2k/mgmt');

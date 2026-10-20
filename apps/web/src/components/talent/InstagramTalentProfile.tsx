@@ -237,19 +237,19 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
 
   const defaultReels = [
     {
-      url: 'https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/reel_1.mp4',
+      url: 'https://res.cloudinary.com/dd29usied/video/upload/v1785067564/banners/apy8yqvmj3nbdq4gvikp.mp4',
       thumbnail: 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?q=80&w=800',
       title: `${name} — Cinematic Look Reel`,
       views: '124K'
     },
     {
-      url: 'https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/reel_2.mp4',
+      url: 'https://res.cloudinary.com/dd29usied/video/upload/v1785067585/banners/wgxkr2c7lnnc2gr1jyyx.mp4',
       thumbnail: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=800',
       title: 'Luxury Brand Campaign Reel',
       views: '88K'
     },
     {
-      url: 'https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/reel_3.mp4',
+      url: 'https://res.cloudinary.com/dd29usied/video/upload/v1785067614/banners/nbu8svb9hfos3l1pe9le.mp4',
       thumbnail: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=800',
       title: 'Runway & Walk Showcase',
       views: '45K'

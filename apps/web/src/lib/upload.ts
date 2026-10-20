@@ -1,41 +1,30 @@
-import { createClient } from '@/utils/supabase/client'
-
-export type StorageBucket = 'mp-public' | 'mp-private' | 'mp-cms'
+export type StorageBucket = 'mp-public' | 'mp-private' | 'mp-cms';
 
 /**
- * Upload a file directly to Supabase Storage from the browser.
- *
- * Uses the anon key (RLS‑protected) so the user must be authenticated
- * for private/CMS buckets.  Returns the public URL of the uploaded file.
- *
- * @example
- * const url = await uploadToSupabase({
- *   file,
- *   bucket: 'mp-public',
- *   folder: 'talent/avatars',
- * })
+ * Upload a file directly to Cloudinary via internal /api/upload.
+ * Retains backward-compatible function name and signature so existing components work seamlessly.
  */
 export async function uploadToSupabase({
   file,
-  bucket,
   folder,
 }: {
-  file: File
-  bucket: StorageBucket
-  folder: string
+  file: File;
+  bucket?: StorageBucket;
+  folder: string;
 }): Promise<string> {
-  const supabase = createClient()
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('folder', folder || 'mdms/uploads');
 
-  const ext = file.name.split('.').pop()
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-  const path = `${folder}/${filename}`
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  });
 
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, { upsert: true })
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to upload media');
+  }
 
-  if (error) throw new Error(error.message)
-
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-  return data.publicUrl
+  return data.url;
 }

@@ -262,10 +262,10 @@ export function HoverFooter() {
 
   return (
     <footer className="w-full bg-background border-t border-border relative z-10 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-8 sm:pt-10 pb-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-8 pb-6 sm:pb-8">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-7 sm:pt-9 pb-4 sm:pb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 lg:gap-8 pb-5 sm:pb-6">
           {/* Brand section */}
-          <div className="flex flex-col space-y-3.5 lg:col-span-2">
+          <div className="flex flex-col space-y-3 lg:col-span-2">
             <a href="/" className="inline-block shrink-0">
               <img
                 src="/logo.webp"
@@ -286,36 +286,6 @@ export function HoverFooter() {
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/10 border border-brand/20 text-[10px] font-mono tracking-wider text-brand uppercase font-semibold w-fit">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
               <span>Global Production Headquarters · Mumbai</span>
-            </div>
-
-            {/* Direct Contact Details */}
-            <div className="space-y-1.5 pt-0.5">
-              <a
-                href={contactInfo[0].href}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-brand transition-colors group"
-              >
-                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/40 transition-colors">
-                  <Mail size={12} />
-                </div>
-                <span className="font-mono text-xs">{contactInfo[0].text}</span>
-              </a>
-
-              <a
-                href={contactInfo[1].href}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-brand transition-colors group"
-              >
-                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/40 transition-colors">
-                  <Phone size={12} />
-                </div>
-                <span className="font-mono text-xs">{contactInfo[1].text}</span>
-              </a>
-
-              <div className="flex items-center gap-2 text-xs text-muted-foreground group">
-                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0">
-                  <MapPin size={12} />
-                </div>
-                <span className="font-mono text-xs">{contactInfo[2].text}</span>
-              </div>
             </div>
 
             {/* Social media icons */}
@@ -358,6 +328,41 @@ export function HoverFooter() {
               </ul>
             </div>
           ))}
+
+          {/* Direct Contact Details - next to Support */}
+          <div className="space-y-2.5">
+            <h4 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand flex items-center gap-1.5">
+              <span className="text-[9px]">●</span> Contact
+            </h4>
+            <div className="space-y-2 pt-0.5">
+              <a
+                href={contactInfo[0].href}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-brand transition-colors group"
+              >
+                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/40 transition-colors">
+                  <Mail size={12} />
+                </div>
+                <span className="font-mono text-xs break-all">{contactInfo[0].text}</span>
+              </a>
+
+              <a
+                href={contactInfo[1].href}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-brand transition-colors group"
+              >
+                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/40 transition-colors">
+                  <Phone size={12} />
+                </div>
+                <span className="font-mono text-xs whitespace-nowrap">{contactInfo[1].text}</span>
+              </a>
+
+              <div className="flex items-start gap-2 text-xs text-muted-foreground group">
+                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 mt-0.5">
+                  <MapPin size={12} />
+                </div>
+                <span className="font-mono text-xs leading-relaxed">{contactInfo[2].text}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Footer bottom bar */}

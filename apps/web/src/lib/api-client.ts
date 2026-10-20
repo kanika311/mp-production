@@ -38,17 +38,7 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
         }
       }
 
-      // 3. Fallback to Supabase client async getSession()
-      if (!token) {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        token = session?.access_token || '';
-        if (token) {
-          localStorage.setItem('token', token);
-        }
-      }
-
-      // 4. Fallback to document.cookie (for OAuth redirect cookies)
+      // 3. Fallback to document.cookie (for session cookies)
       if (!token && typeof document !== 'undefined') {
         const cookieMatch = document.cookie.match(/(?:^|;\s*)(?:mdms_auth_token|token|accessToken)=([^;]+)/);
         if (cookieMatch && cookieMatch[1]) {

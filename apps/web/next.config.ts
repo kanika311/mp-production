@@ -10,6 +10,7 @@ const useStandalone =
 
 const nextConfig: NextConfig = {
   ...(useStandalone ? { output: 'standalone' as const } : {}),
+  serverExternalPackages: ['@prisma/client', 'bcryptjs'],
   experimental: {
     workerThreads: false,
   },

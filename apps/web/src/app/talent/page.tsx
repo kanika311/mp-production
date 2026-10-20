@@ -33,7 +33,7 @@ export default function TalentPage() {
         {/* ── TALENT DISCOVERY SECTION (Search Bar + Sticky Filters + Yogsathi-style Cards) ── */}
         <section id="discovery-feed" className="relative z-10">
           {loading ? (
-            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-[180px] py-8">
+            <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-[170px] py-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((n) => (
                   <div key={n} className="bg-card border border-border rounded-3xl p-6 h-96 animate-pulse" />

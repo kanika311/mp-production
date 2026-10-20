@@ -27,19 +27,19 @@ export default function EmployeeLoginPage() {
     setIsLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (authError) throw authError;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Authentication failed. Please verify staff credentials.');
+      }
 
       // Extract role
-      const rawRole = (
-        data.user?.user_metadata?.role ||
-        data.user?.app_metadata?.role ||
-        ''
-      )
+      const rawRole = (data.user?.role || '')
         .toString()
         .toLowerCase()
         .replace(/-/g, '_');
@@ -47,15 +47,14 @@ export default function EmployeeLoginPage() {
       // STRICT VALIDATION: Clients and Talents are NOT allowed here
       const allowedRoles = ['employee', 'editor', 'project_manager', 'admin', 'super_admin'];
       if (!allowedRoles.includes(rawRole)) {
-        await supabase.auth.signOut();
         localStorage.removeItem('token');
         localStorage.removeItem('mdms_auth_token');
         throw new Error('Access Denied. This login portal is strictly reserved for internal employees & production crew.');
       }
 
-      if (data?.session?.access_token) {
-        localStorage.setItem('token', data.session.access_token);
-        localStorage.setItem('mdms_auth_token', data.session.access_token);
+      if (data?.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('mdms_auth_token', data.token);
       }
 
       toast.success('Welcome back to the studio workspace.');

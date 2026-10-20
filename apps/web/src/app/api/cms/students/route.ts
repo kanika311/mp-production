@@ -1,72 +1,45 @@
-/**
- * Next.js API route: Student Management for Super Admin CMS
- *
- * GET  /api/cms/students         → List all course enrollments
- * POST /api/cms/students         → Submit a new UTR enrollment (public checkout flow)
- */
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/utils/supabase/admin';
+import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/cms/server/guard';
 
-const TABLE = 'course_enrollments';
-
-// Ensure the table exists (idempotent) — runs once on cold start
 let tableEnsured = false;
 async function ensureTable() {
   if (tableEnsured) return;
-  const supabase = createAdminClient();
-  // Try a lightweight probe
-  const { error } = await supabase.from(TABLE).select('id').limit(1);
-  if (error && error.code === '42P01') {
-    // Table doesn't exist — create it via raw SQL
-    const { error: createErr } = await supabase.rpc('exec_sql', {
-      query: `
-        CREATE TABLE IF NOT EXISTS public.course_enrollments (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          student_name TEXT NOT NULL,
-          student_email TEXT NOT NULL,
-          student_phone TEXT,
-          course_id TEXT NOT NULL,
-          course_title TEXT,
-          course_price TEXT,
-          utr_number TEXT,
-          status TEXT NOT NULL DEFAULT 'PENDING_APPROVAL',
-          is_blocked BOOLEAN NOT NULL DEFAULT false,
-          approved_by TEXT,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-        ALTER TABLE public.course_enrollments ENABLE ROW LEVEL SECURITY;
-        CREATE POLICY "service_role_full_access" ON public.course_enrollments FOR ALL USING (true) WITH CHECK (true);
-      `,
-    });
-    if (createErr) {
-      console.warn('[StudentAPI] Could not auto-create table, attempting direct insert:', createErr.message);
-    }
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS public.course_enrollments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        student_name TEXT NOT NULL,
+        student_email TEXT NOT NULL,
+        student_phone TEXT,
+        course_id TEXT NOT NULL,
+        course_title TEXT,
+        course_price TEXT,
+        utr_number TEXT,
+        status TEXT NOT NULL DEFAULT 'PENDING_APPROVAL',
+        is_blocked BOOLEAN NOT NULL DEFAULT false,
+        approved_by TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+    tableEnsured = true;
+  } catch (err: any) {
+    console.warn('[StudentAPI] ensureTable error:', err?.message);
   }
-  tableEnsured = true;
 }
 
 export async function GET() {
-  // Lists student PII (names, emails, phones) — admins only.
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from(TABLE)
-      .select('*')
-      .order('created_at', { ascending: false });
+    await ensureTable();
+    const rows: any[] = await prisma.$queryRawUnsafe(`
+      SELECT * FROM public.course_enrollments ORDER BY created_at DESC
+    `);
 
-    if (error) {
-      console.warn('[StudentAPI] Supabase table notice:', error.message);
-      // Return empty array (or sample data) if table is missing or empty
-      return NextResponse.json({ data: [] });
-    }
-
-    // Map snake_case → camelCase for frontend
-    const mapped = (data || []).map((row: Record<string, unknown>) => ({
+    const mapped = (rows || []).map((row) => ({
       id: row.id,
       studentName: row.student_name,
       studentEmail: row.student_email,
@@ -89,13 +62,6 @@ export async function GET() {
   }
 }
 
-/**
- * Public, create-only enrollment submission (called from the checkout flow).
- * Intentionally NOT admin-guarded so anonymous users can enroll — same posture
- * as the public contact form. It only inserts and returns the created record;
- * it never exposes other students' data or approve/block actions. Reading the
- * roster (GET) and moderation (PATCH) remain admin-only.
- */
 export async function POST(req: NextRequest) {
   try {
     await ensureTable();
@@ -106,28 +72,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'name, email, and courseId are required' }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from(TABLE)
-      .insert({
-        student_name: name,
-        student_email: email,
-        student_phone: phone || null,
-        course_id: courseId,
-        course_title: courseTitle || null,
-        course_price: coursePrice || null,
-        utr_number: utrNumber || null,
-        status: utrNumber ? 'PENDING_APPROVAL' : 'PENDING',
-      })
-      .select()
-      .single();
+    const status = utrNumber ? 'PENDING_APPROVAL' : 'PENDING';
+    const inserted: any[] = await prisma.$queryRawUnsafe(
+      `INSERT INTO public.course_enrollments (student_name, student_email, student_phone, course_id, course_title, course_price, utr_number, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      name,
+      email,
+      phone || null,
+      courseId,
+      courseTitle || null,
+      coursePrice || null,
+      utrNumber || null,
+      status,
+    );
 
-    if (error) {
-      console.warn('[StudentAPI] POST insert notice:', error.message);
-      return NextResponse.json({ message: 'Enrollment record logged' });
-    }
-
-    return NextResponse.json({ data, message: 'Enrollment submitted' });
+    return NextResponse.json({ data: inserted?.[0], message: 'Enrollment submitted' });
   } catch (e) {
     console.error('[StudentAPI] POST error:', e);
     return NextResponse.json({ message: 'Enrollment record logged' });

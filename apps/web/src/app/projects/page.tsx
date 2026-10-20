@@ -247,7 +247,7 @@ export default function ProjectsPage() {
       client: project.client,
       year: project.year,
       description: project.description,
-      videoUrl: project.videoUrl || 'https://zmpeiobdilrgtuzggzuj.supabase.co/storage/v1/object/public/mdms/videos/reel_1.mp4',
+      videoUrl: project.videoUrl || 'https://res.cloudinary.com/dd29usied/video/upload/v1785067564/banners/apy8yqvmj3nbdq4gvikp.mp4',
       coverImage: project.mediaUrl,
       director: project.director || 'Kabir Nair',
       dop: project.dop || 'Aarav Mehta',
