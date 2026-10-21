@@ -75,10 +75,39 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     ...mapped.headers,
   } as HeadersInit;
 
-  const res = await fetch(mapped.url, {
-    ...config,
-    headers: finalHeaders,
-  });
+  let res: Response;
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  try {
+    res = await fetch(mapped.url, {
+      ...config,
+      headers: finalHeaders,
+    });
+
+    // If external Render API returns server error (502/503/504), fallback to internal Next.js BFF
+    if (!res.ok && res.status >= 500 && typeof window !== 'undefined') {
+      const localUrl = `/api${formattedEndpoint}`;
+      const localRes = await fetch(localUrl, { ...config, headers: finalHeaders }).catch(() => null);
+      if (localRes && (localRes.ok || localRes.status < 500)) {
+        res = localRes;
+      }
+    }
+  } catch (netErr) {
+    // If external Render API connection fails (CORS, cold sleep, offline), fallback to internal Next.js BFF
+    if (typeof window !== 'undefined') {
+      const localUrl = `/api${formattedEndpoint}`;
+      try {
+        res = await fetch(localUrl, {
+          ...config,
+          headers: finalHeaders,
+        });
+      } catch (localErr) {
+        throw netErr;
+      }
+    } else {
+      throw netErr;
+    }
+  }
   
   if (!res.ok) {
     let errorMessage = `API request failed with status ${res.status}`;

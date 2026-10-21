@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/cms/server/backend';
 import { requireAdmin } from '@/lib/cms/server/guard';
 
+import { PrismaClient } from '@prisma/client';
+
+function getPrisma() {
+  const poolerUrl = (process.env.DATABASE_URL || '').replace(':5432/', ':6543/') + 
+    (process.env.DATABASE_URL?.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
+  return new PrismaClient({
+    datasources: {
+      db: { url: poolerUrl },
+    },
+  });
+}
+
 export async function GET(req: Request) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -18,21 +30,66 @@ export async function GET(req: Request) {
   if (role) queryParams.set('role', role);
 
   const result = await backendFetch(`/admin/users?${queryParams.toString()}`);
-  if (!result.ok) {
-    return NextResponse.json({ ok: false, error: result.error }, { status: result.status });
+  if (result.ok && result.data) {
+    const rawData: any = result.data;
+    const usersList = Array.isArray(rawData?.data) ? rawData.data : Array.isArray(rawData) ? rawData : [];
+    const total = rawData?.total ?? usersList.length;
+    const totalPages = rawData?.totalPages ?? 1;
+
+    return NextResponse.json({
+      ok: true,
+      data: usersList,
+      total,
+      page: Number(page),
+      totalPages,
+    });
   }
 
-  const rawData: any = result.data;
-  // NestJS response envelope wrapped with ResponseInterceptor: { success, data, total, page, totalPages }
-  const usersList = Array.isArray(rawData?.data) ? rawData.data : Array.isArray(rawData) ? rawData : [];
-  const total = rawData?.total ?? usersList.length;
-  const totalPages = rawData?.totalPages ?? 1;
+  // Resilient Direct Database Fallback
+  const prisma = getPrisma();
+  try {
+    const pageNum = Math.max(1, parseInt(page, 10));
+    const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10)));
+    const where: any = {};
+    if (role) where.role = role;
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-  return NextResponse.json({
-    ok: true,
-    data: usersList,
-    total,
-    page: Number(page),
-    totalPages,
-  });
+    const [usersList, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      ok: true,
+      data: usersList,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+    });
+  } catch (dbErr: any) {
+    console.error('Database fallback error fetching users:', dbErr);
+    return NextResponse.json({ ok: false, error: result.error || dbErr.message }, { status: result.status || 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
 }

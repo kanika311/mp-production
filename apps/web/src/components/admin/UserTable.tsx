@@ -102,6 +102,7 @@ export function UserTable({ currentUserRole }: UserTableProps) {
     email: string;
     role: string;
     isActive: boolean;
+    password?: string;
   } | null>(null);
   const [editLoading, setEditLoading] = useState(false);
 
@@ -149,6 +150,10 @@ export function UserTable({ currentUserRole }: UserTableProps) {
   // Save Edit User
   const handleSaveEdit = async () => {
     if (!editUser) return;
+    if (editUser.password && editUser.password.trim().length > 0 && editUser.password.trim().length < 6) {
+      toast.error('New password must be at least 6 characters.');
+      return;
+    }
     setEditLoading(true);
     try {
       const res = await fetch(`/api/admin/users/${editUser.id}`, {
@@ -441,6 +446,7 @@ export function UserTable({ currentUserRole }: UserTableProps) {
                             email: user.email,
                             role: user.role,
                             isActive: user.isActive,
+                            password: '',
                           })}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/80 hover:border-blue-500 hover:text-blue-500 bg-card text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                           title="Edit User"
@@ -722,6 +728,21 @@ export function UserTable({ currentUserRole }: UserTableProps) {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-foreground">Update Password (Optional)</label>
+                  <span className="text-[10px] text-muted-foreground">Min. 6 chars</span>
+                </div>
+                <input
+                  type="password"
+                  value={editUser.password || ''}
+                  onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
+                  placeholder="Leave empty to keep existing password"
+                  autoComplete="new-password"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand placeholder:text-muted-foreground/50"
+                />
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/80">

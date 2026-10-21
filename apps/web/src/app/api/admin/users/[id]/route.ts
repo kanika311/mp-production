@@ -50,7 +50,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-// PATCH: Edit user details (Name, Email, Role, Status)
+const bcrypt = eval("require('bcryptjs')");
+
+// PATCH: Edit user details (Name, Email, Role, Status, Password)
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -59,7 +61,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const resolved = await params;
   const userId = resolved.id;
   const body = await req.json().catch(() => ({}));
-  const { firstName, lastName, email, role, isActive } = body;
+  const { firstName, lastName, email, role, isActive, password } = body;
 
   const prisma = getPrisma();
 
@@ -67,9 +69,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updateData: any = {};
     if (firstName !== undefined) updateData.firstName = String(firstName).trim();
     if (lastName !== undefined) updateData.lastName = String(lastName).trim();
-    if (email !== undefined) updateData.email = String(email).trim().toLowerCase();
+    if (email !== undefined) {
+      const cleanEmail = String(email).trim().toLowerCase();
+      const existing = await prisma.user.findFirst({
+        where: {
+          email: { equals: cleanEmail, mode: 'insensitive' },
+          NOT: { id: userId },
+        },
+      });
+      if (existing) {
+        return NextResponse.json({ ok: false, error: 'This email is already in use by another user' }, { status: 409 });
+      }
+      updateData.email = cleanEmail;
+    }
     if (role !== undefined) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+    if (password && String(password).trim().length > 0) {
+      if (String(password).trim().length < 6) {
+        return NextResponse.json({ ok: false, error: 'Password must be at least 6 characters' }, { status: 400 });
+      }
+      updateData.passwordHash = await bcrypt.hash(String(password).trim(), 10);
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },

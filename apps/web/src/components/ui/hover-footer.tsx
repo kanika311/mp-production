@@ -243,8 +243,8 @@ export function HoverFooter() {
     },
     {
       icon: <Phone size={18} className="text-primary" />,
-      text: footerConfig?.contactPhone || "+91 86373 73116",
-      href: `tel:${(footerConfig?.contactPhone || "+918637373116").replace(/\s+/g, '')}`,
+      text: footerConfig?.contactPhone || "+91 831 053 1309",
+      href: `tel:${(footerConfig?.contactPhone || "+91 831 053 1309").replace(/\s+/g, '')}`,
     },
     {
       icon: <MapPin size={18} className="text-primary" />,

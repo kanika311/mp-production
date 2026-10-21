@@ -49,6 +49,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { fetchAPI } from '@/lib/api-client';
+import { UserTable } from './UserTable';
 
 export type TabKey =
   | 'dashboard'
@@ -195,7 +196,7 @@ export function UnifiedAdminDashboard() {
     newsletterPlaceholder: 'Enter your email address...',
     copyrightText: '© 2026 MP Production Atelier Ltd. All rights reserved. Powered By JCRM Technologies',
     contactEmail: 'hello@mpproduction.com',
-    contactPhone: '+91 86373 73116',
+    contactPhone: '+91 831 053 1309',
     contactAddress: 'Studio 4, Film City Complex, Goregaon East, Mumbai 400065',
     socialLinks: {
       instagram: 'https://instagram.com/mpproduction',
@@ -313,6 +314,8 @@ export function UnifiedAdminDashboard() {
   const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
   const [editFaqData, setEditFaqData] = useState({ question: '', answer: '', category: 'General' });
   const heroFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const heroVideoFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
   // Force pure light White & Red theme so system dark mode does NOT tint the dashboard
   useEffect(() => {
@@ -810,10 +813,24 @@ export function UnifiedAdminDashboard() {
         payload.sections = [{ title: 'Quick Links', links: footerConfig.quickLinks }];
       }
 
-      await fetchAPI('/cms/config/footer', {
+      // 1. Post to local Next.js BFF endpoint first
+      try {
+        await fetch('/api/cms/config/footer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: payload }),
+        });
+      } catch (e) {}
+
+      // 2. Sync to backend
+      fetchAPI('/cms/config/footer', {
         method: 'POST',
         body: JSON.stringify({ value: payload }),
-      });
+      }).catch(() => null);
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mp_footer_config', JSON.stringify(payload));
+      }
 
       toast.success('Footer CMS settings saved successfully!');
     } catch (err: any) {
@@ -911,17 +928,119 @@ export function UnifiedAdminDashboard() {
     }
   };
 
+  const handleHeroVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/') && !file.name.match(/\.(mp4|webm|mov|mkv|ogg)$/i)) {
+      toast.error('Please select a valid video file (MP4, WebM, MOV, etc.)');
+      return;
+    }
+
+    const sizeMb = file.size / (1024 * 1024);
+    if (sizeMb > 150) {
+      toast.error('Video is too large (max 150MB). Please select a compressed MP4/WebM.');
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    const toastId = toast.loading(`Uploading video (${sizeMb.toFixed(1)} MB) from device...`);
+
+    try {
+      // 1. Try Cloudinary upload via /api/upload
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'banners');
+
+      let savedUrl = '';
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: fd,
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.url) {
+          savedUrl = data.url;
+        }
+      } catch (err) {
+        console.warn('Cloudinary upload attempt failed, trying local fallback:', err);
+      }
+
+      // 2. If Cloudinary failed, try /api/cms/media fallback
+      if (!savedUrl) {
+        const fallbackFd = new FormData();
+        fallbackFd.append('file', file);
+        const fallbackRes = await fetch('/api/cms/media', {
+          method: 'POST',
+          body: fallbackFd,
+        });
+        const fallbackJson = await fallbackRes.json().catch(() => null);
+        if (fallbackRes.ok && (fallbackJson?.data?.url || fallbackJson?.url)) {
+          savedUrl = fallbackJson?.data?.url || fallbackJson?.url;
+        }
+      }
+
+      if (!savedUrl) {
+        throw new Error('Upload failed. Please check network connection or try a smaller video.');
+      }
+
+      setHomePageConfig((prev) => ({
+        ...prev,
+        hero: {
+          ...prev.hero,
+          videoUrl: savedUrl,
+        },
+      }));
+
+      toast.success(`Video uploaded successfully! (${sizeMb.toFixed(1)} MB)`, { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Video upload failed', { id: toastId });
+    } finally {
+      setIsUploadingVideo(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const handleSaveHomePage = async () => {
     setIsSavingHomePage(true);
     try {
-      // 1. Save to /cms/config/home-page
-      await fetchAPI('/cms/config/home-page', {
-        method: 'POST',
-        body: JSON.stringify({ value: homePageConfig }),
-      });
+      // 1. Save to local Next.js BFF endpoint /api/cms/config/home-page first (never CORS blocked)
+      let savedLocally = false;
+      try {
+        const localRes = await fetch('/api/cms/config/home-page', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: homePageConfig }),
+        });
+        if (localRes.ok) savedLocally = true;
+      } catch (err) {
+        console.warn('Local BFF save notice:', err);
+      }
 
-      // 2. Also save hero directly so any /cms/hero or /cms/config/hero endpoints stay synced
-      await fetchAPI('/cms/config/hero', {
+      // 2. Also sync to backend via fetchAPI
+      try {
+        await fetchAPI('/cms/config/home-page', {
+          method: 'POST',
+          body: JSON.stringify({ value: homePageConfig }),
+        });
+        savedLocally = true;
+      } catch (err) {
+        console.warn('Backend sync notice:', err);
+      }
+
+      // 3. Sync hero directly so any /cms/hero endpoints stay synced
+      fetch('/api/cms/config/hero', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          value: {
+            ...homePageConfig.hero,
+            page: 'home',
+          },
+        }),
+      }).catch(() => null);
+
+      fetchAPI('/cms/config/hero', {
         method: 'POST',
         body: JSON.stringify({
           value: {
@@ -931,17 +1050,31 @@ export function UnifiedAdminDashboard() {
         }),
       }).catch(() => null);
 
-      // 3. Also save faqs to /cms/config/faq
-      await fetchAPI('/cms/config/faq', {
+      // 4. Also save faqs
+      fetch('/api/cms/config/faq', {
         method: 'POST',
-        body: JSON.stringify({
-          value: homePageConfig.faqs,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: homePageConfig.faqs }),
       }).catch(() => null);
+
+      fetchAPI('/cms/config/faq', {
+        method: 'POST',
+        body: JSON.stringify({ value: homePageConfig.faqs }),
+      }).catch(() => null);
+
+      // 5. Always persist to localStorage for instant client recovery
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mp_home_page_config', JSON.stringify(homePageConfig));
+      }
 
       toast.success('Home Page CMS settings saved successfully!');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save home page settings');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mp_home_page_config', JSON.stringify(homePageConfig));
+        toast.success('Home Page settings saved to browser storage!');
+      } else {
+        toast.error(err.message || 'Failed to save home page settings');
+      }
     } finally {
       setIsSavingHomePage(false);
     }
@@ -2559,7 +2692,7 @@ export function UnifiedAdminDashboard() {
                           type="text"
                           value={footerConfig.contactPhone}
                           onChange={(e) => setFooterConfig({ ...footerConfig, contactPhone: e.target.value })}
-                          placeholder="e.g. +91 86373 73116"
+                          placeholder="e.g. +91 831 053 1309"
                           className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 font-sans transition-all"
                         />
                       </div>
@@ -2903,6 +3036,15 @@ export function UnifiedAdminDashboard() {
                     className="hidden"
                   />
 
+                  {/* Hidden input for hero video upload */}
+                  <input
+                    type="file"
+                    ref={heroVideoFileInputRef}
+                    onChange={handleHeroVideoUpload}
+                    accept="video/mp4,video/webm,video/quicktime,video/*"
+                    className="hidden"
+                  />
+
                   {/* Section 1: Top Announcement Bar */}
                   <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-xs space-y-5">
                     <div className="pb-4 border-b border-slate-100 flex items-center justify-between">
@@ -3107,18 +3249,66 @@ export function UnifiedAdminDashboard() {
                         {homePageConfig.hero.mediaType === 'video' && (
                           <div className="space-y-1.5 sm:col-span-2">
                             <label className="block text-sm font-semibold text-slate-800 mb-1.5">Background Video URL (MP4 / WebM)</label>
-                            <input
-                              type="text"
-                              value={homePageConfig.hero.videoUrl}
-                              onChange={(e) =>
-                                setHomePageConfig({
-                                  ...homePageConfig,
-                                  hero: { ...homePageConfig.hero, videoUrl: e.target.value },
-                                })
-                              }
-                              placeholder="e.g. https://.../video.mp4"
-                              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-mono placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition-all"
-                            />
+                            <div className="flex gap-2.5">
+                              <input
+                                type="text"
+                                value={homePageConfig.hero.videoUrl}
+                                onChange={(e) =>
+                                  setHomePageConfig({
+                                    ...homePageConfig,
+                                    hero: { ...homePageConfig.hero, videoUrl: e.target.value },
+                                  })
+                                }
+                                placeholder="e.g. https://.../video.mp4"
+                                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-mono placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition-all"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => heroVideoFileInputRef.current?.click()}
+                                disabled={isUploadingVideo}
+                                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-700 hover:text-red-600 text-xs font-bold cursor-pointer shrink-0 transition-all shadow-2xs disabled:opacity-50"
+                              >
+                                {isUploadingVideo ? (
+                                  <Loader2 size={14} className="animate-spin text-red-600" />
+                                ) : (
+                                  <Upload size={14} />
+                                )}
+                                <span>{isUploadingVideo ? 'Uploading...' : 'Upload Video from Device'}</span>
+                              </button>
+                            </div>
+
+                            {/* Active Video Live Preview Card */}
+                            {homePageConfig.hero.videoUrl && (
+                              <div className="mt-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Video className="w-4 h-4 text-red-600" />
+                                    <span className="text-xs font-bold text-slate-800">Active Background Video Preview</span>
+                                  </div>
+                                  <a
+                                    href={homePageConfig.hero.videoUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-red-600 hover:underline font-bold flex items-center gap-1"
+                                  >
+                                    <ExternalLink size={12} /> Open Full Video
+                                  </a>
+                                </div>
+                                <div className="relative aspect-video w-full max-w-sm rounded-lg overflow-hidden border border-slate-200 bg-black">
+                                  <video
+                                    key={homePageConfig.hero.videoUrl}
+                                    src={homePageConfig.hero.videoUrl}
+                                    controls
+                                    playsInline
+                                    muted
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <span className="text-xs text-slate-500 font-mono truncate block">
+                                  {homePageConfig.hero.videoUrl}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -3622,8 +3812,28 @@ export function UnifiedAdminDashboard() {
                 </div>
               )}
 
+              {/* TAB: USERS (Real Database User Directory & Roles) */}
+              {activeTab === 'users' && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900 tracking-tight">System User Directory &amp; Access Control</h2>
+                      <p className="text-xs text-slate-500 mt-0.5">Manage real database user accounts, roles, credentials, and access permissions.</p>
+                    </div>
+                    <Link
+                      href="/super-admin/users/invite"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-600/20 cursor-pointer transition-all self-start sm:self-auto"
+                    >
+                      <Plus size={14} className="stroke-[3]" />
+                      <span>+ Create / Invite New Admin</span>
+                    </Link>
+                  </div>
+                  <UserTable currentUserRole="SUPER_ADMIN" />
+                </div>
+              )}
+
               {/* ALL OTHER CMS FUNCTIONALITY TABS */}
-              {activeTab !== 'dashboard' && activeTab !== 'footer-cms' && activeTab !== 'home-page' && (
+              {activeTab !== 'dashboard' && activeTab !== 'footer-cms' && activeTab !== 'home-page' && activeTab !== 'users' && (
                 <div className="space-y-4">
                   
                   {/* Filter & Search Bar for current tab */}

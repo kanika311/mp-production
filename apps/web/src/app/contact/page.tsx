@@ -38,7 +38,7 @@ export default function Contact() {
     contactAddress?: string;
   }>({
     contactEmail: 'hello@mpproduction.com',
-    contactPhone: '+91 86373 73116',
+    contactPhone: '+91 831 053 1309',
     contactAddress: 'Mumbai, India',
   });
 
@@ -58,7 +58,7 @@ export default function Contact() {
       .catch(() => {});
   }, []);
 
-  const contactPhone = footerConfig?.contactPhone || '+91 86373 73116';
+  const contactPhone = footerConfig?.contactPhone || '+91 831 053 1309';
   const contactEmail = footerConfig?.contactEmail || 'hello@mpproduction.com';
   const contactAddress = footerConfig?.contactAddress || 'Mumbai, India';
   const cleanPhone = contactPhone.replace(/\s+/g, '');
@@ -341,7 +341,7 @@ export default function Contact() {
                           <input
                             type="tel"
                             id="phone"
-                            placeholder="+91 86373 73116"
+                            placeholder="+91 831 053 1309"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             className={inputStyle}

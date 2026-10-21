@@ -69,7 +69,7 @@ function SiteConfigContent() {
     tagline: 'Crafting Cinematic Excellence & Digital Legacies.',
     copyrightText: 'Powered By JCRM Technologies',
     contactEmail: 'hello@mpproduction.com',
-    contactPhone: '+91 86373 73116',
+    contactPhone: '+91 831 053 1309',
     contactAddress: 'Mumbai, India',
     socialLinks: [
       { platform: 'instagram', url: 'https://instagram.com/mpproduction' },
@@ -787,7 +787,7 @@ function SiteConfigContent() {
                       id="footer-phone"
                       value={footer.contactPhone}
                       onChange={(e) => setFooter(prev => ({ ...prev, contactPhone: e.target.value }))}
-                      placeholder="+91 86373 73116"
+                      placeholder="+91 831 053 1309"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">

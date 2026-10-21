@@ -74,33 +74,8 @@ export default async function EditTalentProfilePage() {
   return (
     <>
       <PortalNavbar role="TALENT" />
-      <main className="min-h-screen bg-background pt-28 md:pt-32 pb-24">
+      <main className="min-h-screen bg-background pt-20 md:pt-24 pb-20">
         <Container>
-          <div className="mb-6 border-b border-border/60 pb-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-serif text-foreground font-bold">
-                  Edit Profile
-                </h1>
-              </div>
-              <div className="flex items-center gap-3">
-                <Link
-                  href={`/talent/${profile.slug || profile.id || 'me'}`}
-                  target="_blank"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border border-border bg-card hover:bg-surface text-foreground transition-all shadow-xs cursor-pointer"
-                >
-                  <Eye className="w-3.5 h-3.5 text-brand" /> View Profile Preview
-                </Link>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                  profile.status === 'ACTIVE'
-                    ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
-                    : 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
-                }`}>
-                  {profile.status === 'ACTIVE' ? '✓ Active on Roster' : 'Verification Required'}
-                </span>
-              </div>
-            </div>
-          </div>
           <FullEditProfileClient initialData={profile} />
         </Container>
       </main>

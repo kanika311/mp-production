@@ -1,0 +1,109 @@
+{
+  "tagline": "Crafting Cinematic Excellence & Digital Legacies.",
+  "brandDescription": "MP Production is an exclusive luxury creative production house for global brands and artists. Building timeless cinema, photography, and campaigns frame by frame.",
+  "newsletterTitle": "Subscribe to Our Newsletter",
+  "newsletterDesc": "Receive weekly cinematic production insights, case studies & invitations",
+  "newsletterPlaceholder": "Enter your email address...",
+  "copyrightText": "Powered By JCRM Technologies",
+  "contactEmail": "yogsathi@gmail.com",
+  "contactPhone": "+91 831 053 1309",
+  "contactAddress": "Mumbai, India",
+  "socialLinks": {
+    "instagram": "https://instagram.com/mpproduction",
+    "youtube": "https://youtube.com/mpproduction",
+    "linkedin": "https://linkedin.com/company/mpproduction",
+    "twitter": "https://twitter.com/mpproduction",
+    "facebook": "https://facebook.com/mpproduction"
+  },
+  "quickLinks": [
+    {
+      "id": "ql-1",
+      "label": "About Us",
+      "href": "/about",
+      "group": "Company"
+    },
+    {
+      "id": "ql-2",
+      "label": "Services",
+      "href": "/services",
+      "group": "Company"
+    },
+    {
+      "id": "ql-3",
+      "label": "Portfolio",
+      "href": "/projects",
+      "group": "Network & Work"
+    },
+    {
+      "id": "ql-4",
+      "label": "Talent Directory",
+      "href": "/talent",
+      "group": "Network & Work"
+    },
+    {
+      "id": "ql-5",
+      "label": "Contact Us",
+      "href": "/contact",
+      "group": "Support & Legal"
+    },
+    {
+      "id": "ql-6",
+      "label": "Privacy Policy",
+      "href": "/privacy",
+      "group": "Support & Legal"
+    }
+  ],
+  "sections": [
+    {
+      "title": "Company",
+      "links": [
+        {
+          "id": "ql-1",
+          "label": "About Us",
+          "href": "/about",
+          "group": "Company"
+        },
+        {
+          "id": "ql-2",
+          "label": "Services",
+          "href": "/services",
+          "group": "Company"
+        }
+      ]
+    },
+    {
+      "title": "Network & Work",
+      "links": [
+        {
+          "id": "ql-3",
+          "label": "Portfolio",
+          "href": "/projects",
+          "group": "Network & Work"
+        },
+        {
+          "id": "ql-4",
+          "label": "Talent Directory",
+          "href": "/talent",
+          "group": "Network & Work"
+        }
+      ]
+    },
+    {
+      "title": "Support & Legal",
+      "links": [
+        {
+          "id": "ql-5",
+          "label": "Contact Us",
+          "href": "/contact",
+          "group": "Support & Legal"
+        },
+        {
+          "id": "ql-6",
+          "label": "Privacy Policy",
+          "href": "/privacy",
+          "group": "Support & Legal"
+        }
+      ]
+    }
+  ]
+}

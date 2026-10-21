@@ -1,21 +1,27 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
-import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/cms/server/guard';
+import { PrismaClient } from '@prisma/client';
+
+function getPrisma() {
+  const poolerUrl = (process.env.DATABASE_URL || '').replace(':5432/', ':6543/') + 
+    (process.env.DATABASE_URL?.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
+  return new PrismaClient({
+    datasources: {
+      db: { url: poolerUrl },
+    },
+  });
+}
 
 const bcrypt = eval("require('bcryptjs')");
 
 const ROLES = ['GUEST', 'CLIENT', 'TALENT', 'EDITOR', 'EMPLOYEE', 'PROJECT_MANAGER', 'ADMIN', 'SUPER_ADMIN'];
 
 export async function POST(req: Request) {
-  const session = await auth();
-  const actorRole = (session as any)?.user?.role;
-
-  if (!session) {
+  const adminAuth = await requireAdmin();
+  if (!adminAuth) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
-  if (actorRole !== 'SUPER_ADMIN' && actorRole !== 'ADMIN') {
-    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
-  }
+  const actorRole = adminAuth.role;
 
   const body = await req.json().catch(() => ({}));
   const { name, email, password } = body;
@@ -35,6 +41,7 @@ export async function POST(req: Request) {
   const [firstName, ...rest] = String(name).trim().split(' ');
   const lastName = rest.join(' ') || '';
 
+  const prisma = getPrisma();
   try {
     const existing = await prisma.user.findFirst({
       where: { email: { equals: email.trim(), mode: 'insensitive' } },
@@ -59,5 +66,7 @@ export async function POST(req: Request) {
   } catch (e: any) {
     console.error('Error creating user:', e);
     return NextResponse.json({ ok: false, error: e?.message || 'Failed to create user' }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }

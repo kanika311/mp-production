@@ -30,7 +30,7 @@ async function main() {
       tagline: 'Crafting Cinematic Excellence & Digital Legacies.',
       copyright: 'Powered By JCRM Technologies',
       contactEmail: 'hello@mpproduction.com',
-      contactPhone: '+91 86373 73116',
+      contactPhone: '+91 831 053 1309',
       contactAddress: 'Mumbai, India',
       socialLinks: { instagram: 'https://instagram.com/mpproduction', linkedin: 'https://linkedin.com/company/mpproduction', youtube: 'https://youtube.com/mpproduction' },
       sections: [
