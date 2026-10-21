@@ -97,24 +97,40 @@ export function AuthForm({ mode }: AuthFormProps) {
         // After successful registration, clients land on their portal
         router.push('/client-portal');
       } else {
-        // Internal Login API
-        const loginRes = await fetch('/api/auth/login', {
+        // Try primary Next.js login API
+        let loginRes = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
         });
+
+        // Fallback to NestJS API (/api/v1/auth/login) if reverse proxy routes /api to NestJS (giving 404)
+        if (loginRes.status === 404) {
+          loginRes = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+        }
 
         const loginData = await loginRes.json().catch(() => ({}));
         if (!loginRes.ok) {
           throw new Error(loginData.error || loginData.message || 'Login failed');
         }
 
-        if (loginData?.token) {
-          localStorage.setItem('token', loginData.token);
-          localStorage.setItem('mdms_auth_token', loginData.token);
+        const token = loginData?.token || loginData?.accessToken || loginData?.data?.accessToken;
+        const userObj = loginData?.user || loginData?.data?.user;
+
+        if (token) {
+          localStorage.setItem('token', token);
+          localStorage.setItem('mdms_auth_token', token);
+          // Set cookies for middleware and session guards
+          document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `mdms_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `next-auth.session-token=${token}; path=/; max-age=604800; SameSite=Lax`;
         }
 
-        const role = (loginData.user?.role || '').toString().toLowerCase().replace(/-/g, '_');
+        const role = (userObj?.role || '').toString().toLowerCase().replace(/-/g, '_');
 
         // RESTRICTION: Admin, Super Admin, and Employees cannot log in through the public /login page
         if (

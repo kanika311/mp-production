@@ -10,11 +10,18 @@ export async function GET(request: NextRequest) {
   const errorParam = searchParams.get('error');
   const errorDescription = searchParams.get('error_description');
 
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const host = request.headers.get('host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  const isTrulyLocal = (origin.includes('localhost') || origin.includes('127.0.0.1')) && !forwardedHost && (!host || host.includes('localhost') || host.includes('127.0.0.1'));
+  const effectiveHost = forwardedHost || host;
+  const baseUrl = isTrulyLocal ? origin : (effectiveHost ? `${forwardedProto}://${effectiveHost}` : origin);
+
   if (errorParam || errorDescription) {
     const message = encodeURIComponent(
       errorDescription || errorParam || 'Google Authentication cancelled or failed.'
     );
-    return NextResponse.redirect(`${origin}/login?error=${message}`);
+    return NextResponse.redirect(`${baseUrl}/login?error=${message}`);
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -22,10 +29,6 @@ export async function GET(request: NextRequest) {
 
   if (code && clientId && clientSecret) {
     try {
-      const forwardedHost = request.headers.get('x-forwarded-host');
-      const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
-      const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
-      const baseUrl = isLocal ? origin : (forwardedHost ? `${forwardedProto}://${forwardedHost}` : origin);
       const { pathname } = new URL(request.url);
       const redirectUri = `${baseUrl}${pathname}`;
 
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
         const errMsg = encodeURIComponent(
           tokenData.error_description || tokenData.error || 'Failed to exchange Google OAuth code.'
         );
-        return NextResponse.redirect(`${origin}/login?error=${errMsg}`);
+        return NextResponse.redirect(`${baseUrl}/login?error=${errMsg}`);
       }
 
       // 2. Fetch user profile from Google UserInfo endpoint
@@ -58,14 +61,14 @@ export async function GET(request: NextRequest) {
 
       if (!userInfoRes.ok) {
         console.error('Failed to fetch Google user profile');
-        return NextResponse.redirect(`${origin}/login?error=Failed+to+fetch+Google+user+profile`);
+        return NextResponse.redirect(`${baseUrl}/login?error=Failed+to+fetch+Google+user+profile`);
       }
 
       const googleUser = await userInfoRes.json();
       const email = (googleUser.email || '').toLowerCase().trim();
 
       if (!email) {
-        return NextResponse.redirect(`${origin}/login?error=No+email+associated+with+this+Google+account`);
+        return NextResponse.redirect(`${baseUrl}/login?error=No+email+associated+with+this+Google+account`);
       }
 
       // 3. Upsert user in PostgreSQL database via Prisma
@@ -92,7 +95,7 @@ export async function GET(request: NextRequest) {
         });
       } else {
         if (!user.isActive) {
-          return NextResponse.redirect(`${origin}/login?error=Your+account+has+been+deactivated.+Please+contact+support.`);
+          return NextResponse.redirect(`${baseUrl}/login?error=Your+account+has+been+deactivated.+Please+contact+support.`);
         }
 
         // Update login timestamp and avatar if available
@@ -128,7 +131,8 @@ export async function GET(request: NextRequest) {
       else if (role === 'PROJECT_MANAGER') targetPath = '/project-manager';
 
       const finalPath = next && next.startsWith('/') ? next : targetPath;
-      const redirectUrl = `${origin}${finalPath}`;
+      // Using relative finalPath ensures the client browser stays on the current origin (e.g. https://www.shivaste.com)
+      const redirectUrl = finalPath;
 
       // 6. Set auth cookies
       const cookieOptions = {
@@ -184,9 +188,9 @@ export async function GET(request: NextRequest) {
     } catch (err: any) {
       console.error('Google OAuth callback handler error:', err);
       const message = encodeURIComponent(err?.message || 'Unexpected authentication error');
-      return NextResponse.redirect(`${origin}/login?error=${message}`);
+      return NextResponse.redirect(`${baseUrl}/login?error=${message}`);
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=Missing+Google+authorization+code`);
+  return NextResponse.redirect(`${baseUrl}/login?error=Missing+Google+authorization+code`);
 }

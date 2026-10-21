@@ -419,8 +419,8 @@ export function SimpleTalentRegistrationForm() {
         }
       }
 
-      // 2. Auto-login the talent via internal login API
-      const loginRes = await fetch('/api/auth/login', {
+      // 2. Auto-login the talent via internal login API (with reverse-proxy fallback)
+      let loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -429,13 +429,30 @@ export function SimpleTalentRegistrationForm() {
         }),
       });
 
-      const loginData = await loginRes.json().catch(() => ({}));
-      if (loginData?.token) {
-        localStorage.setItem('token', loginData.token);
-        localStorage.setItem('mdms_auth_token', loginData.token);
+      if (loginRes.status === 404) {
+        loginRes = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
       }
-      if (loginData?.user?.id) {
-        createdUserId = loginData.user.id;
+
+      const loginData = await loginRes.json().catch(() => ({}));
+      const autoToken = loginData?.token || loginData?.accessToken || loginData?.data?.accessToken;
+      const userObj = loginData?.user || loginData?.data?.user;
+
+      if (autoToken) {
+        localStorage.setItem('token', autoToken);
+        localStorage.setItem('mdms_auth_token', autoToken);
+        document.cookie = `token=${autoToken}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `mdms_auth_token=${autoToken}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `next-auth.session-token=${autoToken}; path=/; max-age=604800; SameSite=Lax`;
+      }
+      if (userObj?.id) {
+        createdUserId = userObj.id;
       }
 
       // Create the backend TalentProfile (PENDING_REVIEW) so the applicant

@@ -56,10 +56,31 @@ export class AuthController {
 
     if ('refreshToken' in result) {
       this.setRefreshTokenCookie(res, result.refreshToken);
-      return { accessToken: result.accessToken, expiresIn: result.expiresIn, user: result.user };
+      const token = result.accessToken;
+
+      const isProd = process.env.NODE_ENV === 'production';
+      const cookieOptions = {
+        path: '/',
+        httpOnly: false,
+        sameSite: 'lax' as const,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        secure: isProd,
+      };
+      res.cookie('token', token, cookieOptions);
+      res.cookie('mdms_auth_token', token, cookieOptions);
+      res.cookie('next-auth.session-token', token, cookieOptions);
+
+      return {
+        ok: true,
+        success: true,
+        token,
+        accessToken: token,
+        expiresIn: result.expiresIn,
+        user: result.user,
+      };
     }
     
-    return { success: false, message: 'Unexpected response from login' };
+    return { ok: false, success: false, message: 'Unexpected response from login' };
   }
 
   // ── MFA Verification ───────────────────────

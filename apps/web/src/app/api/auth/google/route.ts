@@ -13,11 +13,13 @@ export async function GET(req: NextRequest) {
   const next = searchParams.get('next') || searchParams.get('redirect') || '';
 
   const forwardedHost = req.headers.get('x-forwarded-host');
+  const host = req.headers.get('host');
   const forwardedProto = req.headers.get('x-forwarded-proto') || 'https';
-  const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
 
-  // In local dev, use origin (http://localhost:3000) so port is preserved accurately
-  const baseUrl = isLocal ? origin : (forwardedHost ? `${forwardedProto}://${forwardedHost}` : origin);
+  // In production behind reverse proxy (Nginx/Cloudflare), forwardedHost or host is the public domain (e.g. shivaste.com)
+  const isTrulyLocal = (origin.includes('localhost') || origin.includes('127.0.0.1')) && !forwardedHost && (!host || host.includes('localhost') || host.includes('127.0.0.1'));
+  const effectiveHost = forwardedHost || host;
+  const baseUrl = isTrulyLocal ? origin : (effectiveHost ? `${forwardedProto}://${effectiveHost}` : origin);
   const redirectUri = `${baseUrl}/auth/callback`;
 
   const params = new URLSearchParams({

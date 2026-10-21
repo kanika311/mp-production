@@ -35,11 +35,19 @@ export default function SushantAdminLoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      let res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+
+      if (res.status === 404) {
+        res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+      }
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -47,7 +55,7 @@ export default function SushantAdminLoginPage() {
       }
 
       // Extract role
-      const rawRole = (data.user?.role || '')
+      const rawRole = (data.user?.role || data.data?.user?.role || '')
         .toString()
         .toLowerCase()
         .replace(/-/g, '_');
@@ -61,9 +69,13 @@ export default function SushantAdminLoginPage() {
         throw new Error('Access Denied. You do not have administrator privileges to enter this portal.');
       }
 
-      if (data?.token && typeof window !== 'undefined') {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('mdms_auth_token', data.token);
+      const token = data?.token || data?.accessToken || data?.data?.accessToken;
+      if (token && typeof window !== 'undefined') {
+        localStorage.setItem('token', token);
+        localStorage.setItem('mdms_auth_token', token);
+        document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `mdms_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `next-auth.session-token=${token}; path=/; max-age=604800; SameSite=Lax`;
       }
 
       toast.success('Administrator authenticated.');

@@ -83,6 +83,12 @@ async function bootstrap() {
   app.use((req: any, res: any, next: any) => {
     if (req.url && req.url.startsWith('/api/') && !req.url.startsWith('/api/v1/')) {
       req.url = req.url.replace('/api/', '/api/v1/');
+      req.originalUrl = req.url;
+      if (req._parsedUrl) {
+        req._parsedUrl.pathname = req._parsedUrl.pathname.replace('/api/', '/api/v1/');
+        req._parsedUrl.path = req.url;
+        req._parsedUrl.href = req.url;
+      }
     }
     next();
   });

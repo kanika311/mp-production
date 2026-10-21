@@ -27,11 +27,19 @@ export default function EmployeeLoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      let res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+
+      if (res.status === 404) {
+        res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+      }
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -39,7 +47,7 @@ export default function EmployeeLoginPage() {
       }
 
       // Extract role
-      const rawRole = (data.user?.role || '')
+      const rawRole = (data.user?.role || data.data?.user?.role || '')
         .toString()
         .toLowerCase()
         .replace(/-/g, '_');
@@ -52,9 +60,13 @@ export default function EmployeeLoginPage() {
         throw new Error('Access Denied. This login portal is strictly reserved for internal employees & production crew.');
       }
 
-      if (data?.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('mdms_auth_token', data.token);
+      const token = data?.token || data?.accessToken || data?.data?.accessToken;
+      if (token) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('mdms_auth_token', token);
+        document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `mdms_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `next-auth.session-token=${token}; path=/; max-age=604800; SameSite=Lax`;
       }
 
       toast.success('Welcome back to the studio workspace.');
