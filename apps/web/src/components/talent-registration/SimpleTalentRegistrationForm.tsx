@@ -493,8 +493,7 @@ export function SimpleTalentRegistrationForm() {
       toast.success('🎉 Registration Successful! Opening your Profile Editor to add photos, videos & details...');
       
       setTimeout(() => {
-        router.push('/talent-dashboard/edit');
-        router.refresh();
+        window.location.href = '/talent-dashboard/edit';
       }, 1200);
     } catch (err: any) {
       console.error(err);

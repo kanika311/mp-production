@@ -118,8 +118,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           throw new Error(loginData.error || loginData.message || 'Login failed');
         }
 
-        const token = loginData?.token || loginData?.accessToken || loginData?.data?.accessToken;
-        const userObj = loginData?.user || loginData?.data?.user;
+        const role = (userObj?.role || '').toString().toLowerCase().replace(/-/g, '_');
 
         if (token) {
           localStorage.setItem('token', token);
@@ -128,9 +127,8 @@ export function AuthForm({ mode }: AuthFormProps) {
           document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
           document.cookie = `mdms_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
           document.cookie = `next-auth.session-token=${token}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `mdms_auth_role=${role || 'client'}; path=/; max-age=604800; SameSite=Lax`;
         }
-
-        const role = (userObj?.role || '').toString().toLowerCase().replace(/-/g, '_');
 
         // RESTRICTION: Admin, Super Admin, and Employees cannot log in through the public /login page
         if (
@@ -146,13 +144,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
 
         if (role === 'model' || role === 'talent') {
-          router.push('/talent-dashboard/edit');
+          window.location.href = '/talent-dashboard/edit';
         } else {
-          router.push('/client-portal');
+          window.location.href = '/client-portal';
         }
+        return;
       }
-
-      router.refresh();
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {

@@ -67,22 +67,21 @@ export default function EmployeeLoginPage() {
         document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `mdms_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `next-auth.session-token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `mdms_auth_role=${rawRole}; path=/; max-age=604800; SameSite=Lax`;
       }
 
       toast.success('Welcome back to the studio workspace.');
 
-      // Role-specific workspace routing
+      // Role-specific workspace routing via hard navigation
       if (rawRole === 'editor') {
-        router.push('/editor-portal');
+        window.location.href = '/editor-portal';
       } else if (rawRole === 'project_manager') {
-        router.push('/project-manager');
+        window.location.href = '/project-manager';
       } else if (rawRole === 'admin' || rawRole === 'super_admin') {
-        router.push('/admin');
+        window.location.href = '/admin';
       } else {
-        router.push('/employee-portal');
+        window.location.href = '/employee-portal';
       }
-
-      router.refresh();
     } catch (err: any) {
       console.error('Employee Login Error:', err);
       setError(err.message || 'Authentication failed. Please verify employee credentials.');

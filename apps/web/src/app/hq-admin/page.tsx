@@ -59,10 +59,10 @@ export default function AdminLoginPage() {
         document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `mdms_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `next-auth.session-token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `mdms_auth_role=${lowerRole || 'admin'}; path=/; max-age=604800; SameSite=Lax`;
       }
 
-      router.push('/studio-8f2k/mgmt');
-      router.refresh();
+      window.location.href = '/studio-8f2k/mgmt';
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {

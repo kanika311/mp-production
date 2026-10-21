@@ -76,13 +76,13 @@ export default function SushantAdminLoginPage() {
         document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `mdms_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `next-auth.session-token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `mdms_auth_role=admin; path=/; max-age=604800; SameSite=Lax`;
       }
 
       toast.success('Administrator authenticated.');
 
-      // Redirect to Admin dashboard
-      router.push('/admin');
-      router.refresh();
+      // Hard navigation ensures freshly set cookies are delivered in request headers to middleware
+      window.location.href = '/admin';
     } catch (err: any) {
       console.error('Admin Login Error:', err);
       setError(err.message || 'Authentication failed. Please verify credentials.');

@@ -55,7 +55,8 @@ export async function middleware(req: NextRequest) {
 
   if (rawToken) {
     try {
-      const payload = await verifySessionToken(rawToken);
+      const cleanToken = decodeURIComponent(rawToken).trim().replace(/^"|"$/g, '');
+      const payload = await verifySessionToken(cleanToken);
       if (payload?.role) {
         userRole = normalizeRole(payload.role as string);
       }
@@ -74,6 +75,14 @@ export async function middleware(req: NextRequest) {
       }
     } catch {
       // NextAuth check ignored
+    }
+  }
+
+  // 3. Fallback to mdms_auth_role cookie if present
+  if (!userRole) {
+    const roleCookie = req.cookies.get('mdms_auth_role')?.value;
+    if (roleCookie) {
+      userRole = normalizeRole(roleCookie);
     }
   }
 

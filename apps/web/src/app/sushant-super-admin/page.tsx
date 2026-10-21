@@ -76,13 +76,13 @@ export default function SushantSuperAdminLoginPage() {
         document.cookie = `token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `mdms_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `next-auth.session-token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `mdms_auth_role=super_admin; path=/; max-age=604800; SameSite=Lax`;
       }
 
       toast.success('Super Admin authenticated successfully.');
       
-      // Redirect to Super Admin root panel
-      router.push('/super-admin');
-      router.refresh();
+      // Hard navigation ensures freshly set cookies are delivered in request headers to middleware
+      window.location.href = '/super-admin';
     } catch (err: any) {
       console.error('Super Admin Login Error:', err);
       setError(err.message || 'Authentication failed. Please verify credentials.');
