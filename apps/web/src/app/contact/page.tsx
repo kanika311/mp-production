@@ -58,7 +58,8 @@ export default function Contact() {
       .catch(() => {});
   }, []);
 
-  const contactPhone = footerConfig?.contactPhone || '+91 831 053 1309';
+  const rawContactPhone = footerConfig?.contactPhone || '+91 831 053 1309';
+  const contactPhone = rawContactPhone.trim().replace(/^(\+?91)[\s-]*/, '+91 ');
   const contactEmail = footerConfig?.contactEmail || 'hello@mpproduction.com';
   const contactAddress = footerConfig?.contactAddress || 'Mumbai, India';
   const cleanPhone = contactPhone.replace(/\s+/g, '');

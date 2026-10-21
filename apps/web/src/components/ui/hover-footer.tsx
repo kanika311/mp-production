@@ -235,6 +235,9 @@ export function HoverFooter() {
   }, [footerConfig?.sections, footerConfig?.quickLinks]);
 
   // Contact info data
+  const rawContactPhone = footerConfig?.contactPhone || "+91 831 053 1309";
+  const displayContactPhone = rawContactPhone.trim().replace(/^(\+?91)[\s-]*/, '+91 ');
+
   const contactInfo = [
     {
       icon: <Mail size={18} className="text-primary" />,
@@ -243,8 +246,8 @@ export function HoverFooter() {
     },
     {
       icon: <Phone size={18} className="text-primary" />,
-      text: footerConfig?.contactPhone || "+91 831 053 1309",
-      href: `tel:${(footerConfig?.contactPhone || "+91 831 053 1309").replace(/\s+/g, '')}`,
+      text: displayContactPhone,
+      href: `tel:${rawContactPhone.replace(/\s+/g, '')}`,
     },
     {
       icon: <MapPin size={18} className="text-primary" />,
