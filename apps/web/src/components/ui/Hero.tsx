@@ -9,7 +9,7 @@ export function Hero() {
       {/* Background Image (Cinematic Reel Placeholder) */}
       <div className="absolute inset-0 z-0">
         <img 
-          src="/assets/hero-dark.jpg" 
+          src="/assets/hero-dark.webp" 
           alt="Cinematic Set" 
           className="w-full h-full object-cover opacity-80"
         />

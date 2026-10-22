@@ -70,7 +70,7 @@ export function PortalNavbar({ role, title, className, user, ...props }: PortalN
         <div className="flex items-center gap-6">
           <Link href={isPortal ? "#" : "/"} className="group flex items-center gap-2">
             <img 
-              src="/logo.png" 
+              src="/logo.webp" 
               alt="MP Productions Logo" 
               className="h-14 md:h-16 w-auto object-contain scale-110 origin-left group-hover:scale-125 transition-all duration-300 drop-shadow-[0_0_10px_rgba(235,61,38,0.15)]"
             />

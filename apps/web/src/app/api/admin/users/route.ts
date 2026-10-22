@@ -51,7 +51,17 @@ export async function GET(req: Request) {
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10)));
     const where: any = {};
-    if (role) where.role = role;
+    if (role) {
+      if (role === 'ADMIN') {
+        where.role = { in: ['ADMIN', 'SUPER_ADMIN'] };
+      } else if (role === 'EMPLOYEE') {
+        where.role = { in: ['EMPLOYEE', 'EDITOR', 'PROJECT_MANAGER'] };
+      } else if (role.includes(',')) {
+        where.role = { in: role.split(',').map((r: string) => r.trim()) };
+      } else {
+        where.role = role;
+      }
+    }
     if (search) {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },

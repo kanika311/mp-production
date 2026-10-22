@@ -90,7 +90,7 @@ export function DashboardLayout({ children, user, title }: DashboardLayoutProps)
         <div className="flex items-center gap-6 sm:gap-10">
           <Link href="/" data-cursor="hover" data-cursor-label="HOME" className="flex items-center gap-3 group">
             <img 
-              src="/logo.png" 
+              src="/logo.webp" 
               alt="MP Production Logo" 
               className="h-14 w-auto object-contain transition-transform group-hover:scale-105 drop-shadow-[0_0_15px_rgba(235,61,38,0.3)]"
             />

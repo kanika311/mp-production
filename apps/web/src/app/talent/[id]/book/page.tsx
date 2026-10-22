@@ -4,15 +4,46 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BookingForm } from './BookingForm';
 import { serverFetchAPI } from '@/lib/server-api-client';
+import { prisma } from '@/lib/prisma';
 
 async function getTalentProfile(id: string) {
+  const trimmed = decodeURIComponent(id || '').trim();
+  const slugHyphen = trimmed.replace(/\s+/g, '-');
+  const slugSpace = trimmed.replace(/-/g, ' ');
+
+  // 1. Try serverFetchAPI first
   try {
-    const data = await serverFetchAPI(`/talent/${id}`, { cache: 'no-store' });
-    if (!data) return null;
-    return data.data ? data.data : data;
-  } catch (error) {
-    return null;
-  }
+    const data = await serverFetchAPI(`/talent/${encodeURIComponent(trimmed)}`, { cache: 'no-store' });
+    if (data && (data.data || data.user)) {
+      return data.data ? data.data : data;
+    }
+  } catch (error) {}
+
+  // 2. Direct Prisma fallback for 100% reliable server rendering
+  try {
+    const profile = await prisma.talentProfile.findFirst({
+      where: {
+        OR: [
+          { id: trimmed },
+          { slug: trimmed },
+          { slug: slugHyphen },
+          { slug: slugSpace },
+          { userId: trimmed },
+        ],
+      },
+      include: {
+        user: true,
+        pricing: true,
+        userTalents: {
+          include: { category: true },
+        },
+      },
+    });
+
+    if (profile) return profile;
+  } catch (dbErr) {}
+
+  return null;
 }
 
 export default async function BookTalentPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
@@ -25,36 +56,26 @@ export default async function BookTalentPage({ params }: { params: Promise<{ id:
     notFound();
   }
 
+  const talentName = `${profile.user?.firstName || ''} ${profile.user?.lastName || ''}`.trim() || profile.stageName || 'Talent';
+  const avatarUrl = profile.user?.avatarUrl || profile.avatarUrl || '';
+  const categoryName = profile.userTalents?.[0]?.category?.name || 'Artist / Model';
+  const dailyRate = profile.pricing?.perDay || 4999;
+
   return (
     <>
       <Navbar />
       
-      <main className="page-content">
-        <div className="max-w-4xl mx-auto">
-          
-          <Reveal direction="up">
-            <Link href={`/talent/${id}`} className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-12 uppercase tracking-widest font-semibold">
-              &larr; Back to Profile
-            </Link>
-          </Reveal>
-
-          <Reveal direction="up" delay={0.1}>
-            <div className="mb-12">
-              <span className="text-[var(--color-primary)] tracking-[0.2em] text-xs uppercase font-semibold mb-4 block">
-                Booking Inquiry
-              </span>
-              <h1 className="text-4xl md:text-5xl font-serif text-foreground mb-4">
-                Book {profile.user.firstName} {profile.user.lastName}
-              </h1>
-              <p className="text-muted-foreground font-light">
-                Submit your project details. Our team will review the inquiry and get back to you with availability and a quotation.
-              </p>
-            </div>
-          </Reveal>
-
+      <main className="page-content min-h-screen py-16 px-4 md:px-8">
+        <div className="max-w-4xl mx-auto mt-20">
           <Reveal direction="up" delay={0.2}>
-            <div className="bg-[var(--color-surface)] p-8 md:p-12 border border-[var(--color-border)]">
-              <BookingForm talentProfileId={id} />
+            <div className="bg-[var(--color-surface)] p-6 md:p-10 border border-[var(--color-border)] rounded-2xl shadow-xl">
+              <BookingForm 
+                talentProfileId={id} 
+                talentName={talentName}
+                talentAvatar={avatarUrl}
+                categoryName={categoryName}
+                dailyRate={dailyRate}
+              />
             </div>
           </Reveal>
 

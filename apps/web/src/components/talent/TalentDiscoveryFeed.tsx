@@ -665,15 +665,30 @@ export default function TalentDiscoveryFeed({ initialTalents }: TalentDiscoveryF
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {paginatedTalents.map((talent, idx) => {
+                  let overrideAvatar = talent.user?.avatarUrl;
+                  let overrideCategory = talent.userTalents?.[0]?.category?.name;
+                  if (typeof window !== 'undefined') {
+                    try {
+                      const raw = localStorage.getItem(`talent_profile_override_${talent.id}`) ||
+                        localStorage.getItem(`talent_profile_override_${talent.userId}`) ||
+                        (talent.slug ? localStorage.getItem(`talent_profile_override_${talent.slug}`) : null);
+                      if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (parsed.avatarUrl || parsed.profilePhotoPreview) overrideAvatar = parsed.avatarUrl || parsed.profilePhotoPreview;
+                        if (parsed.primaryCategory?.name || parsed.category) overrideCategory = parsed.primaryCategory?.name || parsed.category;
+                      }
+                    } catch {}
+                  }
+
                   const name = talent.stageName || `${talent.user?.firstName || ''} ${talent.user?.lastName || ''}`.trim() || 'Verified Talent';
                   const avatar = 
-                    talent.user?.avatarUrl || 
+                    overrideAvatar || 
                     talent.portfolioMedia?.find((m) => m.type === 'PROFILE_PHOTO')?.url ||
                     talent.coverBannerUrl || 
                     fallbackAvatars[idx % fallbackAvatars.length];
                   
                   const category = 
-                    talent.userTalents?.[0]?.category?.name || 
+                    overrideCategory || 
                     'Fashion Model';
 
                   const location = 

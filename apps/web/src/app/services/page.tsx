@@ -116,10 +116,79 @@ const SORT_OPTIONS = [
   { label: 'Name (A-Z)', value: 'name_asc' },
 ];
 
+const DEFAULT_SERVICES_LIST: ServiceItem[] = [
+  {
+    id: 'commercial-cinema',
+    slug: 'commercial-cinema',
+    title: 'Commercial Cinema & TVC',
+    desc: 'Full-scale cinematic brand film production with storytelling, 4K/8K anamorphic cinematography, and professional color grading.',
+    category: 'Video',
+    img: '/assets/hero_cinematic_dark.webp',
+    features: ['4K/8K Cinema', 'Master Gaffer Lighting', 'RED & ARRI Packages'],
+    pricing: '₹5,00,000',
+    rawPrice: 500000,
+  },
+  {
+    id: 'pre-production',
+    slug: 'pre-production',
+    title: 'Pre-Production & Creative Direction',
+    desc: 'Scriptwriting, visual storyboarding, moodboarding, location scouting, and comprehensive casting for luxury lookbooks and commercial cinema.',
+    category: 'Production',
+    img: '/assets/service_pre_production.webp',
+    features: ['Storyboarding', 'Location Scouting', 'Comprehensive Casting'],
+    pricing: '₹1,50,000',
+    rawPrice: 150000,
+  },
+  {
+    id: 'high-fashion-lookbooks',
+    slug: 'high-fashion-lookbooks',
+    title: 'High-Fashion Lookbooks & Editorial',
+    desc: 'Editorial and runway campaigns for luxury fashion ateliers with full art direction, prime glass, and high-end retouching.',
+    category: 'Photography',
+    img: '/assets/fashion_lookbook.webp',
+    features: ['Runway & Ateliers', 'High-End Retouching', 'Art Direction'],
+    pricing: '₹4,00,000',
+    rawPrice: 400000,
+  },
+  {
+    id: 'post-color-grade',
+    slug: 'post-color-grade',
+    title: 'Post-Production & Dolby Vision Color',
+    desc: 'Theatrical editing, Kodak 2383 film emulation, Dolby Vision HDR color grading, motion graphics, and immersive sound design.',
+    category: 'Post-Production',
+    img: '/assets/service_post_production.webp',
+    features: ['Dolby Vision HDR', 'Kodak 2383 Emulation', 'Spatial Sound Design'],
+    pricing: '₹2,00,000',
+    rawPrice: 200000,
+  },
+  {
+    id: 'casting-roster',
+    slug: 'casting-roster',
+    title: 'Talent Roster & Representation',
+    desc: 'Direct exclusive access to over 1,200 verified models, dramatic actors, and visual directors with secure escrow contract protections.',
+    category: 'Talent',
+    img: '/assets/service_casting.webp',
+    features: ['1,200+ Verified Roster', 'Escrow Contract Protection', 'Direct Agency Access'],
+    pricing: '₹1,50,000',
+    rawPrice: 150000,
+  },
+  {
+    id: 'digital-campaigns',
+    slug: 'digital-campaigns',
+    title: 'Digital Campaigns & Viral Reels',
+    desc: 'High-retention 9:16 social-first campaign reels, algorithm-tailored hooks, and content suites built for maximum reach and brand conversion.',
+    category: 'Marketing',
+    img: '/assets/project-fashion.webp',
+    features: ['9:16 Cinematic Reels', 'Algorithm Hook Testing', 'Omnichannel Assets'],
+    pricing: '₹2,50,000',
+    rawPrice: 250000,
+  },
+];
+
 export default function ServicesPage() {
-  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>(DEFAULT_SERVICES_LIST);
   const [sponsoredPartners, setSponsoredPartners] = useState<SponsoredPartner[]>(DEFAULT_SPONSORED);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Filter & Search States
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,8 +230,9 @@ export default function ServicesPage() {
       fetchAPI('/cms/config/sponsored').catch(() => null),
     ])
       .then(([servicesRes, sponsoredRes]) => {
-        if (servicesRes?.data && Array.isArray(servicesRes.data) && servicesRes.data.length > 0) {
-          const mapped: ServiceItem[] = servicesRes.data.map((s: any) => {
+        const servicesData = Array.isArray(servicesRes) ? servicesRes : (servicesRes?.data || []);
+        if (Array.isArray(servicesData) && servicesData.length > 0) {
+          const mapped: ServiceItem[] = servicesData.map((s: any) => {
             const rawPrice = s.basePrice ? Number(s.basePrice) / 100 : (Number(s.price) || 0);
             const category = s.category || 'Production';
             const fallbackImg = CATEGORY_IMAGES[category] || '/assets/service_production.webp';
@@ -201,7 +271,7 @@ export default function ServicesPage() {
         }
       })
       .catch(() => {
-        toast.error('Failed to load services data');
+        // Silently preserve DEFAULT_SERVICES_LIST without breaking UI
       })
       .finally(() => {
         setLoading(false);

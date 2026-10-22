@@ -32,7 +32,7 @@ export default async function TestimonialsPage() {
         {/* Header Section */}
         <section className="relative w-full h-[60vh] flex items-center justify-center overflow-hidden mb-20 text-center">
           <Image 
-            src="/images/bg-minimal.jpg" 
+            src="/images/bg-minimal.webp" 
             alt="Client Stories" 
             fill 
             className="object-cover" 

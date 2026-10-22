@@ -118,6 +118,8 @@ export function AuthForm({ mode }: AuthFormProps) {
           throw new Error(loginData.error || loginData.message || 'Login failed');
         }
 
+        const userObj = loginData?.user || loginData?.data?.user;
+        const token = loginData?.token || loginData?.access_token || loginData?.data?.token || loginData?.data?.access_token;
         const role = (userObj?.role || '').toString().toLowerCase().replace(/-/g, '_');
 
         if (token) {
@@ -130,21 +132,19 @@ export function AuthForm({ mode }: AuthFormProps) {
           document.cookie = `mdms_auth_role=${role || 'client'}; path=/; max-age=604800; SameSite=Lax`;
         }
 
-        // RESTRICTION: Admin, Super Admin, and Employees cannot log in through the public /login page
-        if (
-          role === 'super_admin' ||
-          role === 'admin' ||
-          role === 'employee' ||
-          role === 'editor' ||
-          role === 'project_manager'
-        ) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('mdms_auth_token');
-          throw new Error('Access Denied. Admins and internal employees cannot log in from this public page. Please use your designated private portal.');
-        }
-
-        if (role === 'model' || role === 'talent') {
-          window.location.href = '/talent-dashboard/edit';
+        // Redirect user directly to their appropriate portal based on role
+        if (role === 'super_admin') {
+          window.location.href = '/super-admin';
+        } else if (role === 'admin') {
+          window.location.href = '/admin';
+        } else if (role === 'employee') {
+          window.location.href = '/employee-portal';
+        } else if (role === 'editor') {
+          window.location.href = '/editor-portal';
+        } else if (role === 'project_manager') {
+          window.location.href = '/project-manager';
+        } else if (role === 'model' || role === 'talent') {
+          window.location.href = '/talent-dashboard';
         } else {
           window.location.href = '/client-portal';
         }
@@ -162,12 +162,12 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       <div className="text-center mb-8">
         <Link href="/" className="inline-block mb-4">
-          <img src="/logo.png" alt="MP Productions" className="h-14 w-auto object-contain mx-auto drop-shadow-[0_0_20px_rgba(235,61,38,0.25)]" />
+          <img src="/logo.webp" alt="MP Productions" className="h-14 w-auto object-contain mx-auto drop-shadow-[0_0_20px_rgba(235,61,38,0.25)]" />
         </Link>
-        <h1 className="text-2xl font-bold text-foreground mb-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-2 tracking-tight">
           {isLogin ? 'Welcome Back' : 'Join the Platform'}
         </h1>
-        <p className="text-sm text-muted-foreground font-light">
+        <p className="text-sm sm:text-base text-foreground/80 font-medium">
           {isLogin
             ? 'Sign in to access your production portal'
             : 'Create your account to start collaborating'}
@@ -175,7 +175,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-brand/10 border border-brand/30 text-brand text-sm text-center">
+        <div className="mb-6 p-4 rounded-xl bg-brand/10 border border-brand/30 text-brand text-sm font-semibold text-center">
           {error}
         </div>
       )}
@@ -186,11 +186,11 @@ export function AuthForm({ mode }: AuthFormProps) {
           type="button"
           onClick={handleGoogleLogin}
           disabled={isLoading || isGoogleLoading}
-          className="w-full flex items-center justify-center gap-3 bg-surface hover:bg-surface/80 text-foreground py-3 rounded-xl border border-border hover:border-brand/40 transition-all text-sm font-medium disabled:opacity-50 shadow-sm cursor-pointer"
+          className="w-full flex items-center justify-center gap-3 bg-surface hover:bg-surface/80 text-foreground py-3 rounded-xl border border-slate-300 dark:border-border hover:border-brand/40 transition-all text-sm font-bold disabled:opacity-50 shadow-sm cursor-pointer"
         >
           {isGoogleLoading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <Loader2 className="w-5 h-5 animate-spin text-foreground" />
               <span>Connecting to Google...</span>
             </>
           ) : (
@@ -221,39 +221,39 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
+          <span className="w-full border-t border-slate-300 dark:border-border" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+        <div className="relative flex justify-center text-xs uppercase font-bold tracking-wider">
+          <span className="bg-background px-3 text-foreground/80">Or continue with email</span>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {!isLogin && (
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-foreground mb-2">
               Full Name
             </label>
             <div className="relative">
-              <User className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <User className="w-4 h-4 text-foreground/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Elena Smith"
                 required
-                className="w-full bg-surface text-foreground pl-10 pr-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-brand transition-colors text-sm placeholder:text-muted-foreground"
+                className="w-full bg-surface text-foreground font-semibold pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-border focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors text-sm placeholder:text-muted-foreground placeholder:font-normal"
               />
             </div>
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-foreground mb-2">
             Email Address
           </label>
           <div className="relative">
-            <Mail className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Mail className="w-4 h-4 text-foreground/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="email"
               value={email}
@@ -261,17 +261,17 @@ export function AuthForm({ mode }: AuthFormProps) {
               placeholder="name@example.com"
               autoComplete="username"
               required
-              className="w-full bg-surface text-foreground pl-10 pr-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-brand transition-colors text-sm placeholder:text-muted-foreground"
+              className="w-full bg-surface text-foreground font-semibold pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-border focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors text-sm placeholder:text-muted-foreground placeholder:font-normal"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-foreground mb-2">
             Password
           </label>
           <div className="relative">
-            <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Lock className="w-4 h-4 text-foreground/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="password"
               value={password}
@@ -280,18 +280,18 @@ export function AuthForm({ mode }: AuthFormProps) {
               autoComplete={isLogin ? "current-password" : "new-password"}
               required
               minLength={isLogin ? undefined : 8}
-              className="w-full bg-surface text-foreground pl-10 pr-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-brand transition-colors text-sm placeholder:text-muted-foreground"
+              className="w-full bg-surface text-foreground font-semibold pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-border focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors text-sm placeholder:text-muted-foreground placeholder:font-normal"
             />
           </div>
         </div>
 
         {!isLogin && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-foreground mb-2">
                 Confirm Password
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-foreground/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   value={confirmPassword}
@@ -300,7 +300,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                   autoComplete="new-password"
                   required
                   minLength={8}
-                  className="w-full bg-surface text-foreground pl-10 pr-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-brand transition-colors text-sm placeholder:text-muted-foreground"
+                  className="w-full bg-surface text-foreground font-semibold pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-border focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors text-sm placeholder:text-muted-foreground placeholder:font-normal"
                 />
               </div>
             </div>
@@ -309,34 +309,34 @@ export function AuthForm({ mode }: AuthFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full mt-6 bg-brand hover:brightness-110 text-primary-foreground font-semibold py-3 rounded-xl transition-all shadow-glow flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          className="w-full mt-6 bg-brand hover:brightness-110 text-primary-foreground font-bold py-3.5 rounded-xl transition-all shadow-glow flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-base tracking-wide"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
               <span>{isLogin ? 'Signing in...' : 'Creating account...'}</span>
             </>
           ) : (
             <>
               <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-5 h-5" />
             </>
           )}
         </button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-border text-center text-xs text-muted-foreground">
+      <div className="mt-8 pt-6 border-t border-slate-300 dark:border-border text-center text-sm font-medium text-foreground/80">
         {isLogin ? (
           <p>
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-brand font-semibold hover:underline">
+            <Link href="/register" className="text-brand font-bold hover:underline ml-1">
               Register here
             </Link>
           </p>
         ) : (
           <p>
             Already have an account?{' '}
-            <Link href="/login" className="text-brand font-semibold hover:underline">
+            <Link href="/login" className="text-brand font-bold hover:underline ml-1">
               Sign In
             </Link>
           </p>

@@ -62,7 +62,7 @@ export default function Careers() {
         {/* Header Section — Full Bleed Merged With Navbar */}
         <section className="relative w-full h-[70vh] sm:h-[80vh] flex items-center justify-center overflow-hidden mb-20 text-center pt-28 sm:pt-36">
           <img 
-            src="/images/careers-meeting.jpg" 
+            src="/images/careers-meeting.webp" 
             alt="Careers at MP Productions" 
             className="absolute inset-0 w-full h-full object-cover object-center"
           />
@@ -94,7 +94,7 @@ export default function Careers() {
           <Reveal direction="up" delay={0.1}>
             <div className="relative aspect-[21/9] overflow-hidden rounded-sm mb-24 group cursor-pointer border border-border">
               <img 
-                src="/images/careers-office.jpg" 
+                src="/images/careers-office.webp" 
                 alt="Studio Culture" 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
               />
@@ -110,7 +110,7 @@ export default function Careers() {
           <section className="mb-24">
             <Reveal direction="up">
               <div className="flex flex-col items-center gap-4">
-                <img src="/logo.png" alt="MP Productions" className="h-14 w-auto object-contain drop-shadow-[0_0_15px_rgba(235,61,38,0.2)]" />
+                <img src="/logo.webp" alt="MP Productions" className="h-14 w-auto object-contain drop-shadow-[0_0_15px_rgba(235,61,38,0.2)]" />
                 <h2 className="text-3xl font-serif text-foreground text-center">Why Join Us?</h2>
               </div>
             </Reveal>

@@ -176,6 +176,93 @@ const DEFAULT_TALENT = [
   },
 ];
 
+const DEFAULT_SERVICES = [
+  {
+    id: "commercial-cinema",
+    slug: "commercial-cinema",
+    title: "Commercial Cinema & TVC",
+    name: "Commercial Cinema",
+    category: "Video",
+    description: "Full-scale cinematic brand film production with storytelling, 4K/8K anamorphic cinematography, and professional color grading.",
+    shortDesc: "Premium brand commercials",
+    features: ["4K/8K Cinema", "Master Gaffer Lighting", "RED & ARRI Packages"],
+    tags: ["4K/8K Cinema", "Master Gaffer Lighting", "RED & ARRI Packages"],
+    pricing: "₹5,00,000",
+    basePrice: 50000000,
+    imageUrl: "/assets/hero_cinematic_dark.webp",
+  },
+  {
+    id: "pre-production",
+    slug: "pre-production",
+    title: "Pre-Production & Creative Direction",
+    name: "Pre-Production & Creative Direction",
+    category: "Production",
+    description: "Scriptwriting, visual storyboarding, moodboarding, location scouting, and comprehensive casting for luxury lookbooks and commercial cinema.",
+    shortDesc: "Concept & Art Direction",
+    features: ["Storyboarding", "Location Scouting", "Comprehensive Casting"],
+    tags: ["Storyboarding", "Location Scouting", "Comprehensive Casting"],
+    pricing: "₹1,50,000",
+    basePrice: 15000000,
+    imageUrl: "/assets/service_pre_production.webp",
+  },
+  {
+    id: "high-fashion-lookbooks",
+    slug: "high-fashion-lookbooks",
+    title: "High-Fashion Lookbooks & Editorial",
+    name: "High-Fashion Lookbooks",
+    category: "Photography",
+    description: "Editorial and runway campaigns for luxury fashion ateliers with full art direction, prime glass, and high-end retouching.",
+    shortDesc: "Editorial & runway",
+    features: ["Runway & Ateliers", "High-End Retouching", "Art Direction"],
+    tags: ["Runway & Ateliers", "High-End Retouching", "Art Direction"],
+    pricing: "₹4,00,000",
+    basePrice: 40000000,
+    imageUrl: "/assets/fashion_lookbook.webp",
+  },
+  {
+    id: "post-color-grade",
+    slug: "post-color-grade",
+    title: "Post-Production & Dolby Vision Color",
+    name: "Post & Color Grade",
+    category: "Post-Production",
+    description: "Theatrical editing, Kodak 2383 film emulation, Dolby Vision HDR color grading, motion graphics, and immersive sound design.",
+    shortDesc: "Dolby Vision grading",
+    features: ["Dolby Vision HDR", "Kodak 2383 Emulation", "Spatial Sound Design"],
+    tags: ["Dolby Vision HDR", "Kodak 2383 Emulation", "Spatial Sound Design"],
+    pricing: "₹2,00,000",
+    basePrice: 20000000,
+    imageUrl: "/assets/service_post_production.webp",
+  },
+  {
+    id: "casting-roster",
+    slug: "casting-roster",
+    title: "Talent Roster & Representation",
+    name: "Casting & Roster",
+    category: "Talent",
+    description: "Direct exclusive access to over 1,200 verified models, dramatic actors, and visual directors with secure escrow contract protections.",
+    shortDesc: "1,200+ verified talent",
+    features: ["1,200+ Verified Roster", "Escrow Contract Protection", "Direct Agency Access"],
+    tags: ["1,200+ Verified Roster", "Escrow Contract Protection", "Direct Agency Access"],
+    pricing: "₹1,50,000",
+    basePrice: 15000000,
+    imageUrl: "/assets/service_casting.webp",
+  },
+  {
+    id: "digital-campaigns",
+    slug: "digital-campaigns",
+    title: "Digital Campaigns & Viral Reels",
+    name: "Digital Campaigns",
+    category: "Marketing",
+    description: "High-retention 9:16 social-first campaign reels, algorithm-tailored hooks, and content suites built for maximum reach and brand conversion.",
+    shortDesc: "Social-first content",
+    features: ["9:16 Cinematic Reels", "Algorithm Hook Testing", "Omnichannel Assets"],
+    tags: ["9:16 Cinematic Reels", "Algorithm Hook Testing", "Omnichannel Assets"],
+    pricing: "₹2,50,000",
+    basePrice: 25000000,
+    imageUrl: "/assets/project-fashion.webp",
+  },
+];
+
 /* ═══════════════════════════════════════════════════════════
    Main Component
    ═══════════════════════════════════════════════════════════ */
@@ -184,7 +271,7 @@ export default function Home() {
   const [announcement, setAnnouncement] = useState<any>(null);
   const [intro, setIntro] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
-  const [services, setServices] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>(DEFAULT_SERVICES);
   const [portfolio, setPortfolio] = useState<any[]>(DEFAULT_PORTFOLIO);
   const [talent, setTalent] = useState<any[]>(DEFAULT_TALENT);
   const [testimonials, setTestimonials] = useState<any[]>([]);
@@ -197,12 +284,81 @@ export default function Home() {
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
     const safeFetch = (endpoint: string) =>
       fetchAPI(endpoint, { cache: "no-store", signal: controller.signal }).catch(() => null);
 
-    Promise.all([
+    // Progressive independent fetches so fast responses update immediately without blocking
+    safeFetch("/cms/services?active=true").then((servRes) => {
+      if (!isMounted || !servRes) return;
+      const rows = Array.isArray(servRes) ? servRes : (servRes.data || []);
+      if (rows.length > 0) setServices(rows);
+    });
+
+    safeFetch("/cms/hero?page=home").then((heroRes) => {
+      if (!isMounted || !heroRes) return;
+      setHero((prev: any) => ({ ...prev, ...(heroRes.data || heroRes) }));
+    });
+
+    safeFetch("/cms/config/home-page").then((homePageRes) => {
+      if (!isMounted || !homePageRes) return;
+      const homeData = homePageRes?.data || homePageRes;
+      if (homeData) {
+        if (homeData.announcement) setAnnouncement(homeData.announcement);
+        if (homeData.hero) setHero((prev: any) => ({ ...prev, ...homeData.hero }));
+        if (Array.isArray(homeData.stats) && homeData.stats.length > 0) setStats(homeData.stats);
+        if (Array.isArray(homeData.faqs) && homeData.faqs.length > 0) setFaqs(homeData.faqs);
+      }
+    });
+
+    safeFetch("/cms/config/intro").then((introRes) => {
+      if (!isMounted || !introRes) return;
+      setIntro(introRes.data || introRes);
+    });
+
+    safeFetch("/cms/stats").then((statsRes) => {
+      if (!isMounted || !statsRes) return;
+      setStats((prev: any) => prev || statsRes.data || statsRes);
+    });
+
+    safeFetch("/cms/portfolio?featured=true&limit=6").then((portRes) => {
+      if (!isMounted || !portRes) return;
+      const rows = Array.isArray(portRes) ? portRes : (portRes.data || []);
+      if (rows.length > 0) setPortfolio(rows);
+    });
+
+    safeFetch("/talent/featured").then((talentRes) => {
+      if (!isMounted || !talentRes) return;
+      const rows = Array.isArray(talentRes) ? talentRes : (talentRes.data || []);
+      if (rows.length > 0) setTalent(rows);
+    });
+
+    safeFetch("/cms/testimonials?published=true").then((testRes) => {
+      if (!isMounted || !testRes) return;
+      const rows = Array.isArray(testRes) ? testRes : (testRes.data || []);
+      if (rows.length > 0) setTestimonials(rows);
+    });
+
+    safeFetch("/cms/faq?limit=8").then((faqRes) => {
+      if (!isMounted || !faqRes) return;
+      const rows = Array.isArray(faqRes) ? faqRes : (faqRes.data || []);
+      if (rows.length > 0) setFaqs(rows);
+    });
+
+    safeFetch("/cms/courses?limit=4").then((courseRes) => {
+      if (!isMounted || !courseRes) return;
+      const rows = Array.isArray(courseRes)
+        ? courseRes
+        : Array.isArray(courseRes.data)
+          ? courseRes.data
+          : Array.isArray(courseRes.data?.data)
+            ? courseRes.data.data
+            : [];
+      if (rows.length > 0) setCourses(rows);
+    });
+
+    Promise.allSettled([
       safeFetch("/cms/hero?page=home"),
       safeFetch("/cms/config/home-page"),
       safeFetch("/cms/config/intro"),
@@ -213,54 +369,10 @@ export default function Home() {
       safeFetch("/cms/testimonials?published=true"),
       safeFetch("/cms/faq?limit=8"),
       safeFetch("/cms/courses?limit=4"),
-    ])
-      .then(([heroRes, homePageRes, introRes, statsRes, servRes, portRes, talentRes, testRes, faqRes, courseRes]) => {
-        if (!isMounted) return;
-        const homeData = homePageRes?.data || homePageRes;
-        if (homeData) {
-          if (homeData.announcement) setAnnouncement(homeData.announcement);
-          if (homeData.hero) setHero((prev: any) => ({ ...prev, ...homeData.hero }));
-          if (Array.isArray(homeData.stats) && homeData.stats.length > 0) setStats(homeData.stats);
-          if (Array.isArray(homeData.faqs) && homeData.faqs.length > 0) setFaqs(homeData.faqs);
-        }
-        if (!homeData?.hero && heroRes) setHero(heroRes.data || heroRes);
-        if (introRes) setIntro(introRes.data || introRes);
-        if (!homeData?.stats && statsRes) setStats(statsRes.data || statsRes);
-        if (servRes) {
-          const rows = Array.isArray(servRes) ? servRes : (servRes.data || []);
-          if (rows.length > 0) setServices(rows);
-        }
-        if (portRes) {
-          const rows = Array.isArray(portRes) ? portRes : (portRes.data || []);
-          if (rows.length > 0) setPortfolio(rows);
-        }
-        if (talentRes) {
-          const rows = Array.isArray(talentRes) ? talentRes : (talentRes.data || []);
-          if (rows.length > 0) setTalent(rows);
-        }
-        if (testRes) setTestimonials(Array.isArray(testRes) ? testRes : (testRes.data || []));
-        if (!homeData?.faqs && faqRes) {
-          const rows = Array.isArray(faqRes) ? faqRes : (faqRes.data || []);
-          if (rows.length > 0) setFaqs(rows);
-        }
-        if (courseRes) {
-          const rows = Array.isArray(courseRes)
-            ? courseRes
-            : Array.isArray(courseRes.data)
-              ? courseRes.data
-              : Array.isArray(courseRes.data?.data)
-                ? courseRes.data.data
-                : [];
-          if (rows.length > 0) setCourses(rows);
-        }
-      })
-      .catch(() => {
-        // Silently preserve default states without disruptive toasts
-      })
-      .finally(() => {
-        clearTimeout(timeoutId);
-        if (isMounted) setLoading(false);
-      });
+    ]).finally(() => {
+      clearTimeout(timeoutId);
+      if (isMounted) setLoading(false);
+    });
 
     return () => {
       isMounted = false;
@@ -683,37 +795,6 @@ function Intro({ intro }: { intro?: any }) {
 /* ═══════════════════════════════════════════════════════════
    SERVICES — Bento grid (asymmetric)
    ═══════════════════════════════════════════════════════════ */
-const DEFAULT_SERVICES = [
-  {
-    id: "pre-production",
-    title: "Pre-Production & Creative Direction",
-    description: "Scriptwriting, visual storyboarding, moodboarding, location scouting, and comprehensive casting for luxury lookbooks and commercial cinema.",
-    tags: ["Storyboarding", "Scouting", "Casting"],
-    imageUrl: "/images/services-lighting.webp"
-  },
-  {
-    id: "cinematography",
-    title: "High-Fashion Cinematography",
-    description: "ARRI & RED 8K camera packages with anamorphic glass, master Gaffer lighting, and elite camera operators for high-fashion campaigns.",
-    tags: ["ARRI Alexa 35", "Anamorphic", "Lighting"],
-    imageUrl: "/images/portfolio-equipment.webp"
-  },
-  {
-    id: "post-production",
-    title: "Post-Production & Color Grading",
-    description: "Theatrical editing, Kodak film emulation, Dolby Vision HDR color grading, motion graphics, and immersive sound design.",
-    tags: ["Dolby Vision", "Kodak 2383", "Sound Design"],
-    imageUrl: "/images/about-bts.webp"
-  },
-  {
-    id: "talent-management",
-    title: "Talent Roster & Representation",
-    description: "Exclusive access to international cover models, actors, dancers, and visual directors with secure escrow contract protections.",
-    tags: ["Global Roster", "Escrow Contract", "Agency Access"],
-    imageUrl: "/images/projects-outdoor.webp"
-  }
-];
-
 const SERVICE_IMAGE_MAP: Record<string, string> = {
   'premium-brand-film': '/assets/service_production.webp',
   'product-launch-video': '/assets/commercial_car_shoot.webp',
@@ -764,13 +845,9 @@ function getServiceImage(s: any): string {
   return '/assets/service_production.webp';
 }
 
-function Services({ services = [], loading }: { services?: any[]; loading?: boolean }) {
+function Services({ services = DEFAULT_SERVICES, loading }: { services?: any[]; loading?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Only display section if services actually exist in CMS / DB
-  if (!services || services.length === 0) {
-    return null;
-  }
+  const displayServices = services && services.length > 0 ? services : DEFAULT_SERVICES;
 
   const scroll = (dir: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -810,7 +887,7 @@ function Services({ services = [], loading }: { services?: any[]; loading?: bool
               href="/services"
               className="hidden sm:inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-brand transition-colors ml-2"
             >
-              <span>Explore All ({services.length})</span>
+              <span>Explore All ({displayServices.length})</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -822,7 +899,7 @@ function Services({ services = [], loading }: { services?: any[]; loading?: bool
           className="flex gap-6 overflow-x-auto pb-6 pt-2 scrollbar-none snap-x snap-mandatory -mx-6 px-6 sm:-mx-10 sm:px-10"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {services.map((s, idx) => {
+          {displayServices.map((s, idx) => {
             const serviceName = s.title || s.name || `Service 0${idx + 1}`;
             const desc = s.description || s.shortDesc || s.desc || "";
             const category = s.category || "Production";
@@ -1107,72 +1184,72 @@ function FeaturedTalent({ talent = [], loading }: { talent?: any[]; loading?: bo
             </Link>
           </div>
         </Reveal>
-      </div>
 
-      {/* Horizontal scroll strip with Editorial Cards */}
-      {loading && talent.length === 0 ? (
-        <div className="flex gap-5 px-6 sm:px-10">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="shrink-0 w-[260px] sm:w-[300px] h-[380px] sm:h-[420px] rounded-3xl bg-surface/50 animate-pulse border border-border" />
-          ))}
-        </div>
-      ) : (
-        <div
-          ref={scrollRef}
-          className="flex gap-6 overflow-x-auto scrollbar-hide px-6 sm:px-10 pb-4 snap-x snap-mandatory"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {displayTalent.map((t: any, i: number) => (
-            <Link
-              key={t.id || t.slug || i}
-              href={`/talent/${t.slug || t.id}`}
-              className="group shrink-0 w-[260px] sm:w-[300px] h-[380px] sm:h-[420px] snap-start relative rounded-3xl overflow-hidden border border-border hover:border-brand/60 transition-all duration-500 shadow-xl flex flex-col justify-end p-6 bg-card"
-            >
-              {/* Full bleed portrait background */}
-              <div className="absolute inset-0 z-0">
-                {t.user?.avatarUrl ? (
-                  <Image
-                    src={t.user.avatarUrl}
-                    alt={`${t.user.firstName ?? ''} ${t.user.lastName ?? ''}`.trim() || 'Talent'}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700 brightness-90 group-hover:brightness-100"
-                    sizes="(max-width: 640px) 260px, 300px"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-[#151722] flex items-center justify-center">
-                    <span className="text-5xl font-display text-white/30">
-                      {t.user?.firstName?.[0] || "T"}
-                    </span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
-              </div>
-
-              {/* Top badge */}
-              <div className="absolute top-4 left-4 z-20">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/15 text-white/90">
-                  <CheckCircle2 className="h-3 w-3 text-brand" />
-                  <span>Exclusive</span>
-                </span>
-              </div>
-
-              {/* Bottom Info */}
-              <div className="relative z-20 space-y-1.5">
-                <h3 className="font-display text-2xl sm:text-3xl text-white font-bold group-hover:text-brand transition-colors leading-tight drop-shadow-md">
-                  {t.user?.firstName || "Talent"} {t.user?.lastName || ""}
-                </h3>
-                <p className="text-xs font-mono font-medium tracking-widest uppercase text-brand">
-                  {t.talentTypes?.[0]?.replace(/_/g, " ") || "Artist"}
-                </p>
-                <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs font-mono text-white/70">
-                  <span>{t.instagramFollowers ? `${(t.instagramFollowers / 1000).toFixed(0)}K Followers` : "Agency Roster"}</span>
-                  <ArrowRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-brand" />
+        {/* Horizontal scroll strip with Editorial Cards */}
+        {loading && talent.length === 0 ? (
+          <div className="flex gap-5 -mx-6 px-6 sm:-mx-10 sm:px-10">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="shrink-0 w-[260px] sm:w-[300px] h-[380px] sm:h-[420px] rounded-3xl bg-surface/50 animate-pulse border border-border" />
+            ))}
+          </div>
+        ) : (
+          <div
+            ref={scrollRef}
+            className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory -mx-6 px-6 sm:-mx-10 sm:px-10"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {displayTalent.map((t: any, i: number) => (
+              <Link
+                key={t.id || t.slug || i}
+                href={`/talent/${t.slug || t.id}`}
+                className="group shrink-0 w-[260px] sm:w-[300px] h-[380px] sm:h-[420px] snap-start relative rounded-3xl overflow-hidden border border-border hover:border-brand/60 transition-all duration-500 shadow-xl flex flex-col justify-end p-6 bg-card"
+              >
+                {/* Full bleed portrait background */}
+                <div className="absolute inset-0 z-0">
+                  {t.user?.avatarUrl ? (
+                    <Image
+                      src={t.user.avatarUrl}
+                      alt={`${t.user.firstName ?? ''} ${t.user.lastName ?? ''}`.trim() || 'Talent'}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 brightness-90 group-hover:brightness-100"
+                      sizes="(max-width: 640px) 260px, 300px"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#151722] flex items-center justify-center">
+                      <span className="text-5xl font-display text-white/30">
+                        {t.user?.firstName?.[0] || "T"}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+
+                {/* Top badge */}
+                <div className="absolute top-4 left-4 z-20">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md border border-white/15 text-white/90">
+                    <CheckCircle2 className="h-3 w-3 text-brand" />
+                    <span>Exclusive</span>
+                  </span>
+                </div>
+
+                {/* Bottom Info */}
+                <div className="relative z-20 space-y-1.5">
+                  <h3 className="font-display text-2xl sm:text-3xl text-white font-bold group-hover:text-brand transition-colors leading-tight drop-shadow-md">
+                    {t.user?.firstName || "Talent"} {t.user?.lastName || ""}
+                  </h3>
+                  <p className="text-xs font-mono font-medium tracking-widest uppercase text-brand">
+                    {t.talentTypes?.[0]?.replace(/_/g, " ") || "Artist"}
+                  </p>
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs font-mono text-white/70">
+                    <span>{t.instagramFollowers ? `${(t.instagramFollowers / 1000).toFixed(0)}K Followers` : "Agency Roster"}</span>
+                    <ArrowRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-brand" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

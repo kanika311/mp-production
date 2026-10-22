@@ -61,6 +61,7 @@ export function Navbar() {
   const { resolvedTheme } = useTheme();
   const [navItems, setNavItems] = useState(DEFAULT_NAV_ITEMS);
   const [studentUser, setStudentUser] = useState<{ name: string; email: string } | null>(null);
+  const [authUser, setAuthUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -71,8 +72,18 @@ export function Navbar() {
       if (isLoggedIn && name) {
         setStudentUser({ name, email: email || '' });
       }
+
+      // Check NextAuth / MDMS session
+      fetch('/api/auth/me')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.ok && data?.user) {
+            setAuthUser(data.user);
+          }
+        })
+        .catch(() => {});
     }
-  }, []);
+  }, [pathname]);
 
   function handleSignOut() {
     if (typeof window !== 'undefined') {
@@ -81,10 +92,19 @@ export function Navbar() {
       sessionStorage.removeItem('mp_student_email');
       sessionStorage.removeItem('mp_student_phone');
       sessionStorage.removeItem('mp_sec_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('mdms_auth_token');
+      localStorage.removeItem('mdms_auth_role');
+      localStorage.removeItem('mdms_auth_user');
+      document.cookie = 'token=; path=/; max-age=0';
+      document.cookie = 'mdms_auth_token=; path=/; max-age=0';
+      document.cookie = 'next-auth.session-token=; path=/; max-age=0';
     }
     setStudentUser(null);
+    setAuthUser(null);
     setUserDropdownOpen(false);
-    toast.success('👋 Signed out successfully!');
+    toast.success('Signed out successfully');
+    window.location.href = '/';
   }
   
   const isForcedDark = false; // Deprecated, theme variables are now light-aware
@@ -224,7 +244,91 @@ export function Navbar() {
               <span>Become a YouTuber</span>
             </Link>
 
-            {studentUser ? (
+            {authUser ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand/30 bg-brand/10 hover:bg-brand/15 text-foreground text-xs font-bold shadow-xs transition-all cursor-pointer"
+                >
+                  <div className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-extrabold uppercase shadow-xs">
+                    {authUser.name ? authUser.name.charAt(0) : 'U'}
+                  </div>
+                  <span className="max-w-[120px] sm:max-w-[160px] truncate font-medium">{authUser.name || 'Account'}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand text-white uppercase font-bold tracking-wider">
+                    {authUser.role || 'USER'}
+                  </span>
+                  <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-2 opacity-70" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6"/></svg>
+                </button>
+
+                {userDropdownOpen && (
+                  <div 
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="absolute right-0 mt-2 w-56 rounded-2xl bg-card border border-border p-2 shadow-2xl z-50 text-xs space-y-1 animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="px-3 py-2 border-b border-border mb-1">
+                      <p className="font-bold text-foreground text-sm truncate">{authUser.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{authUser.email}</p>
+                    </div>
+
+                    {authUser.role === 'TALENT' && (
+                      <>
+                        <Link
+                          href="/talent-dashboard"
+                          className="flex items-center gap-2 p-2 rounded-xl text-foreground font-semibold hover:bg-muted transition-colors"
+                        >
+                          <Users className="w-4 h-4 text-brand" />
+                          <span>Talent Dashboard</span>
+                        </Link>
+                        <Link
+                          href="/talent-dashboard/edit"
+                          className="flex items-center gap-2 p-2 rounded-xl text-foreground font-semibold hover:bg-muted transition-colors"
+                        >
+                          <Sparkles className="w-4 h-4 text-brand" />
+                          <span>Edit Portfolio</span>
+                        </Link>
+                      </>
+                    )}
+
+                    {authUser.role === 'CLIENT' && (
+                      <>
+                        <Link
+                          href="/client-portal"
+                          className="flex items-center gap-2 p-2 rounded-xl text-foreground font-semibold hover:bg-muted transition-colors"
+                        >
+                          <Briefcase className="w-4 h-4 text-brand" />
+                          <span>Client Portal</span>
+                        </Link>
+                        <Link
+                          href="/client-portal/casting"
+                          className="flex items-center gap-2 p-2 rounded-xl text-foreground font-semibold hover:bg-muted transition-colors"
+                        >
+                          <Film className="w-4 h-4 text-brand" />
+                          <span>Casting Calls</span>
+                        </Link>
+                      </>
+                    )}
+
+                    {(authUser.role === 'ADMIN' || authUser.role === 'SUPER_ADMIN') && (
+                      <Link
+                        href="/studio-8f2k/mgmt"
+                        className="flex items-center gap-2 p-2 rounded-xl text-foreground font-semibold hover:bg-muted transition-colors"
+                      >
+                        <Layers className="w-4 h-4 text-brand" />
+                        <span>Admin Studio</span>
+                      </Link>
+                    )}
+
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-2 p-2 rounded-xl text-rose-500 font-bold hover:bg-rose-500/10 transition-colors text-left cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-500" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : studentUser ? (
               <div className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -258,21 +362,22 @@ export function Navbar() {
                 )}
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="inline-flex items-center text-[11px] lg:text-xs font-bold tracking-widest uppercase transition-all px-2.5 py-1.5 lg:px-3 rounded-full border shadow-sm text-foreground hover:text-brand bg-surface/80 hover:bg-surface border-border hidden sm:inline-flex"
-              >
-                Sign In
-              </Link>
+              <>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center text-[11px] lg:text-xs font-bold tracking-widest uppercase transition-all px-2.5 py-1.5 lg:px-3 rounded-full border shadow-sm text-foreground hover:text-brand bg-surface/80 hover:bg-surface border-border hidden sm:inline-flex"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/join/talent"
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 lg:px-3.5 lg:py-2 text-[10px] lg:text-xs font-bold tracking-wider uppercase rounded-full transition-all duration-300 bg-brand text-white hover:bg-brand/90 hover:shadow-[0_0_15px_rgba(235,61,38,0.4)] shadow-md shrink-0 border border-brand/30"
+                  data-cursor="hover"
+                >
+                  Talent Register
+                </Link>
+              </>
             )}
-
-            <Link
-              href="/join/talent"
-              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 lg:px-3.5 lg:py-2 text-[10px] lg:text-xs font-bold tracking-wider uppercase rounded-full transition-all duration-300 bg-brand text-white hover:bg-brand/90 hover:shadow-[0_0_15px_rgba(235,61,38,0.4)] shadow-md shrink-0 border border-brand/30"
-              data-cursor="hover"
-            >
-              Talent Register
-            </Link>
 
             <ThemeToggle />
 
@@ -402,7 +507,63 @@ export function Navbar() {
 
               {/* Drawer Bottom Actions & User Profile */}
               <div className="p-5 border-t border-border bg-card/60 backdrop-blur-md space-y-3 shrink-0">
-                {studentUser ? (
+                {authUser ? (
+                  <div className="space-y-2">
+                    <div className="p-2.5 rounded-xl bg-surface border border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-brand text-white font-bold flex items-center justify-center text-xs shrink-0">
+                          {authUser.name ? authUser.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs text-foreground truncate">{authUser.name}</p>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand/10 text-brand font-bold uppercase tracking-wider">
+                            {authUser.role}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleSignOut}
+                        className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg text-xs font-semibold cursor-pointer shrink-0"
+                        title="Sign Out"
+                      >
+                        <LogOut className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {authUser.role === 'TALENT' && (
+                      <Link
+                        href="/talent-dashboard"
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full py-2.5 px-4 rounded-xl text-center text-xs font-bold bg-brand text-white shadow-sm flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Open Talent Dashboard</span>
+                      </Link>
+                    )}
+
+                    {authUser.role === 'CLIENT' && (
+                      <Link
+                        href="/client-portal"
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full py-2.5 px-4 rounded-xl text-center text-xs font-bold bg-brand text-white shadow-sm flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors"
+                      >
+                        <Briefcase className="w-3.5 h-3.5" />
+                        <span>Open Client Portal</span>
+                      </Link>
+                    )}
+
+                    {(authUser.role === 'ADMIN' || authUser.role === 'SUPER_ADMIN') && (
+                      <Link
+                        href="/studio-8f2k/mgmt"
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full py-2.5 px-4 rounded-xl text-center text-xs font-bold bg-brand text-white shadow-sm flex items-center justify-center gap-2 hover:bg-brand/90 transition-colors"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>Admin Studio</span>
+                      </Link>
+                    )}
+                  </div>
+                ) : studentUser ? (
                   <div className="space-y-2">
                     <div className="p-2.5 rounded-xl bg-surface border border-border flex items-center justify-between">
                       <div className="flex items-center gap-2.5 min-w-0">

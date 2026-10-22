@@ -3,7 +3,7 @@ import { Eye } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import FullEditProfileClient from './FullEditProfileClient';
-import { PortalNavbar } from '@/components/ui/PortalNavbar';
+import { Navbar } from '@/components/ui/Navbar';
 import { auth } from '@/auth';
 import { serverFetchAPI } from '@/lib/server-api-client';
 async function getTalentProfile(sessionUser: any) {
@@ -73,7 +73,7 @@ export default async function EditTalentProfilePage() {
 
   return (
     <>
-      <PortalNavbar role="TALENT" />
+      <Navbar />
       <main className="min-h-screen bg-background pt-20 md:pt-24 pb-20">
         <Container>
           <FullEditProfileClient initialData={profile} />

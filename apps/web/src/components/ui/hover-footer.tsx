@@ -278,21 +278,21 @@ export function HoverFooter() {
             </a>
 
             {footerConfig?.tagline && (
-              <p className="text-xs font-semibold text-foreground/90 tracking-wide">
+              <p className="text-sm font-bold text-foreground tracking-wide">
                 {footerConfig.tagline}
               </p>
             )}
-            <p className="text-xs leading-relaxed text-muted-foreground font-light max-w-sm">
+            <p className="text-sm leading-relaxed text-foreground/90 dark:text-muted-foreground font-medium max-w-sm">
               {footerConfig?.brandDescription || "MP Production is an exclusive luxury creative production house for global brands and artists. Building timeless cinema, photography, and campaigns frame by frame."}
             </p>
 
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/10 border border-brand/20 text-[10px] font-mono tracking-wider text-brand uppercase font-semibold w-fit">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/25 text-xs font-mono tracking-wider text-brand uppercase font-bold w-fit">
+              <span className="inline-block h-2 w-2 rounded-full bg-brand animate-pulse" />
               <span>Global Production Headquarters · Mumbai</span>
             </div>
 
             {/* Social media icons */}
-            <div className="flex items-center gap-2 pt-0.5">
+            <div className="flex items-center gap-2 pt-1">
               {socialLinks.map(({ icon, label, href }) => (
                 <a
                   key={label}
@@ -300,7 +300,7 @@ export function HoverFooter() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-surface text-muted-foreground hover:text-brand hover:border-brand/50 hover:bg-brand/10 transition-all shadow-xs"
+                  className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 dark:border-border bg-surface text-foreground hover:text-brand hover:border-brand/50 hover:bg-brand/10 transition-all shadow-xs"
                 >
                   {icon}
                 </a>
@@ -310,20 +310,20 @@ export function HoverFooter() {
 
           {/* Footer link sections */}
           {footerLinks.map((section: any, idx: number) => (
-            <div key={section.title || idx} className="space-y-2.5">
-              <h4 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand flex items-center gap-1.5">
-                <span className="text-[9px]">●</span> {section.title}
+            <div key={section.title || idx} className="space-y-3">
+              <h4 className="font-mono text-xs font-black uppercase tracking-[0.2em] text-brand flex items-center gap-1.5">
+                <span className="text-[10px]">●</span> {section.title}
               </h4>
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {section.links?.map((link: any) => (
                   <li key={link.label} className="relative w-fit">
                     <a
                       href={link.href}
-                      className="text-muted-foreground hover:text-foreground text-xs font-light hover:translate-x-0.5 transition-all inline-flex items-center gap-1 group"
+                      className="text-foreground/80 dark:text-muted-foreground hover:text-brand text-sm font-semibold hover:translate-x-0.5 transition-all inline-flex items-center gap-1.5 group"
                     >
                       <span>{link.label}</span>
                       {link.pulse && (
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+                        <span className="inline-block w-2 h-2 rounded-full bg-brand animate-pulse" />
                       )}
                     </a>
                   </li>
@@ -333,53 +333,53 @@ export function HoverFooter() {
           ))}
 
           {/* Direct Contact Details - next to Support */}
-          <div className="space-y-2.5">
-            <h4 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-brand flex items-center gap-1.5">
-              <span className="text-[9px]">●</span> Contact
+          <div className="space-y-3">
+            <h4 className="font-mono text-xs font-black uppercase tracking-[0.2em] text-brand flex items-center gap-1.5">
+              <span className="text-[10px]">●</span> Contact
             </h4>
-            <div className="space-y-2 pt-0.5">
+            <div className="space-y-2.5 pt-0.5">
               <a
                 href={contactInfo[0].href}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-brand transition-colors group"
+                className="flex items-center gap-2.5 text-sm text-foreground/85 dark:text-muted-foreground hover:text-brand transition-colors group"
               >
-                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/40 transition-colors">
-                  <Mail size={12} />
+                <div className="w-7 h-7 rounded-md bg-surface border border-slate-300 dark:border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/50 transition-colors">
+                  <Mail size={14} />
                 </div>
-                <span className="font-mono text-xs break-all">{contactInfo[0].text}</span>
+                <span className="font-mono text-xs sm:text-sm font-semibold break-all">{contactInfo[0].text}</span>
               </a>
 
               <a
                 href={contactInfo[1].href}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-brand transition-colors group"
+                className="flex items-center gap-2.5 text-sm text-foreground/85 dark:text-muted-foreground hover:text-brand transition-colors group"
               >
-                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/40 transition-colors">
-                  <Phone size={12} />
+                <div className="w-7 h-7 rounded-md bg-surface border border-slate-300 dark:border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/50 transition-colors">
+                  <Phone size={14} />
                 </div>
-                <span className="font-mono text-xs whitespace-nowrap">{contactInfo[1].text}</span>
+                <span className="font-mono text-xs sm:text-sm font-semibold whitespace-nowrap">{contactInfo[1].text}</span>
               </a>
 
-              <div className="flex items-start gap-2 text-xs text-muted-foreground group">
-                <div className="w-6 h-6 rounded-md bg-surface border border-border text-brand flex items-center justify-center shrink-0 mt-0.5">
-                  <MapPin size={12} />
+              <div className="flex items-start gap-2.5 text-sm text-foreground/85 dark:text-muted-foreground group">
+                <div className="w-7 h-7 rounded-md bg-surface border border-slate-300 dark:border-border text-brand flex items-center justify-center shrink-0 mt-0.5">
+                  <MapPin size={14} />
                 </div>
-                <span className="font-mono text-xs leading-relaxed">{contactInfo[2].text}</span>
+                <span className="font-mono text-xs sm:text-sm font-semibold leading-relaxed">{contactInfo[2].text}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer bottom bar */}
-        <div className="pt-4 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] font-mono text-muted-foreground">
-          <p className="text-center sm:text-left tracking-wide">
+        <div className="pt-4 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono font-medium text-foreground/80 dark:text-muted-foreground">
+          <p className="text-center sm:text-left tracking-wide font-semibold">
             {footerConfig?.copyright || footerConfig?.copyrightText || 'Powered By JCRM Technologies'}
           </p>
 
-          <div className="flex items-center gap-5 text-[10px] tracking-wider uppercase">
-            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="/security" className="hover:text-foreground transition-colors">Security</a>
-            <span className="hidden md:inline-flex items-center gap-1.5 text-brand font-semibold">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="flex items-center gap-6 text-xs font-bold tracking-wider uppercase">
+            <a href="/privacy" className="hover:text-brand transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-brand transition-colors">Terms</a>
+            <a href="/security" className="hover:text-brand transition-colors">Security</a>
+            <span className="hidden md:inline-flex items-center gap-1.5 text-brand font-bold">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               Studio Online
             </span>
           </div>

@@ -84,7 +84,7 @@ export default function Pricing() {
         {/* Header Section — Full Bleed Merged With Navbar */}
         <section className="relative w-full h-[75vh] sm:h-[85vh] flex items-center justify-center overflow-hidden mb-20 text-center pt-28 sm:pt-36">
           <Image 
-            src="/images/pricing-hero.jpg" 
+            src="/images/pricing-hero.webp" 
             alt="Investment" 
             fill 
             className="object-cover object-center" 

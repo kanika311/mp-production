@@ -30,7 +30,7 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     subtitle: 'The Standard in Production',
     title: 'Cinematic Mastery. Digital Excellence.',
     description: 'We unify premium media production and elite talent discovery within a single, seamless digital ecosystem.',
-    image: '/hero/hero_cinematic_set.png',
+    image: '/hero/hero_cinematic_set.webp',
     primaryCta: {
       text: 'Explore Portfolio',
       href: '/portfolio',
@@ -45,7 +45,7 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     subtitle: 'Global Representation',
     title: 'Elite Roster. World-Class Creators.',
     description: 'Connecting visionary brands with premier actors, models, influencers, and digital artists across the globe.',
-    image: '/hero/hero_talent_roster.png',
+    image: '/hero/hero_talent_roster.webp',
     primaryCta: {
       text: 'Browse Roster',
       href: '/talent/directory',
@@ -60,7 +60,7 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     subtitle: 'Cutting-Edge Post-Production',
     title: 'Where Vision Meets Craftsmanship.',
     description: 'From 8K color grading and immersive Dolby Atmos sound design to breathtaking VFX and precision editing.',
-    image: '/hero/hero_post_production.png',
+    image: '/hero/hero_post_production.webp',
     primaryCta: {
       text: 'Our Services',
       href: '/services',
@@ -75,7 +75,7 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     subtitle: 'Next-Gen Casting & Auditions',
     title: 'Real-Time Casting Room.',
     description: 'Experience our proprietary interactive casting portal. Review live auditions, shortlist candidates, and collaborate instantly.',
-    image: '/hero/hero_casting_audition.png',
+    image: '/hero/hero_casting_audition.webp',
     primaryCta: {
       text: 'Enter Casting Room',
       href: '/client-portal/casting',
@@ -90,7 +90,7 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     subtitle: 'Enterprise Studio Ecosystem',
     title: 'End-to-End Campaign Execution.',
     description: 'Trusted by Fortune 500 brands and global media houses to deliver high-impact commercial narratives on time and on budget.',
-    image: '/hero/hero_studio_ecosystem.png',
+    image: '/hero/hero_studio_ecosystem.webp',
     primaryCta: {
       text: 'Start Your Project',
       href: '/contact',

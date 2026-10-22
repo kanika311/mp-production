@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { fetchAPI } from '@/lib/api-client';
+import { uploadToSupabase } from '@/lib/upload';
 import { 
   Camera, 
   Image as ImageIcon, 
@@ -261,48 +262,87 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
     setIsSubmitting(true);
 
     try {
-      let finalProfilePhotoPreview = data.profilePhotoPreview;
+      // 1. Upload Profile Photo to Cloudinary CDN
+      let finalProfilePhotoUrl = data.profilePhotoPreview;
       if (data.profilePhoto instanceof File) {
-        finalProfilePhotoPreview = await fileToDataUrl(data.profilePhoto);
+        try {
+          finalProfilePhotoUrl = await uploadToSupabase({
+            file: data.profilePhoto,
+            folder: 'talent/avatars',
+          });
+        } catch (uploadErr) {
+          console.warn('Profile photo upload error, falling back to dataUrl:', uploadErr);
+          finalProfilePhotoUrl = await fileToDataUrl(data.profilePhoto);
+        }
       }
 
-      let finalCoverBannerPreview = data.coverBannerPreview;
+      // 2. Upload Cover Banner to Cloudinary CDN
+      let finalCoverBannerUrl = data.coverBannerPreview;
       if (data.coverBanner instanceof File) {
-        finalCoverBannerPreview = await fileToDataUrl(data.coverBanner);
+        try {
+          finalCoverBannerUrl = await uploadToSupabase({
+            file: data.coverBanner,
+            folder: 'talent/banners',
+          });
+        } catch (uploadErr) {
+          console.warn('Cover banner upload error, falling back to dataUrl:', uploadErr);
+          finalCoverBannerUrl = await fileToDataUrl(data.coverBanner);
+        }
       }
 
+      // 3. Upload Gallery Portfolio Images to Cloudinary CDN
       const finalGalleryImages = await Promise.all(
         data.galleryImages.map(async (img: any) => {
           if (img.file instanceof File) {
-            const dataUrl = await fileToDataUrl(img.file);
-            return { id: img.id, url: dataUrl };
+            try {
+              const uploadedUrl = await uploadToSupabase({
+                file: img.file,
+                folder: 'talent/gallery',
+              });
+              return { id: img.id, url: uploadedUrl };
+            } catch (err) {
+              console.warn('Gallery image upload error:', err);
+              const dataUrl = await fileToDataUrl(img.file);
+              return { id: img.id, url: dataUrl };
+            }
           }
           return { id: img.id, url: img.url };
         })
       );
 
+      // 4. Upload Resume Document
       let finalResumeUrl = (data as any).resumeUrl || '';
       if (data.resume instanceof File) {
         try {
-          finalResumeUrl = await fileToDataUrl(data.resume);
+          finalResumeUrl = await uploadToSupabase({
+            file: data.resume,
+            folder: 'talent/documents',
+          });
         } catch {
-          finalResumeUrl = URL.createObjectURL(data.resume);
+          finalResumeUrl = (data.resume as any).name ? `documents/${(data.resume as any).name}` : '';
         }
       }
 
+      // 5. Upload Comp Card Document
       let finalCompCardUrl = (data as any).compCardUrl || '';
       if (data.compCard instanceof File) {
         try {
-          finalCompCardUrl = await fileToDataUrl(data.compCard);
+          finalCompCardUrl = await uploadToSupabase({
+            file: data.compCard,
+            folder: 'talent/compcards',
+          });
         } catch {
-          finalCompCardUrl = URL.createObjectURL(data.compCard);
+          finalCompCardUrl = (data.compCard as any).name ? `documents/${(data.compCard as any).name}` : '';
         }
       }
 
       const payload = {
         ...data,
-        profilePhotoPreview: finalProfilePhotoPreview,
-        coverBannerPreview: finalCoverBannerPreview,
+        userId: initialData?.userId || initialData?.id,
+        avatarUrl: finalProfilePhotoUrl,
+        profilePhotoPreview: finalProfilePhotoUrl,
+        coverBannerUrl: finalCoverBannerUrl,
+        coverBannerPreview: finalCoverBannerUrl,
         galleryImages: finalGalleryImages,
         resumeUrl: finalResumeUrl || (data.resumeName ? `documents/${data.resumeName}` : null),
         resumeName: data.resumeName || (data.resume instanceof File ? data.resume.name : ''),
@@ -311,13 +351,26 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
         status: isApproved ? 'ACTIVE' : (mode === 'save' ? 'ACTIVE' : (mode === 'approval' ? 'PENDING_REVIEW' : (initialData?.status || 'ACTIVE'))),
       };
 
+      // 6. Direct Next.js Database Persistence API endpoint /api/talent/submit
+      const res = await fetch('/api/talent/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const submitRes = await res.json().catch(() => null);
+
+      if (!res.ok && !submitRes?.success) {
+        throw new Error(submitRes?.message || 'Failed to update profile in database');
+      }
+
       // Cache locally for instant preview across browser tabs
       if (typeof window !== 'undefined') {
         const fullSavedProfile = {
           ...initialData,
           ...payload,
-          avatarUrl: finalProfilePhotoPreview,
-          coverBannerUrl: finalCoverBannerPreview,
+          avatarUrl: finalProfilePhotoUrl,
+          coverBannerUrl: finalCoverBannerUrl,
           portfolioMedia: finalGalleryImages.map((g: any, i: number) => ({ id: g.id || `pm-${i}`, url: g.url, type: 'PORTFOLIO_IMAGE' })),
           draftData: payload,
         };
@@ -336,53 +389,23 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
             localStorage.setItem(key, JSON.stringify(fullSavedProfile));
           } catch {}
         });
-      }
 
-      // 1. Try Next.js BFF endpoint /api/talent/submit
-      let saved = false;
-      try {
-        const res = await fetch('/api/talent/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) saved = true;
-      } catch (submitErr) {
-        console.warn('Next.js BFF /api/talent/submit error:', submitErr);
-      }
-
-      // 2. Also save to /api/talent/draft
-      try {
-        await fetch('/api/talent/draft', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentStep: 5, wizardData: payload }),
-        });
-      } catch {}
-
-      // 3. Fallback to fetchAPI('/talent/me')
-      if (!saved) {
-        try {
-          await fetchAPI('/talent/me', {
-            method: 'PATCH',
-            body: JSON.stringify(payload),
-          });
-          saved = true;
-        } catch (patchErr) {
-          console.error('fetchAPI /talent/me failed:', patchErr);
-        }
+        // Broadcast cross-tab and cross-component update event
+        window.dispatchEvent(new CustomEvent('talent_profile_updated', { detail: fullSavedProfile }));
       }
 
       setData(prev => ({
         ...prev,
-        profilePhotoPreview: finalProfilePhotoPreview,
-        coverBannerPreview: finalCoverBannerPreview,
+        profilePhoto: null,
+        coverBanner: null,
+        profilePhotoPreview: finalProfilePhotoUrl,
+        coverBannerPreview: finalCoverBannerUrl,
         galleryImages: finalGalleryImages,
         resumeName: payload.resumeName,
         compCardName: payload.compCardName,
       }));
 
-      toast.success('🎉 Profile saved successfully!');
+      toast.success('🎉 Profile & Photos saved and updated successfully!');
       router.refresh();
     } catch (error: any) {
       console.error('Error saving profile:', error);
@@ -460,11 +483,11 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
         </div>
 
         {/* Profile Avatar & Quick Identity Row */}
-        <div className="px-6 pb-6 pt-0 relative flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-14 sm:-mt-16">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
-            {/* Avatar Circle with Camera badge */}
-            <div className="relative group/avatar">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-card bg-surface overflow-hidden shadow-md shrink-0 flex items-center justify-center">
+        <div className="px-6 pb-6 pt-2 sm:pt-3 relative flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-5 text-center sm:text-left min-w-0">
+            {/* Avatar Circle with Camera badge - cleanly overlapping banner */}
+            <div className="relative group/avatar shrink-0 -mt-14 sm:-mt-16">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-card bg-surface overflow-hidden shadow-lg shrink-0 flex items-center justify-center">
                 {data.profilePhotoPreview ? (
                   <img
                     src={data.profilePhotoPreview}
@@ -487,13 +510,13 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
               </button>
             </div>
 
-            {/* Stage Name & Subtitle right beside avatar */}
-            <div className="space-y-1 mb-1">
-              <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-bold font-serif text-foreground">
+            {/* Stage Name & Subtitle right beside avatar - cleanly on card surface */}
+            <div className="space-y-1 mb-1 min-w-0">
+              <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-bold font-serif text-foreground tracking-tight whitespace-nowrap">
                   {data.stageName || 'Your Name'}
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand/10 text-brand border border-brand/20">
+                <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand/10 text-brand border border-brand/20">
                   {primaryCategory?.name || 'Talent'}
                 </span>
               </div>

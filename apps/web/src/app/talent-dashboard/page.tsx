@@ -1,4 +1,5 @@
-import { PortalNavbar } from '@/components/ui/PortalNavbar';
+import { Navbar } from '@/components/ui/Navbar';
+import { TalentDashboardView } from '@/components/talent/TalentDashboardView';
 import { Reveal } from '@/components/ui/Reveal';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
@@ -99,7 +100,7 @@ export default async function TalentDashboard({
   if (result.status === 'api_error') {
     return (
       <>
-        <PortalNavbar role="TALENT" />
+        <Navbar />
         <main className="page-content py-20 text-center">
           <Container>
             <div className="max-w-md mx-auto bg-surface border border-border rounded-3xl p-8 space-y-4">
@@ -157,7 +158,7 @@ export default async function TalentDashboard({
   if (!isApproved) {
     return (
       <>
-        <PortalNavbar role="TALENT" />
+        <Navbar />
 
         <main className="min-h-screen bg-background pt-28 md:pt-36 pb-20 relative overflow-hidden grain">
           {/* Subtle Ambient Glows */}
@@ -367,116 +368,12 @@ export default async function TalentDashboard({
   // ─────────────────────────────────────────────────────────────
   return (
     <>
-      <PortalNavbar role="TALENT" />
-      
-      <main className="page-content">
-        <Container>
-          <Reveal direction="up">
-            <div className="mb-12 border-b border-border pb-8 flex flex-col md:flex-row justify-between items-start md:items-end">
-              <div>
-                <span className="text-primary tracking-[0.2em] text-xs uppercase font-semibold mb-2 block">
-                  Talent Command Center
-                </span>
-                <h1 className="text-4xl font-serif text-foreground">
-                  My Dashboard
-                </h1>
-              </div>
-              <div className="flex items-center gap-4 mt-6 md:mt-0">
-                <Button href={`/talent/${profile.slug || profile.id}`} variant="outline" size="sm" target="_blank">
-                  View Public Profile
-                </Button>
-                <Button href="/talent-dashboard/edit" variant="primary" size="sm">
-                  Edit Profile
-                </Button>
-              </div>
-            </div>
-          </Reveal>
-
-          <Reveal direction="up" delay={0.1}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <Card padding="md" className="bg-surface border-border">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-2 font-semibold">Profile Status</span>
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <span className="text-xl font-serif text-emerald-400 font-bold">
-                    ACTIVE ON ROSTER
-                  </span>
-                </div>
-              </Card>
-              <Card padding="md" className="bg-surface border-border">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-2 font-semibold">Profile Views</span>
-                <span className="text-xl font-serif text-foreground font-bold">{profile.profileViews || 0}</span>
-              </Card>
-              <Card padding="md" className="bg-surface border-border">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-2 font-semibold">Completed Projects</span>
-                <span className="text-xl font-serif text-foreground font-bold">{profile.projectCount || 0}</span>
-              </Card>
-            </div>
-          </Reveal>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Reveal direction="up" delay={0.2}>
-              <section>
-                <h2 className="text-xl font-serif text-foreground mb-6">Inbound Direct Requests</h2>
-                <Card padding="lg" className="bg-surface border-border">
-                  {profile.hireRequests && profile.hireRequests.length > 0 ? (
-                    <ul className="space-y-6">
-                      {profile.hireRequests.map((hr: any) => (
-                        <li key={hr.id} className="border-b border-border pb-6 last:border-0 last:pb-0">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-semibold text-foreground">{hr.requesterName}</h3>
-                            <span className="px-2 py-1 border border-primary text-primary text-[10px] uppercase tracking-widest font-semibold rounded-sm bg-surface-elevated">
-                              {hr.status ? hr.status.replace('_', ' ') : 'NEW'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-4">{hr.projectType}</p>
-                          <div className="flex gap-4">
-                            <Button href="/talent-dashboard/requests" size="sm" variant="primary">Accept Request</Button>
-                            <Button href="/talent-dashboard/requests" size="sm" variant="outline" className="text-red-600 hover:bg-red-600 hover:text-white border-red-600">Decline</Button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-muted-foreground text-sm italic">No direct hire requests at the moment.</p>
-                  )}
-                </Card>
-              </section>
-            </Reveal>
-
-            <Reveal direction="up" delay={0.3}>
-              <section>
-                <h2 className="text-xl font-serif text-foreground mb-6">Active Casting Applications</h2>
-                <Card padding="lg" className="bg-surface border-border">
-                  {profile.castingApplications && profile.castingApplications.length > 0 ? (
-                    <ul className="space-y-6">
-                      {profile.castingApplications.map((app: any) => (
-                        <li key={app.id} className="border-b border-border pb-6 last:border-0 last:pb-0 flex justify-between items-center">
-                          <div>
-                            <h3 className="font-semibold text-foreground">{app.castingCall?.title || 'Untitled Casting Call'}</h3>
-                          </div>
-                          <span className={`text-xs uppercase tracking-widest font-semibold px-2.5 py-1 rounded-sm ${
-                            app.status === 'SHORTLISTED' ? 'bg-primary text-white' : 'bg-surface-elevated text-muted-foreground'
-                          }`}>
-                            {app.status}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted-foreground text-sm italic mb-4">You haven&apos;t applied to any recent castings.</p>
-                      <Button href="/talent" variant="outline" size="sm">
-                        Browse Casting Board
-                      </Button>
-                    </div>
-                  )}
-                </Card>
-              </section>
-            </Reveal>
-          </div>
-        </Container>
-      </main>
+      <Navbar />
+      <TalentDashboardView
+        profile={profile}
+        user={session.user}
+        isApproved={isApproved}
+      />
     </>
   );
 }

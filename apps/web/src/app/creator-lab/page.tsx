@@ -52,7 +52,7 @@ const UNLOCKED_COURSES_DATA: Record<string, StudentCourse> = {
     categoryLabel: 'YouTube Masterclass',
     instructor: 'Rohan Verma',
     progress: 35,
-    image: '/images/services-lighting.jpg',
+    image: '/images/services-lighting.webp',
     lessons: [
       { id: 'l1', title: 'Lesson 1.1: Sony Log & Canon 10-Bit Camera Setup', duration: '14:20', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
       { id: 'l2', title: 'Lesson 1.2: 3-Point Key & Ambient Studio Lighting', duration: '18:45', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4' },
@@ -71,7 +71,7 @@ const UNLOCKED_COURSES_DATA: Record<string, StudentCourse> = {
     categoryLabel: 'Instagram Reels',
     instructor: 'Aanya Kapoor',
     progress: 60,
-    image: '/assets/project-fashion.jpg',
+    image: '/assets/project-fashion.webp',
     lessons: [
       { id: 'l1', title: 'Lesson 1.1: 9:16 Mobile Composition & Lighting', duration: '12:10', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4' },
       { id: 'l2', title: 'Lesson 1.2: Beat-Sync Editing & High-Energy Cuts', duration: '15:30', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4' },

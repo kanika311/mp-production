@@ -53,7 +53,7 @@ const DEFAULT_POSTS: BlogPost[] = [
     slug: 'evolution-of-virtual-production',
     title: 'The Evolution of Virtual Production in 2026',
     category: 'Technology',
-    coverImageUrl: '/images/blog/blog_ai_filmmaking.png',
+    coverImageUrl: '/images/blog/blog_ai_filmmaking.webp',
     excerpt: 'How real-time LED volumes, neural rendering, and in-camera visual effects have permanently elevated modern cinematic sets.',
     author: 'Super Admin',
     createdAt: '2026-10-09T00:00:00.000Z',
@@ -78,7 +78,7 @@ const DEFAULT_POSTS: BlogPost[] = [
     slug: 'anamorphic-glass-and-luxury-commercials',
     title: 'Anamorphic Glass & The Aesthetic of Modern Luxury Commercials',
     category: 'Cinematography',
-    coverImageUrl: '/images/blog/blog_cinematic_lighting.png',
+    coverImageUrl: '/images/blog/blog_cinematic_lighting.webp',
     excerpt: 'Exploring why vintage anamorphic prime lenses and wide aspect ratios remain the ultimate visual signature for luxury ateliers.',
     author: 'Chief Cinematographer',
     createdAt: '2026-09-28T00:00:00.000Z',
@@ -103,7 +103,7 @@ const DEFAULT_POSTS: BlogPost[] = [
     slug: 'mastering-high-fashion-editorial-lighting',
     title: 'Mastering High-Fashion Editorial Lighting: Shadows, Contrast & Mood',
     category: 'Fashion',
-    coverImageUrl: '/images/blog/blog_fashion_editorial.png',
+    coverImageUrl: '/images/blog/blog_fashion_editorial.webp',
     excerpt: 'Step inside the lighting design for high-fashion campaigns: controlling spill, shaping key light, and balancing negative fill.',
     author: 'Creative Director',
     createdAt: '2026-09-15T00:00:00.000Z',
@@ -128,7 +128,7 @@ const DEFAULT_POSTS: BlogPost[] = [
     slug: 'mastering-spatial-audio-and-sound-design',
     title: 'Sound Design & Spatial Acoustics: The Invisible 50% of Cinema',
     category: 'Sound Design',
-    coverImageUrl: '/images/blog/blog_sound_design.png',
+    coverImageUrl: '/images/blog/blog_sound_design.webp',
     excerpt: 'Why audio design drives subconscious audience immersion in commercial campaigns and how Dolby Atmos mixes elevate screen presence.',
     author: 'Lead Sound Engineer',
     createdAt: '2026-08-30T00:00:00.000Z',
@@ -508,7 +508,7 @@ function BlogContent() {
                   {/* Left: Featured Cover Image */}
                   <div className="relative w-full md:w-56 lg:w-64 aspect-[16/11] md:aspect-[4/3] rounded-xl overflow-hidden border border-border bg-neutral-950 shrink-0 shadow-sm group">
                     <Image
-                      src={activePost.coverImageUrl || '/images/blog/blog_ai_filmmaking.png'}
+                      src={activePost.coverImageUrl || '/images/blog/blog_ai_filmmaking.webp'}
                       alt={activePost.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-700"

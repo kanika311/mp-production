@@ -51,7 +51,7 @@ const COURSES_MAP: Record<string, CourseData> = {
     price: '₹4,999',
     numericPrice: 4999,
     originalPrice: '₹12,999',
-    image: '/images/services-lighting.jpg',
+    image: '/images/services-lighting.webp',
     instructorName: 'Rohan Verma',
   },
   'course-reeler': {
@@ -63,7 +63,7 @@ const COURSES_MAP: Record<string, CourseData> = {
     price: '₹3,499',
     numericPrice: 3499,
     originalPrice: '₹8,999',
-    image: '/assets/project-fashion.jpg',
+    image: '/assets/project-fashion.webp',
     instructorName: 'Aanya Kapoor',
   },
   'course-creator': {
@@ -75,7 +75,7 @@ const COURSES_MAP: Record<string, CourseData> = {
     price: '₹5,999',
     numericPrice: 5999,
     originalPrice: '₹14,999',
-    image: '/images/about-bts.jpg',
+    image: '/images/about-bts.webp',
     instructorName: 'Karan Malhotra',
   },
   'course-influencer': {
@@ -87,7 +87,7 @@ const COURSES_MAP: Record<string, CourseData> = {
     price: '₹4,499',
     numericPrice: 4499,
     originalPrice: '₹11,999',
-    image: '/assets/service_casting.png',
+    image: '/assets/service_casting.webp',
     instructorName: 'Priya Sundaram',
   },
   'course-davinci': {
@@ -99,7 +99,7 @@ const COURSES_MAP: Record<string, CourseData> = {
     price: '₹3,999',
     numericPrice: 3999,
     originalPrice: '₹9,999',
-    image: '/images/about-bts.jpg',
+    image: '/images/about-bts.webp',
     instructorName: 'Vikramaditya Roy',
   },
   'course-shorts': {
@@ -111,7 +111,7 @@ const COURSES_MAP: Record<string, CourseData> = {
     price: '₹2,999',
     numericPrice: 2999,
     originalPrice: '₹7,999',
-    image: '/images/portfolio-equipment.jpg',
+    image: '/images/portfolio-equipment.webp',
     instructorName: 'Aanya Kapoor',
   },
   'course-podcast': {
@@ -123,7 +123,7 @@ const COURSES_MAP: Record<string, CourseData> = {
     price: '₹3,499',
     numericPrice: 3499,
     originalPrice: '₹8,499',
-    image: '/images/careers-meeting.jpg',
+    image: '/images/careers-meeting.webp',
     instructorName: 'David Chen',
   },
   'course-monetization': {
@@ -135,7 +135,7 @@ const COURSES_MAP: Record<string, CourseData> = {
     price: '₹4,999',
     numericPrice: 4999,
     originalPrice: '₹12,999',
-    image: '/images/projects-outdoor.jpg',
+    image: '/images/projects-outdoor.webp',
     instructorName: 'Karan Malhotra',
   },
 };
@@ -163,7 +163,7 @@ function CheckoutContent() {
             price: match.price || '',
             numericPrice: Number(match.numericPrice) || 0,
             originalPrice: match.originalPrice || '',
-            image: match.image || '/images/services-lighting.jpg',
+            image: match.image || '/images/services-lighting.webp',
             instructorName: match.instructorName || 'MP Instructor',
           });
         }

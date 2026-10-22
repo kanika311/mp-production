@@ -48,16 +48,16 @@
 :root {
   --radius: 1rem;
 
-  /* Scoped Cinematic Variables for Light Theme (Warm Ivory Cinematic) */
+  /* Scoped Cinematic Variables for Light Theme (Warm Ivory Cinematic - High Contrast) */
   --cinematic-bg: oklch(0.985 0.003 260);    /* Light Warm Ivory base */
   --cinematic-bg-elevated: oklch(0.955 0.006 260); /* Ivory surface */
-  --cinematic-text: oklch(0.12 0.02 260);    /* Dark Obsidian text */
-  --cinematic-text-muted: oklch(0.48 0.015 260);
-  --cinematic-border: oklch(0 0 0 / 0.12);
+  --cinematic-text: oklch(0.08 0.01 260);    /* Dark Obsidian text - High contrast */
+  --cinematic-text-muted: oklch(0.25 0.01 260); /* Deep Slate - crisp readable */
+  --cinematic-border: oklch(0 0 0 / 0.15);
 
   /* Awwwards card surface — Light Theme (Ivory glass) */
   --card-surface: linear-gradient(145deg, oklch(0.99 0.003 260 / 0.9), oklch(0.955 0.006 260 / 0.95));
-  --card-surface-border: oklch(0 0 0 / 0.1);
+  --card-surface-border: oklch(0 0 0 / 0.12);
   --card-surface-shadow: 0 10px 40px -15px oklch(0 0 0 / 0.18), inset 0 1px 0 oklch(1 0 0 / 0.7);
 
   /* Hero Section theme variables */
@@ -65,7 +65,7 @@
   --hero-gradient-left: linear-gradient(to right, oklch(0.08 0 0 / 0.85) 0%, oklch(0.08 0 0 / 0.3) 40%, transparent 100%);
   --hero-gradient-bottom: linear-gradient(to top, oklch(0.08 0 0 / 0.9) 0%, oklch(0.08 0 0 / 0.4) 30%, transparent 100%);
   --hero-text: oklch(0.99 0 0);           /* Crisp White */
-  --hero-text-muted: oklch(0.75 0.01 260); /* Light muted text */
+  --hero-text-muted: oklch(0.85 0.01 260); /* Light muted text */
   --hero-border: oklch(1 0 0 / 0.15);     /* Light border */
   --hero-bg-elevated: oklch(0.13 0.006 260); /* Dark Obsidian Glass */
 
@@ -77,20 +77,20 @@
   --primary-hover: var(--brand-glow);
   --text-primary: var(--foreground);
   --text-secondary: var(--muted-foreground);
-  --text-tertiary: oklch(0 0 0 / 0.35);
+  --text-tertiary: oklch(0.30 0.01 260);
   --border-focus: var(--brand-glow);
 
-  /* Crisp Modern Multi-Color Light Palette */
+  /* Crisp Modern Multi-Color Light Palette - Deep High Contrast Text */
   --background: oklch(0.985 0.003 260);
-  --foreground: oklch(0.12 0.02 260);
+  --foreground: oklch(0.08 0.01 260);
 
   --surface: oklch(0.955 0.006 260);
   --surface-elevated: oklch(0.995 0 0);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0.02 260);
+  --card-foreground: oklch(0.08 0.01 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0.02 260);
+  --popover-foreground: oklch(0.08 0.01 260);
 
   --brand: oklch(0.58 0.24 27);          /* Signature Cinematic Red */
   --brand-glow: oklch(0.66 0.26 27);
@@ -100,15 +100,15 @@
   --primary: oklch(0.58 0.24 27);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.88 0.015 260);
-  --secondary-foreground: oklch(0.12 0.02 260);
+  --secondary-foreground: oklch(0.08 0.01 260);
   --muted: oklch(0.93 0.01 260);
-  --muted-foreground: oklch(0.35 0.015 260);
+  --muted-foreground: oklch(0.24 0.01 260); /* High contrast dark slate (approx #334155) */
   --accent: oklch(0.78 0.16 75);
-  --accent-foreground: oklch(0.12 0.02 260);
+  --accent-foreground: oklch(0.08 0.01 260);
   --destructive: oklch(0.58 0.24 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0 0 0 / 0.12);
-  --input: oklch(0 0 0 / 0.15);
+  --border: oklch(0 0 0 / 0.15);
+  --input: oklch(0 0 0 / 0.18);
   --ring: oklch(0.58 0.24 27);
 
   /* Gradients & shadows */
@@ -202,15 +202,52 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { scroll-behavior: auto; }
+  html { 
+    scroll-behavior: auto;
+    font-size: 16px;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
+  
+  p {
+    font-weight: 450;
+  }
+
+  /* Eliminate washed-out faint font weights site-wide */
+  .font-light {
+    font-weight: 450 !important;
+  }
+
+  /* Increase tiny text font-sizes across the site for crisp legibility */
+  .text-xs {
+    font-size: 0.8125rem !important; /* 13px */
+    line-height: 1.35rem !important;
+  }
+
+  .text-sm {
+    font-size: 0.9375rem !important; /* 15px */
+    line-height: 1.45rem !important;
+  }
+
+  .text-\[10px\] {
+    font-size: 0.75rem !important; /* 12px */
+    font-weight: 600;
+  }
+
+  .text-\[11px\] {
+    font-size: 0.8125rem !important; /* 13px */
+    font-weight: 600;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .theme-transition {
       transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),

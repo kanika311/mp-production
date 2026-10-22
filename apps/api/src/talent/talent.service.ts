@@ -663,9 +663,21 @@ export class TalentService {
   // }
 
   async createHireRequest(talentId: string, data: CreateHireRequestDto) {
-    const profile = await this.prisma.talentProfile.findUnique({
-      where: { id: talentId },
-      include: { user: true },
+    const trimmed = (talentId || '').trim();
+    const slugHyphen = trimmed.replace(/\s+/g, '-');
+    const slugSpace = trimmed.replace(/-/g, ' ');
+
+    const profile = await this.prisma.talentProfile.findFirst({
+      where: {
+        OR: [
+          { id: trimmed },
+          { slug: trimmed },
+          { slug: slugHyphen },
+          { slug: slugSpace },
+          { userId: trimmed },
+        ],
+      },
+      include: { user: true, pricing: true },
     });
 
     if (!profile) {
@@ -674,7 +686,7 @@ export class TalentService {
 
     const request = await this.prisma.hireRequest.create({
       data: {
-        talentId,
+        talentId: profile.id,
         requesterName: data.requesterName,
         requesterEmail: data.requesterEmail,
         requesterPhone: data.requesterPhone,
@@ -712,12 +724,37 @@ export class TalentService {
       this.logger.error('Failed to auto-create SalesLead from HireRequest:', err);
     }
 
-    // Notify the talent (optional) or admins
+    const talentFullName = `${profile.user.firstName || ''} ${profile.user.lastName || ''}`.trim() || 'Talent';
+
+    // 1. Notify the requester/client on WhatsApp
+    if (data.requesterPhone) {
+      try {
+        const clientMsg = `🎬 *MP PRODUCTION — BOOKING CONFIRMATION* 🎬\n\nDear ${data.requesterName},\nYour booking inquiry for *${talentFullName}* has been successfully received!\n\n📋 *Details*:\n• Talent: ${talentFullName}\n• Project: ${data.projectType || 'Production Shoot'}\n• Amount/Budget: ${data.budgetRange || 'Day-wise calculation'}\n• City: ${data.city || 'Not specified'}\n\nOur team is reviewing the schedule and will contact you shortly.\n📞 Admin Contact: +91 831 053 1309\n🌐 MP Production Atelier`;
+        this.whatsappService.sendMessage(data.requesterPhone, clientMsg).catch((e) => {
+          this.logger.error(`Failed to send WhatsApp to client ${data.requesterPhone}`, e);
+        });
+      } catch (e) {}
+    }
+
+    // 2. Notify Admin on WhatsApp (831 053 1309)
+    try {
+      const adminPhone = '8310531309';
+      const adminMsg = `🚨 *NEW TALENT BOOKING RECEIVED* 🎬\n\n• *Talent*: ${talentFullName}\n• *Client*: ${data.requesterName}\n• *Phone*: ${data.requesterPhone}\n• *Email*: ${data.requesterEmail}\n• *Project*: ${data.projectType || 'N/A'}\n• *Budget*: ${data.budgetRange || 'N/A'}\n• *City*: ${data.city || 'N/A'}\n• *Date*: ${data.dateNeeded ? new Date(data.dateNeeded).toLocaleDateString('en-IN') : 'Flexible'}\n• *Brief*: ${data.briefDescription || 'N/A'}\n\nPlease check Admin Studio to review.`;
+      this.whatsappService.sendMessage(adminPhone, adminMsg).catch((e) => {
+        this.logger.error(`Failed to send WhatsApp to admin ${adminPhone}`, e);
+      });
+    } catch (e) {}
+
+    // 3. Notify the talent (if phone number is available)
     if (profile.user.phone) {
-      this.whatsappService.sendMessage(
-        profile.user.phone,
-        `Hi ${profile.user.firstName}, you have a new booking inquiry for a ${data.projectType} project. MP Productions team will contact you shortly with details.`
-      );
+      try {
+        this.whatsappService.sendMessage(
+          profile.user.phone,
+          `Hi ${profile.user.firstName}, you have a new booking inquiry for a ${data.projectType} project from ${data.requesterName}. MP Productions team will contact you shortly with details.`
+        ).catch((e) => {
+          this.logger.error(`Failed to send WhatsApp to talent ${profile.user.phone}`, e);
+        });
+      } catch (e) {}
     }
 
     return request;

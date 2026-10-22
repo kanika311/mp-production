@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
-import { PortalNavbar } from '@/components/ui/PortalNavbar';
+import { Navbar } from '@/components/ui/Navbar';
 import { Reveal } from '@/components/ui/Reveal';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
@@ -17,7 +17,7 @@ export default async function ClientPortalSettings() {
 
   return (
     <>
-      <PortalNavbar />
+      <Navbar />
 
       <main className="page-content">
         <Container>

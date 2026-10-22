@@ -46,7 +46,7 @@ export default async function TeamPage() {
         {/* Header Section */}
         <section className="relative w-full h-[60vh] flex items-center justify-center overflow-hidden mb-24 text-center">
           <Image 
-            src="/images/join-hero.jpg" 
+            src="/images/join-hero.webp" 
             alt="MP Productions Team" 
             fill 
             className="object-cover" 

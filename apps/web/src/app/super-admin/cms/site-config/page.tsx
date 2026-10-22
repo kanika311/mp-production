@@ -49,7 +49,7 @@ function SiteConfigContent() {
   const [pricing, setPricing] = useState<Array<{ name: string; price: string; period?: string; description?: string; highlighted?: boolean; cta?: string; features: string[] }>>([]);
 
   const [navbar, setNavbar] = useState({
-    logoUrl: '/logo.png',
+    logoUrl: '/logo.webp',
     siteTitle: 'MP Productions',
     sticky: true,
     links: [
@@ -644,7 +644,7 @@ function SiteConfigContent() {
                         id="navbar-logo"
                         value={navbar.logoUrl}
                         onChange={(e) => setNavbar(prev => ({ ...prev, logoUrl: e.target.value }))}
-                        placeholder="/logo.png"
+                        placeholder="/logo.webp"
                       />
                       <Button
                         type="button"
@@ -1011,7 +1011,7 @@ function SiteConfigContent() {
                       id="seo-og"
                       value={seo.ogImage}
                       onChange={(e) => setSeo(prev => ({ ...prev, ogImage: e.target.value }))}
-                      placeholder="e.g. /images/og-main.jpg"
+                      placeholder="e.g. /images/og-main.webp"
                     />
                     <Button
                       type="button"
@@ -1041,7 +1041,7 @@ function SiteConfigContent() {
                       category: 'Commercial',
                       description: 'Brand showcase',
                       videoUrl: '/videos/reel_1.mp4',
-                      coverImage: '/images/portfolio-hero.jpg',
+                      coverImage: '/images/portfolio-hero.webp',
                       duration: '0:30',
                       camera: 'ARRI ALEXA 35',
                       lenses: 'Cooke Anamorphic /i',
@@ -1133,7 +1133,7 @@ function SiteConfigContent() {
                                   copy[idx].coverImage = e.target.value;
                                   setShowreels(copy);
                                 }}
-                                placeholder="e.g. /images/portfolio-hero.jpg"
+                                placeholder="e.g. /images/portfolio-hero.webp"
                                 required
                               />
                               <Button

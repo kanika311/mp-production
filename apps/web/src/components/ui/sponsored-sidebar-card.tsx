@@ -185,7 +185,7 @@ export function SponsoredSidebarCard({
 
       {/* Main Full-Height Card */}
       <div
-        className="relative w-full min-h-[460px] max-h-[640px] flex-1 rounded-3xl border border-border bg-card overflow-hidden shadow-lg group"
+        className="relative w-full h-full min-h-[460px] flex-1 rounded-3xl border border-border bg-card overflow-hidden shadow-lg group"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >

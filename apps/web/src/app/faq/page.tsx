@@ -73,7 +73,7 @@ export default function FAQ() {
           {/* Header Section */}
         <section className="relative w-full h-[60vh] flex items-center justify-center overflow-hidden mb-20 text-center -mx-4 sm:-mx-8 lg:-mx-12 px-4 sm:px-8 lg:px-12 w-[calc(100%+2rem)] sm:w-[calc(100%+4rem)] lg:w-[calc(100%+6rem)] rounded-none">
           <Image 
-            src="/images/bg-luxury.jpg" 
+            src="/images/bg-luxury.webp" 
             alt="FAQ & Support" 
             fill 
             className="object-cover" 

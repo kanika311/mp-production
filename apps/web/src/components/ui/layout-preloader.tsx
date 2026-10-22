@@ -71,7 +71,7 @@ export function LayoutPreloader() {
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-gradient-to-r from-red-600/20 via-orange-500/10 to-red-600/20 blur-3xl rounded-full opacity-50 mix-blend-screen" />
               
               <img 
-                src="/logo.png" 
+                src="/logo.webp" 
                 alt="MP Productions" 
                 className="h-32 md:h-48 object-contain drop-shadow-[0_0_15px_rgba(235,61,38,0.3)] relative z-10"
               />

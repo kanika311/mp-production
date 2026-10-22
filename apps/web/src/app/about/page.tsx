@@ -39,7 +39,7 @@ export default function About() {
         {/* Brand Story Hero — Full Bleed Merged With Navbar */}
         <section className="relative w-full h-[75vh] sm:h-[85vh] flex items-center justify-center overflow-hidden mb-20 pt-28 sm:pt-36">
           <Image 
-            src="/images/about-hero.jpg" 
+            src="/images/about-hero.webp" 
             alt="About MP Production" 
             fill 
             className="object-cover object-center" 
@@ -88,7 +88,7 @@ export default function About() {
               <Reveal direction="up" delay={0.2}>
                 <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] border border-border">
                   <Image 
-                    src="/images/about-bts.jpg" 
+                    src="/images/about-bts.webp" 
                     alt="Behind the scenes camera operator" 
                     fill 
                     className="object-cover" sizes="100vw" />
@@ -105,7 +105,7 @@ export default function About() {
             <Reveal direction="up" delay={0.15}>
               <div className="group relative aspect-video overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-2xl">
                 <img 
-                  src="/assets/hero-dark.jpg" 
+                  src="/assets/hero-dark.webp" 
                   alt="Studio Production Set" 
                   className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-80 transition-all duration-1200 ease-out" 
                 />

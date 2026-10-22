@@ -44,7 +44,9 @@ import {
   Loader2,
   Save,
   ArrowRight,
-  CheckCheck
+  CheckCheck,
+  Shield,
+  Briefcase
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -61,6 +63,10 @@ export type TabKey =
   | 'contact-leads'
   | 'home-page'
   | 'footer-cms'
+  | 'admins'
+  | 'clients'
+  | 'talents'
+  | 'employees'
   | 'users'
   | 'sponsored';
 
@@ -71,20 +77,27 @@ interface TabItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   description: string;
+  group: string;
 }
 
+const TAB_GROUPS = ['Overview', 'Content & CMS', 'CRM & Leads', 'User Accounts', 'Site Management'] as const;
+
 const TABS: TabItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Overview & Key Performance Indicators' },
-  { id: 'talent', label: 'Talent', icon: UserCheck, description: 'Actors, Models, Creators & Roster Management' },
-  { id: 'services', label: 'Services', icon: Layers, description: 'Production Offerings & Pricing Packages' },
-  { id: 'blogs', label: 'Blogs', icon: Newspaper, description: 'Articles, News & Editorial Journal' },
-  { id: 'become-a-youtuber', label: 'Become a YouTuber', icon: Video, description: 'Creator Courses, Monetization & Submissions' },
-  { id: 'projects', label: 'Projects', icon: Clapperboard, description: 'Cinematic Portfolio & Works Archive' },
-  { id: 'contact-leads', label: 'Contact Leads', icon: Mail, description: 'Client Inquiries, Bookings & Messages' },
-  { id: 'home-page', label: 'Home Page', icon: Home, description: 'Hero Banners, Announcements & Featured Sections' },
-  { id: 'footer-cms', label: 'Footer CMS', icon: FileText, description: 'Footer Details, Social Links & Copyright' },
-  { id: 'users', label: 'Users', icon: Users, description: 'User Accounts, Roles & Security Access' },
-  { id: 'sponsored', label: 'Sponsored', icon: Sparkles, description: 'Sidebar Partner Brands & Ads' },
+  { id: 'dashboard',        label: 'Dashboard',             icon: LayoutDashboard, description: 'Overview & Key Performance Indicators',           group: 'Overview' },
+  { id: 'talent',           label: 'Talent Roster CMS',     icon: UserCheck,       description: 'Actors, Models, Creators & Public Roster',       group: 'Content & CMS' },
+  { id: 'services',         label: 'Services',              icon: Layers,          description: 'Production Offerings & Pricing Packages',         group: 'Content & CMS' },
+  { id: 'blogs',            label: 'Blogs',                 icon: Newspaper,       description: 'Articles, News & Editorial Journal',               group: 'Content & CMS' },
+  { id: 'become-a-youtuber',label: 'Become a YouTuber',     icon: Video,           description: 'Creator Courses, Monetization & Submissions',     group: 'Content & CMS' },
+  { id: 'projects',         label: 'Projects',              icon: Clapperboard,    description: 'Cinematic Portfolio & Works Archive',              group: 'Content & CMS' },
+  { id: 'contact-leads',    label: 'Contact Leads',         icon: Mail,            description: 'Client Inquiries, Bookings & Messages',           group: 'CRM & Leads' },
+  { id: 'admins',           label: 'Admins',                icon: Shield,          description: 'System Administrators & Super Admins',             group: 'User Accounts' },
+  { id: 'clients',          label: 'Clients',               icon: Briefcase,       description: 'Brand Clients & Agency Accounts',                  group: 'User Accounts' },
+  { id: 'talents',          label: 'Talents',               icon: Sparkles,        description: 'Talent User Logins & Profiles',                    group: 'User Accounts' },
+  { id: 'employees',        label: 'Employees & Crew',      icon: UserCheck,       description: 'Crew, Editors & Project Managers',                 group: 'User Accounts' },
+  { id: 'users',            label: 'All Users',             icon: Users,           description: 'Master User Directory & Roles',                    group: 'User Accounts' },
+  { id: 'home-page',        label: 'Home Page',             icon: Home,            description: 'Hero Banners, Announcements & Featured Sections',  group: 'Site Management' },
+  { id: 'footer-cms',       label: 'Footer CMS',            icon: FileText,        description: 'Footer Details, Social Links & Copyright',         group: 'Site Management' },
+  { id: 'sponsored',        label: 'Sponsored',             icon: Sparkles,        description: 'Sidebar Partner Brands & Ads',                     group: 'Site Management' },
 ];
 
 export function UnifiedAdminDashboard() {
@@ -429,6 +442,10 @@ export function UnifiedAdminDashboard() {
       case 'contact-leads': return leads;
       case 'home-page': return homePageConfig.faqs;
       case 'footer-cms': return footerConfig.quickLinks;
+      case 'admins': return usersList.filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
+      case 'clients': return usersList.filter(u => u.role === 'CLIENT');
+      case 'talents': return usersList.filter(u => u.role === 'TALENT');
+      case 'employees': return usersList.filter(u => ['EMPLOYEE', 'EDITOR', 'PROJECT_MANAGER'].includes(u.role));
       case 'users': return usersList;
       case 'sponsored': return sponsoredList;
       default: return [];
@@ -776,6 +793,61 @@ export function UnifiedAdminDashboard() {
           }));
         }
       }
+
+      // 7. Recent Bookings & Hire Requests -> Live Notifications & Contact Leads CRM
+      try {
+        const bookingsRes = await fetch('/api/admin/dashboard/recent-bookings', { cache: 'no-store' })
+          .then((r) => r.json())
+          .catch(() => null);
+        const liveBookings = bookingsRes?.data || bookingsRes?.result || [];
+        if (Array.isArray(liveBookings) && liveBookings.length > 0) {
+          const liveNotifs = liveBookings.map((b: any, idx: number) => {
+            const clientName = b.client?.user?.firstName
+              ? `${b.client.user.firstName} ${b.client.user.lastName || ''}`.trim()
+              : (b.requesterName || 'New Client');
+            const talent = b.talentName || (b.talent?.user ? `${b.talent.user.firstName || ''} ${b.talent.user.lastName || ''}`.trim() : 'Talent Roster');
+            const clientPhone = b.client?.user?.phone || b.requesterPhone || '';
+            const budget = b.budget || (b.budgetRange ? b.budgetRange : 'Day-wise Booking');
+            const timeAgo = b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-IN') : 'Recent';
+
+            return {
+              id: `live-booking-${b.id || idx}`,
+              title: `New Booking: ${talent}`,
+              message: `${clientName} booked ${talent}. Fee: ${budget}. Contact: ${clientPhone || 'Admin Hotline: +91 831 053 1309'}`,
+              type: 'booking' as const,
+              time: timeAgo,
+              isRead: false,
+              linkTab: 'contact-leads' as TabKey,
+              linkId: b.id,
+            };
+          });
+
+          setNotifications((prev) => {
+            const existingIds = new Set(prev.map((n) => n.id));
+            const newNotifs = liveNotifs.filter((n: any) => !existingIds.has(n.id));
+            return [...newNotifs, ...prev];
+          });
+
+          // Also merge into Leads
+          const liveLeads = liveBookings.map((b: any, idx: number) => ({
+            id: `live-lead-${b.id || idx}`,
+            name: b.client?.user?.firstName ? `${b.client.user.firstName} ${b.client.user.lastName || ''}`.trim() : (b.requesterName || 'Talent Client'),
+            email: b.client?.user?.email || b.requesterEmail || 'client@mdms.internal',
+            phone: b.client?.user?.phone || b.requesterPhone || '+91 831 053 1309',
+            category: b.service?.name || b.projectType || 'Talent Booking',
+            budget: b.budget || b.budgetRange || 'Day-wise calculation',
+            date: b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-IN') : 'Today',
+            status: b.status || 'Inquiry',
+            message: b.projectBrief || b.briefDescription || 'Direct Talent Booking Inquiry',
+          }));
+
+          setLeads((prev) => {
+            const existingIds = new Set(prev.map((l) => l.id));
+            const newLeads = liveLeads.filter((l: any) => !existingIds.has(l.id));
+            return [...newLeads, ...prev];
+          });
+        }
+      } catch (err) {}
 
       toast.success('Live CMS datasets synced successfully.');
     } catch (err) {
@@ -1502,10 +1574,19 @@ export function UnifiedAdminDashboard() {
     t.label.toLowerCase().includes(tabSearch.toLowerCase())
   );
 
+  // Group tabs by their category for sidebar rendering
+  const groupedFilteredTabs = tabSearch
+    ? null // When searching, show flat list
+    : TAB_GROUPS.reduce((acc, group) => {
+        const items = TABS.filter((t) => t.group === group);
+        if (items.length > 0) acc[group] = items;
+        return acc;
+      }, {} as Record<string, TabItem[]>);
+
   const renderSidebarContent = (isMobile = false) => (
     <>
       {/* Brand Header with Official Site Logo */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between gap-3 bg-white">
+      <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between gap-3 bg-white shrink-0">
         <Link
           href="/super-admin"
           onClick={() => isMobile && setIsMobileNavOpen(false)}
@@ -1513,21 +1594,21 @@ export function UnifiedAdminDashboard() {
         >
           <div className="p-1.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 shadow-2xs">
             <img
-              src="/logo.png"
+              src="/logo.webp"
               alt="MP Production Logo"
               className="h-7 w-auto object-contain group-hover:scale-105 transition-transform"
             />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-[15px] tracking-tight text-slate-900 group-hover:text-[#eb3d26] transition-colors">
+              <span className="font-extrabold text-[15.5px] tracking-tight text-slate-950 group-hover:text-[#eb3d26] transition-colors">
                 MP Production
               </span>
               <span className="px-2 py-0.5 rounded-md bg-red-50 text-[#eb3d26] border border-red-200 text-xs font-mono font-bold uppercase tracking-wide">
                 Root
               </span>
             </div>
-            <p className="text-xs text-slate-400 font-medium tracking-tight">Super Admin Atelier</p>
+            <p className="text-xs text-slate-600 font-semibold tracking-tight">Super Admin Atelier</p>
           </div>
         </Link>
 
@@ -1535,7 +1616,7 @@ export function UnifiedAdminDashboard() {
           <button
             type="button"
             onClick={() => setIsMobileNavOpen(false)}
-            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
             aria-label="Close menu"
           >
             <X size={18} />
@@ -1545,7 +1626,7 @@ export function UnifiedAdminDashboard() {
           <button
             type="button"
             onClick={() => setIsNotificationDrawerOpen(true)}
-            className="relative p-2 rounded-xl bg-slate-50 hover:bg-red-50 border border-slate-200 text-slate-600 hover:text-red-600 transition-all cursor-pointer group"
+            className="relative p-2 rounded-xl bg-slate-50 hover:bg-red-50 border border-slate-200 text-slate-700 hover:text-red-600 transition-all cursor-pointer group"
             title="Alerts & Notifications"
           >
             <Bell size={17} className="group-hover:rotate-12 transition-transform" />
@@ -1559,20 +1640,20 @@ export function UnifiedAdminDashboard() {
       </div>
 
       {/* Tab Search Bar */}
-      <div className="p-3 border-b border-slate-200 bg-white">
+      <div className="p-3 border-b border-slate-200 bg-white shrink-0">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           <input
             type="text"
             value={tabSearch}
             onChange={(e) => setTabSearch(e.target.value)}
             placeholder="Search tabs..."
-            className="w-full pl-9 pr-7 py-2 text-sm rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition-all font-sans"
+            className="w-full pl-9 pr-7 py-2 text-sm font-semibold rounded-xl bg-slate-50 border border-slate-200 text-slate-950 placeholder:text-slate-500 focus:outline-none focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/10 transition-all font-sans"
           />
           {tabSearch && (
             <button
               onClick={() => setTabSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900"
             >
               <X size={13} />
             </button>
@@ -1580,75 +1661,149 @@ export function UnifiedAdminDashboard() {
         </div>
       </div>
 
-      {/* Navigation Tabs List */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto bg-white">
-        {filteredTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          const count = getTabCount(tab.id);
-
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setPageMode('list');
-                setSearchQuery('');
-                setStatusFilter('all');
-                if (isMobile) setIsMobileNavOpen(false);
-                if (typeof window !== 'undefined') {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set('tab', tab.id);
-                  url.searchParams.delete('mode');
-                  url.searchParams.delete('id');
-                  window.history.pushState(null, '', url.toString());
-                }
-              }}
-              className={cn(
-                "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13.5px] transition-all duration-200 cursor-pointer group text-left tracking-tight",
-                isActive
-                  ? "bg-red-600 text-white shadow-md shadow-red-600/20 font-bold scale-[1.01]"
-                  : "text-slate-600 hover:text-red-600 hover:bg-red-50/70 font-medium"
-              )}
-            >
-              <div className="flex items-center gap-3 truncate">
-                <Icon
-                  className={cn(
-                    "w-4 h-4 shrink-0 transition-colors",
-                    isActive ? "text-white" : "text-slate-400 group-hover:text-red-500"
-                  )}
-                />
-                <span className="truncate">{tab.label}</span>
+      {/* Navigation Tabs List - Enhanced with smooth visible scrolling */}
+      <nav
+        className="flex-1 p-3 overflow-y-auto overscroll-contain bg-white space-y-3"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f8fafc' }}
+      >
+        {groupedFilteredTabs ? (
+          // Grouped view (no search active)
+          Object.entries(groupedFilteredTabs).map(([group, tabs]) => (
+            <div key={group} className="mb-3">
+              <div className="px-3 py-1.5 mb-1 flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-800 select-none">
+                  {group}
+                </span>
+                <span className="text-[11px] font-bold text-slate-500">
+                  {tabs.length}
+                </span>
               </div>
-
-              {tab.id !== 'dashboard' && (
-                <span
+              <div className="space-y-0.5">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  const count = getTabCount(tab.id);
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setPageMode('list');
+                        setSearchQuery('');
+                        setStatusFilter('all');
+                        if (isMobile) setIsMobileNavOpen(false);
+                        if (typeof window !== 'undefined') {
+                          const url = new URL(window.location.href);
+                          url.searchParams.set('tab', tab.id);
+                          url.searchParams.delete('mode');
+                          url.searchParams.delete('id');
+                          window.history.pushState(null, '', url.toString());
+                        }
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm transition-all duration-200 cursor-pointer group text-left tracking-tight",
+                        isActive
+                          ? "bg-red-600 text-white shadow-md shadow-red-600/25 font-black scale-[1.01]"
+                          : "text-slate-900 hover:text-red-600 hover:bg-red-50/80 font-bold"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 truncate">
+                        <Icon
+                          className={cn(
+                            "w-4 h-4 shrink-0 transition-colors",
+                            isActive ? "text-white" : "text-slate-700 group-hover:text-red-600"
+                          )}
+                        />
+                        <span className="truncate">{tab.label}</span>
+                      </div>
+                      {tab.id !== 'dashboard' && (
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-xs font-mono font-bold shrink-0",
+                            isActive
+                              ? "bg-white/25 text-white"
+                              : "bg-slate-200 text-slate-800 group-hover:bg-red-100 group-hover:text-red-800"
+                          )}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        ) : (
+          // Flat list (search active)
+          <div className="space-y-1">
+            {filteredTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              const count = getTabCount(tab.id);
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setPageMode('list');
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                    if (isMobile) setIsMobileNavOpen(false);
+                    if (typeof window !== 'undefined') {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('tab', tab.id);
+                      url.searchParams.delete('mode');
+                      url.searchParams.delete('id');
+                      window.history.pushState(null, '', url.toString());
+                    }
+                  }}
                   className={cn(
-                    "px-2 py-0.5 rounded-full text-xs font-mono font-semibold shrink-0",
+                    "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm transition-all duration-200 cursor-pointer group text-left tracking-tight",
                     isActive
-                      ? "bg-white/25 text-white"
-                      : "bg-slate-100 text-slate-600 group-hover:bg-red-100 group-hover:text-red-700"
+                      ? "bg-red-600 text-white shadow-md shadow-red-600/25 font-black scale-[1.01]"
+                      : "text-slate-900 hover:text-red-600 hover:bg-red-50/80 font-bold"
                   )}
                 >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+                  <div className="flex items-center gap-3 truncate">
+                    <Icon
+                      className={cn(
+                        "w-4 h-4 shrink-0 transition-colors",
+                        isActive ? "text-white" : "text-slate-700 group-hover:text-red-600"
+                      )}
+                    />
+                    <span className="truncate">{tab.label}</span>
+                  </div>
+                  {tab.id !== 'dashboard' && (
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 rounded-full text-xs font-mono font-bold shrink-0",
+                        isActive
+                          ? "bg-white/25 text-white"
+                          : "bg-slate-200 text-slate-800 group-hover:bg-red-100 group-hover:text-red-800"
+                      )}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* Sidebar Footer Controls */}
-      <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 text-xs">
-        <div className="flex items-center justify-between px-2 py-1 text-slate-600">
-          <span className="flex items-center gap-1.5 text-xs font-medium">
+      <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 text-xs shrink-0">
+        <div className="flex items-center justify-between px-2 py-1 text-slate-700">
+          <span className="flex items-center gap-1.5 text-xs font-bold">
             <Globe size={14} className="text-red-600" />
-            <span className="text-slate-500">Language: EN</span>
+            <span className="text-slate-700">Language: EN</span>
           </span>
           <Link
             href="/"
             target="_blank"
-            className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-semibold"
+            className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-bold"
           >
             <span>Live Site</span>
             <ExternalLink size={12} />
@@ -1670,7 +1825,7 @@ export function UnifiedAdminDashboard() {
             router.push('/sushant-super-admin');
             router.refresh();
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-700 hover:text-red-600 font-semibold transition-all cursor-pointer shadow-2xs text-xs"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-900 hover:text-red-600 font-bold transition-all cursor-pointer shadow-2xs text-xs"
         >
           <LogOut size={14} />
           <span>Logout</span>
@@ -1685,7 +1840,7 @@ export function UnifiedAdminDashboard() {
       {/* ═══════════════════════════════════════════════════════════
           DESKTOP SIDEBAR (Visible on md and above)
           ═══════════════════════════════════════════════════════════ */}
-      <aside className="hidden md:flex w-64 lg:w-72 fixed inset-y-0 left-0 h-screen bg-white border-r border-slate-200 flex-col z-40 shadow-sm">
+      <aside className="hidden md:flex w-64 lg:w-72 fixed inset-y-0 left-0 h-screen max-h-screen bg-white border-r border-slate-200 flex-col z-40 shadow-sm overflow-hidden">
         {renderSidebarContent(false)}
       </aside>
 
@@ -3812,28 +3967,81 @@ export function UnifiedAdminDashboard() {
                 </div>
               )}
 
-              {/* TAB: USERS (Real Database User Directory & Roles) */}
+              {/* ── DEDICATED SEPARATE TABS FOR EACH USER TYPE ── */}
+              {/* 1. ADMINS TAB */}
+              {activeTab === 'admins' && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+                  <UserTable
+                    currentUserRole="SUPER_ADMIN"
+                    fixedRole="ADMIN"
+                    hideCategoryTabs={true}
+                    title="System Administrators & Super Admins"
+                    subtitle="Manage administrator accounts, security access, MFA, and elevated root control."
+                    addBtnText="+ Add New Admin"
+                    defaultNewRole="ADMIN"
+                  />
+                </div>
+              )}
+
+              {/* 2. CLIENTS TAB */}
+              {activeTab === 'clients' && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+                  <UserTable
+                    currentUserRole="SUPER_ADMIN"
+                    fixedRole="CLIENT"
+                    hideCategoryTabs={true}
+                    title="Clients & Brand Agency Accounts"
+                    subtitle="Manage corporate brand clients, booking requests, briefs access, and client portal credentials."
+                    addBtnText="+ Add New Client"
+                    defaultNewRole="CLIENT"
+                  />
+                </div>
+              )}
+
+              {/* 3. TALENTS TAB */}
+              {activeTab === 'talents' && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+                  <UserTable
+                    currentUserRole="SUPER_ADMIN"
+                    fixedRole="TALENT"
+                    hideCategoryTabs={true}
+                    title="Talent User Directory & Access"
+                    subtitle="Manage registered actors, models, video creators, verification approval, and portal accounts."
+                    addBtnText="+ Add New Talent User"
+                    defaultNewRole="TALENT"
+                  />
+                </div>
+              )}
+
+              {/* 4. EMPLOYEES & CREW TAB */}
+              {activeTab === 'employees' && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+                  <UserTable
+                    currentUserRole="SUPER_ADMIN"
+                    fixedRole="EMPLOYEE"
+                    hideCategoryTabs={true}
+                    title="Employees, Crew & Project Managers"
+                    subtitle="Manage production staff, post-production editors, sound engineers, and operations managers."
+                    addBtnText="+ Add New Employee"
+                    defaultNewRole="EMPLOYEE"
+                  />
+                </div>
+              )}
+
+              {/* 5. ALL USERS TAB */}
               {activeTab === 'users' && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900 tracking-tight">System User Directory &amp; Access Control</h2>
-                      <p className="text-xs text-slate-500 mt-0.5">Manage real database user accounts, roles, credentials, and access permissions.</p>
-                    </div>
-                    <Link
-                      href="/super-admin/users/invite"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-600/20 cursor-pointer transition-all self-start sm:self-auto"
-                    >
-                      <Plus size={14} className="stroke-[3]" />
-                      <span>+ Create / Invite New Admin</span>
-                    </Link>
-                  </div>
-                  <UserTable currentUserRole="SUPER_ADMIN" />
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+                  <UserTable
+                    currentUserRole="SUPER_ADMIN"
+                    title="Master User Directory & Access Control"
+                    subtitle="Comprehensive database of all user accounts across all roles with access level assignment."
+                    addBtnText="+ Create / Invite New User"
+                  />
                 </div>
               )}
 
               {/* ALL OTHER CMS FUNCTIONALITY TABS */}
-              {activeTab !== 'dashboard' && activeTab !== 'footer-cms' && activeTab !== 'home-page' && activeTab !== 'users' && (
+              {activeTab !== 'dashboard' && activeTab !== 'footer-cms' && activeTab !== 'home-page' && !['users', 'admins', 'clients', 'talents', 'employees'].includes(activeTab) && (
                 <div className="space-y-4">
                   
                   {/* Filter & Search Bar for current tab */}

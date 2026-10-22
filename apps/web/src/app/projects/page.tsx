@@ -50,7 +50,7 @@ const DEFAULT_PROJECTS: PortfolioProject[] = [
     category: 'Fashion Film',
     year: '2026',
     client: 'Vogue & Gucci Collective',
-    mediaUrl: '/images/portfolio-hero.jpg',
+    mediaUrl: '/images/portfolio-hero.webp',
     description: 'High-fashion cinematic editorial shot across cyberpunk neon alleyways in Mumbai and nocturnal studios in London.',
     camera: 'ARRI ALEXA 35',
     lenses: 'Cooke Anamorphic /i',
@@ -65,7 +65,7 @@ const DEFAULT_PROJECTS: PortfolioProject[] = [
     category: 'Music Video',
     year: '2026',
     client: 'Universal Music Group',
-    mediaUrl: '/images/about-bts.jpg',
+    mediaUrl: '/images/about-bts.webp',
     description: 'A surrealist exploration of haute couture against brutalist architecture. Shot entirely on 35mm film stock.',
     camera: 'ARRIFLEX 435',
     lenses: 'Kowa Anamorphic',
@@ -80,7 +80,7 @@ const DEFAULT_PROJECTS: PortfolioProject[] = [
     category: 'Commercial',
     year: '2025',
     client: 'The Macallan Distillers',
-    mediaUrl: '/images/careers-meeting.jpg',
+    mediaUrl: '/images/careers-meeting.webp',
     description: 'An atmospheric brand commercial across secluded coastal cliffs in South Goa and heritage Scottish distilleries.',
     camera: 'RED V-Raptor 8K',
     lenses: 'Leica Summilux-C',
@@ -95,7 +95,7 @@ const DEFAULT_PROJECTS: PortfolioProject[] = [
     category: 'Brand Campaign',
     year: '2025',
     client: 'Raymond Tailored',
-    mediaUrl: '/images/services-lighting.jpg',
+    mediaUrl: '/images/services-lighting.webp',
     description: 'Dynamic editorial campaign blending 16mm film grit with hyper-polished digital intermediate finishing.',
     camera: 'ARRI ALEXA Mini LF',
     lenses: 'Zeiss Master Primes',
@@ -110,7 +110,7 @@ const DEFAULT_PROJECTS: PortfolioProject[] = [
     category: 'Art & Theatre',
     year: '2026',
     client: 'Royal Opera House',
-    mediaUrl: '/images/bg-abstract.jpg',
+    mediaUrl: '/images/bg-abstract.webp',
     description: 'An immersive 360-degree sensory exploration of human movement and architectural acoustic spaces.',
     camera: 'Sony Venice 2',
     lenses: 'Angenieux Optimo',
@@ -125,7 +125,7 @@ const DEFAULT_PROJECTS: PortfolioProject[] = [
     category: 'Commercial',
     year: '2025',
     client: 'Porsche Motorsport',
-    mediaUrl: '/images/bg-luxury.jpg',
+    mediaUrl: '/images/bg-luxury.webp',
     description: 'High-speed precision tracking shots across salt flats at dawn with custom FPV cinema drone cinematography.',
     camera: 'RED Komodo 6K',
     lenses: 'Atlas Orion Anamorphic',
@@ -491,7 +491,7 @@ export default function ProjectsPage() {
                       {/* Media Image / Aspect Ratio */}
                       <div className="relative aspect-[16/10] w-full bg-neutral-950 overflow-hidden shrink-0">
                         <Image
-                          src={project.mediaUrl || '/images/portfolio-hero.jpg'}
+                          src={project.mediaUrl || '/images/portfolio-hero.webp'}
                           alt={project.title}
                           fill
                           sizes="(max-width: 768px) 100vw, 400px"

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { PortalNavbar } from '@/components/ui/PortalNavbar';
+import { Navbar } from '@/components/ui/Navbar';
 import { auth } from '@/auth';
 import { TalentRegistrationWizard } from '@/components/talent-registration/TalentRegistrationWizard';
 import { serverFetchAPI } from '@/lib/server-api-client';
@@ -29,9 +29,9 @@ export default async function SetupTalentProfilePage() {
   }
 
   return (
-    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-background">
-      <PortalNavbar role="TALENT" />
-      <main className="flex-1 min-h-0 overflow-hidden relative">
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      <main className="flex-1 pt-24 pb-12">
         <TalentRegistrationWizard />
       </main>
     </div>

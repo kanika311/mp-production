@@ -327,7 +327,7 @@ export function CinematicProductScrollSection({ items = [] }: { items?: any[] })
     id: item.id || Math.random().toString(),
     title: item.title || "Untitled Project",
     handle: item.slug || item.id || "",
-    thumbnail: item.mediaUrl || item.coverImage || "/assets/placeholder.jpg",
+    thumbnail: item.mediaUrl || item.coverImage || "/assets/hero_cinematic_dark.webp",
     description: item.description || "A premium creative production by MP Production.",
     collection: {
       title: item.category || "Portfolio"

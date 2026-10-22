@@ -16,7 +16,7 @@ async function main() {
   // ── Site configs (correct shapes the site-config page expects) ──
   const configs = {
     navigation: {
-      logoUrl: '/logo.png', siteTitle: 'MP Productions', sticky: true,
+      logoUrl: '/logo.webp', siteTitle: 'MP Productions', sticky: true,
       links: [
         { label: 'HOME', href: '/' }, { label: 'PORTFOLIO', href: '/portfolio' },
         { label: 'SERVICES', href: '/services' }, { label: 'TALENT', href: '/talent' },
@@ -48,11 +48,11 @@ async function main() {
       siteTitle: 'MP Production — Cinematic Media House',
       metaDescription: 'High-fashion campaigns, cinematic commercials and exclusive talent representation.',
       keywords: 'production house, cinematic, fashion film, talent, mumbai',
-      ogImage: '/images/portfolio-hero.jpg',
+      ogImage: '/images/portfolio-hero.webp',
     },
     showreels: [
-      { id: 'sr-1', title: 'Commercial Reel 2026', category: 'Commercial', description: 'Our latest brand film work.', videoUrl: '/videos/reel_1.mp4', coverImage: '/images/portfolio-hero.jpg', duration: '2:14', camera: 'ARRI ALEXA 35', lenses: 'Cooke Anamorphic', colorGrade: 'Dolby Vision' },
-      { id: 'sr-2', title: 'Fashion Reel', category: 'Fashion', description: 'Editorial and runway highlights.', videoUrl: '/videos/reel_2.mp4', coverImage: '/images/about-bts.jpg', duration: '1:48', camera: 'RED V-Raptor', lenses: 'Panavision C-Series', colorGrade: 'Technicolor' },
+      { id: 'sr-1', title: 'Commercial Reel 2026', category: 'Commercial', description: 'Our latest brand film work.', videoUrl: '/videos/reel_1.mp4', coverImage: '/images/portfolio-hero.webp', duration: '2:14', camera: 'ARRI ALEXA 35', lenses: 'Cooke Anamorphic', colorGrade: 'Dolby Vision' },
+      { id: 'sr-2', title: 'Fashion Reel', category: 'Fashion', description: 'Editorial and runway highlights.', videoUrl: '/videos/reel_2.mp4', coverImage: '/images/about-bts.webp', duration: '1:48', camera: 'RED V-Raptor', lenses: 'Panavision C-Series', colorGrade: 'Technicolor' },
     ],
   };
   for (const [key, value] of Object.entries(configs)) {
@@ -124,14 +124,14 @@ async function main() {
 
   // ── Media assets (Media Library) ───────────────────────────
   const media = [
-    { id: 'seed-md-1', url: '/images/portfolio-hero.jpg', originalName: 'portfolio-hero.jpg' },
-    { id: 'seed-md-2', url: '/images/about-bts.jpg', originalName: 'about-bts.jpg' },
-    { id: 'seed-md-3', url: '/images/careers-meeting.jpg', originalName: 'careers-meeting.jpg' },
-    { id: 'seed-md-4', url: '/images/services-lighting.jpg', originalName: 'services-lighting.jpg' },
-    { id: 'seed-md-5', url: '/images/bg-abstract.jpg', originalName: 'bg-abstract.jpg' },
-    { id: 'seed-md-6', url: '/images/bg-luxury.jpg', originalName: 'bg-luxury.jpg' },
-    { id: 'seed-md-7', url: '/assets/service_production.png', originalName: 'service_production.png' },
-    { id: 'seed-md-8', url: '/assets/service_casting.png', originalName: 'service_casting.png' },
+    { id: 'seed-md-1', url: '/images/portfolio-hero.webp', originalName: 'portfolio-hero.jpg' },
+    { id: 'seed-md-2', url: '/images/about-bts.webp', originalName: 'about-bts.jpg' },
+    { id: 'seed-md-3', url: '/images/careers-meeting.webp', originalName: 'careers-meeting.jpg' },
+    { id: 'seed-md-4', url: '/images/services-lighting.webp', originalName: 'services-lighting.jpg' },
+    { id: 'seed-md-5', url: '/images/bg-abstract.webp', originalName: 'bg-abstract.jpg' },
+    { id: 'seed-md-6', url: '/images/bg-luxury.webp', originalName: 'bg-luxury.jpg' },
+    { id: 'seed-md-7', url: '/assets/service_production.webp', originalName: 'service_production.png' },
+    { id: 'seed-md-8', url: '/assets/service_casting.webp', originalName: 'service_casting.png' },
   ];
   for (const m of media) {
     await prisma.mediaAsset.upsert({

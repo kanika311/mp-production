@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { RefreshCw, Search, ShieldAlert, UserMinus, UserCheck, Key, Shield, Users, Sparkles, Briefcase, Loader2, Eye, Pencil, Trash2, X, ExternalLink } from 'lucide-react';
+import { RefreshCw, Search, ShieldAlert, UserMinus, UserCheck, Key, Shield, Users, Sparkles, Briefcase, Loader2, Eye, Pencil, Trash2, X, ExternalLink, Plus, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface User {
@@ -17,9 +17,23 @@ interface User {
 
 interface UserTableProps {
   currentUserRole: 'ADMIN' | 'SUPER_ADMIN';
+  fixedRole?: string;
+  hideCategoryTabs?: boolean;
+  title?: string;
+  subtitle?: string;
+  addBtnText?: string;
+  defaultNewRole?: string;
 }
 
-export function UserTable({ currentUserRole }: UserTableProps) {
+export function UserTable({
+  currentUserRole,
+  fixedRole,
+  hideCategoryTabs,
+  title,
+  subtitle,
+  addBtnText = '+ Add New User',
+  defaultNewRole,
+}: UserTableProps) {
   const searchParams = useSearchParams();
   const urlRole = searchParams ? searchParams.get('role') : null;
 
@@ -32,17 +46,40 @@ export function UserTable({ currentUserRole }: UserTableProps) {
   // Filters
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>(urlRole || '');
+  const [roleFilter, setRoleFilter] = useState<string>(fixedRole || urlRole || '');
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  // Sync roleFilter with URL query param whenever it changes
+  // Create User Modal State
+  const initialRole = defaultNewRole || (fixedRole === 'ADMIN' ? 'ADMIN' : fixedRole || 'CLIENT');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: initialRole,
+  });
+  const [createLoading, setCreateLoading] = useState(false);
+
+  // Sync roleFilter with URL query param or fixedRole
   useEffect(() => {
-    if (urlRole !== null) {
+    if (fixedRole) {
+      setRoleFilter(fixedRole);
+      setPage(1);
+    } else if (urlRole !== null) {
       setRoleFilter(urlRole);
       setPage(1);
     }
-  }, [urlRole]);
+  }, [fixedRole, urlRole]);
+
+  useEffect(() => {
+    if (defaultNewRole || fixedRole) {
+      setCreateForm((prev) => ({
+        ...prev,
+        role: defaultNewRole || (fixedRole === 'ADMIN' ? 'ADMIN' : fixedRole || 'CLIENT'),
+      }));
+    }
+  }, [defaultNewRole, fixedRole]);
 
   const userCategoryTabs = [
     { label: 'All Users', value: '', icon: Users },
@@ -228,6 +265,43 @@ export function UserTable({ currentUserRole }: UserTableProps) {
     }
   };
 
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createForm.name.trim() || !createForm.email.trim() || !createForm.password) {
+      toast.error('Please fill in Name, Email, and Password.');
+      return;
+    }
+    if (createForm.password.length < 6) {
+      toast.error('Password must be at least 6 characters.');
+      return;
+    }
+    setCreateLoading(true);
+    try {
+      const res = await fetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createForm),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Failed to create user');
+      }
+      toast.success(`User ${createForm.name} created successfully!`);
+      setIsCreateModalOpen(false);
+      setCreateForm({
+        name: '',
+        email: '',
+        password: '',
+        role: initialRole,
+      });
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create user');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   const rolesList = [
     'SUPER_ADMIN',
     'ADMIN',
@@ -241,30 +315,52 @@ export function UserTable({ currentUserRole }: UserTableProps) {
 
   return (
     <div className="space-y-6">
-      {/* Category Tabs: Separate Clients, Talents, Staff, Admins */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
-        {userCategoryTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = roleFilter === tab.value;
-          return (
+      {/* Title & Add Button Header */}
+      {title && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-foreground tracking-tight">{title}</h2>
+            {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+          </div>
+          {addBtnText && (
             <button
-              key={tab.label}
-              onClick={() => {
-                setRoleFilter(tab.value);
-                setPage(1);
-              }}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border ${
-                isActive
-                  ? 'bg-brand text-white border-brand shadow-sm'
-                  : 'bg-surface text-muted-foreground border-border hover:text-foreground hover:bg-muted'
-              }`}
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-600/20 cursor-pointer transition-all self-start sm:self-auto"
             >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
+              <Plus size={14} className="stroke-[3]" />
+              <span>{addBtnText}</span>
             </button>
-          );
-        })}
-      </div>
+          )}
+        </div>
+      )}
+
+      {/* Category Tabs: Separate Clients, Talents, Staff, Admins (Shown only in master users view) */}
+      {!fixedRole && !hideCategoryTabs && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
+          {userCategoryTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = roleFilter === tab.value;
+            return (
+              <button
+                key={tab.label}
+                onClick={() => {
+                  setRoleFilter(tab.value);
+                  setPage(1);
+                }}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border ${
+                  isActive
+                    ? 'bg-brand text-white border-brand shadow-sm'
+                    : 'bg-surface text-muted-foreground border-border hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-surface p-4 border border-border rounded-xl shadow-sm">
@@ -280,6 +376,16 @@ export function UserTable({ currentUserRole }: UserTableProps) {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          {!title && addBtnText && (
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs cursor-pointer transition-all shrink-0"
+            >
+              <Plus size={14} className="stroke-[3]" />
+              <span>{addBtnText}</span>
+            </button>
+          )}
           <select
             value={limit}
             onChange={(e) => {
@@ -296,21 +402,23 @@ export function UserTable({ currentUserRole }: UserTableProps) {
             <option value={10}>10 per page</option>
           </select>
 
-          <select
-            value={roleFilter}
-            onChange={(e) => {
-              setRoleFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 border border-border rounded-lg bg-background text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
-          >
-            <option value="">All Roles</option>
-            {rolesList.map((r) => (
-              <option key={r} value={r}>
-                {r.replace('_', ' ')}
-              </option>
-            ))}
-          </select>
+          {!fixedRole && (
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 border border-border rounded-lg bg-background text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
+            >
+              <option value="">All Roles</option>
+              {rolesList.map((r) => (
+                <option key={r} value={r}>
+                  {r.replace('_', ' ')}
+                </option>
+              ))}
+            </select>
+          )}
 
           <button
             onClick={() => fetchUsers()}
@@ -779,6 +887,120 @@ export function UserTable({ currentUserRole }: UserTableProps) {
                 Save Changes
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CREATE / PROVISION USER MODAL ── */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-5 animate-scaleIn relative">
+            <button
+              onClick={() => setIsCreateModalOpen(false)}
+              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted/30 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="border-b border-border pb-3">
+              <h3 className="text-lg font-serif font-bold text-foreground">
+                {title ? `Provision ${createForm.role} Account` : 'Provision New User'}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Create database credentials and assign portal access privileges.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-semibold text-foreground">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rahul Sharma"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand placeholder:text-muted-foreground/50 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-foreground">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="name@company.com"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand placeholder:text-muted-foreground/50 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-foreground">System Role *</label>
+                <select
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand cursor-pointer text-xs"
+                >
+                  {rolesList.map((r) => (
+                    <option
+                      key={r}
+                      value={r}
+                      disabled={r === 'SUPER_ADMIN' && currentUserRole !== 'SUPER_ADMIN'}
+                    >
+                      {r.replace('_', ' ')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-foreground">Password *</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+                      let pass = '';
+                      for (let i = 0; i < 12; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                      setCreateForm((prev) => ({ ...prev, password: pass }));
+                      toast.success('Generated secure password');
+                    }}
+                    className="text-[10px] text-brand hover:underline font-bold"
+                  >
+                    Auto-Generate Password
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="Min. 6 characters"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand font-mono text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  disabled={createLoading}
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 border border-border hover:bg-muted/10 rounded-lg text-xs font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  {createLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Create Account</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

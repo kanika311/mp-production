@@ -1,5 +1,5 @@
 import { serverFetchAPI } from '@/lib/server-api-client';
-import { PortalNavbar } from '@/components/ui/PortalNavbar';
+import { Navbar } from '@/components/ui/Navbar';
 import { Reveal } from '@/components/ui/Reveal';
 import { Button } from '@/components/ui/Button';
 import { notFound, redirect } from 'next/navigation';
@@ -43,7 +43,7 @@ function ClientWorkspaceUI({ project }: { project: any }) {
 
   return (
     <>
-      <PortalNavbar />
+      <Navbar />
       <main className="page-content">
         <div className="max-w-7xl mx-auto">
           

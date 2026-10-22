@@ -61,10 +61,10 @@ export function TalentDashboardClient({ user }: TalentDashboardClientProps) {
   ]);
 
   const [portfolio, setPortfolio] = useState<PortfolioMedia[]>([
-    { id: 'pm-1', title: 'Vogue Summer Cover Shot 2026', category: 'High Fashion', type: 'Photo', url: '/assets/project-fashion.jpg', views: 1420 },
-    { id: 'pm-2', title: 'Nike Athletic Running Reel', category: 'Commercial Action', type: 'Video Reel', url: '/assets/project-commercial.jpg', views: 3850 },
-    { id: 'pm-3', title: 'Monochrome Studio Editorial', category: 'Portrait', type: 'Photo', url: '/assets/project-corporate.jpg', views: 980 },
-    { id: 'pm-4', title: 'Cinematic Lighting Showreel', category: 'Dramatic Film', type: 'Video Reel', url: '/assets/project-music.jpg', views: 5120 },
+    { id: 'pm-1', title: 'Vogue Summer Cover Shot 2026', category: 'High Fashion', type: 'Photo', url: '/assets/project-fashion.webp', views: 1420 },
+    { id: 'pm-2', title: 'Nike Athletic Running Reel', category: 'Commercial Action', type: 'Video Reel', url: '/assets/project-commercial.webp', views: 3850 },
+    { id: 'pm-3', title: 'Monochrome Studio Editorial', category: 'Portrait', type: 'Photo', url: '/assets/project-corporate.webp', views: 980 },
+    { id: 'pm-4', title: 'Cinematic Lighting Showreel', category: 'Dramatic Film', type: 'Video Reel', url: '/assets/project-music.webp', views: 5120 },
   ]);
 
   const [earnings, setEarnings] = useState<EarningItem[]>([
@@ -90,7 +90,7 @@ export function TalentDashboardClient({ user }: TalentDashboardClientProps) {
       title: newTitle,
       category: newCategory,
       type: newType,
-      url: '/demo/model-new.jpg',
+      url: '/assets/talent-model-1.webp',
       views: 1,
     };
     setPortfolio(prev => [item, ...prev]);
@@ -241,10 +241,10 @@ export function TalentDashboardClient({ user }: TalentDashboardClientProps) {
           <div className="p-8 rounded-2xl bg-surface border border-border flex flex-col md:flex-row gap-8 items-center md:items-start">
             <div className="w-36 h-36 rounded-2xl bg-background border-4 border-border overflow-hidden shrink-0 shadow-2xl relative group">
               <img
-                src="/assets/project-fashion.jpg"
+                src="/assets/project-fashion.webp"
                 alt={user.name || 'Elena Smith'}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                data-cursor-image="/assets/project-fashion.jpg"
+                data-cursor-image="/assets/project-fashion.webp"
               />
             </div>
             <div className="space-y-4 flex-1 text-center md:text-left">
