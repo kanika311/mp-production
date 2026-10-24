@@ -10,16 +10,39 @@ export default function TalentPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAPI('/talent', { cache: 'no-store' })
+    let isMounted = true;
+
+    // 1. Fetch from local Next.js /api/talent route first (has freshest database records & pricing)
+    fetch('/api/talent', { cache: 'no-store' })
+      .then((r) => r.json())
       .then((res) => {
-        if (res && res.data && Array.isArray(res.data)) {
+        if (isMounted && res?.data && Array.isArray(res.data) && res.data.length > 0) {
           setAllTalents(res.data);
+          setLoading(false);
+          return true;
+        }
+        return false;
+      })
+      .then((handled) => {
+        if (!handled && isMounted) {
+          // 2. Fallback to remote backend
+          return fetchAPI('/talent', { cache: 'no-store' }).then((res) => {
+            if (isMounted && res && res.data && Array.isArray(res.data)) {
+              setAllTalents(res.data);
+            }
+          });
         }
       })
       .catch((err) => {
         console.error("Failed to load talents:", err);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

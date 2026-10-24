@@ -1,18 +1,7 @@
 import { NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/cms/server/backend';
 import { requireAdmin } from '@/lib/cms/server/guard';
-
-import { PrismaClient } from '@prisma/client';
-
-function getPrisma() {
-  const poolerUrl = (process.env.DATABASE_URL || '').replace(':5432/', ':6543/') + 
-    (process.env.DATABASE_URL?.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
-  return new PrismaClient({
-    datasources: {
-      db: { url: poolerUrl },
-    },
-  });
-}
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: Request) {
   if (!(await requireAdmin())) {
@@ -46,7 +35,6 @@ export async function GET(req: Request) {
   }
 
   // Resilient Direct Database Fallback
-  const prisma = getPrisma();
   try {
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10)));
@@ -67,6 +55,7 @@ export async function GET(req: Request) {
         { email: { contains: search, mode: 'insensitive' } },
         { firstName: { contains: search, mode: 'insensitive' } },
         { lastName: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -81,9 +70,17 @@ export async function GET(req: Request) {
           email: true,
           firstName: true,
           lastName: true,
+          phone: true,
           role: true,
           isActive: true,
           createdAt: true,
+          employee: {
+            select: {
+              id: true,
+              designation: true,
+              department: true,
+            },
+          },
         },
       }),
       prisma.user.count({ where }),
@@ -99,7 +96,5 @@ export async function GET(req: Request) {
   } catch (dbErr: any) {
     console.error('Database fallback error fetching users:', dbErr);
     return NextResponse.json({ ok: false, error: result.error || dbErr.message }, { status: result.status || 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

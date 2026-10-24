@@ -2,15 +2,47 @@ import { serverFetchAPI } from '@/lib/server-api-client';
 import { Navbar } from '@/components/ui/Navbar';
 import InstagramTalentProfile from '@/components/talent/InstagramTalentProfile';
 import { notFound } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 async function getTalentProfile(id: string) {
   try {
-    const encodedId = encodeURIComponent(id.trim());
+    const trimmed = id.trim();
+    const decodedId = decodeURIComponent(trimmed);
+
+    // 1. Query local Prisma database first for instant reflection of saved edits
+    const dbProfile = await prisma.talentProfile.findFirst({
+      where: {
+        OR: [
+          { id: decodedId },
+          { slug: decodedId },
+          { slug: decodedId.toLowerCase() },
+          { slug: decodedId.replace(/\s+/g, '-').toLowerCase() },
+          { stageName: { equals: decodedId.replace(/-/g, ' '), mode: 'insensitive' } },
+          { user: { email: { equals: decodedId, mode: 'insensitive' } } },
+        ],
+      },
+      include: {
+        user: true,
+        userTalents: { include: { category: true } },
+        portfolioMedia: true,
+        userSkills: { include: { skill: true } },
+        userLanguages: { include: { language: true } },
+        pricing: true,
+        socialLinks: true,
+      },
+    }).catch(() => null);
+
+    if (dbProfile) {
+      return dbProfile;
+    }
+
+    // 2. Fallback to serverFetchAPI
+    const encodedId = encodeURIComponent(trimmed);
     let res = await serverFetchAPI(`/talent/${encodedId}`, { cache: 'no-store' }).catch(() => null);
     if (!res?.data && id.includes(' ')) {
-      const hyphenId = encodeURIComponent(id.trim().replace(/\s+/g, '-'));
+      const hyphenId = encodeURIComponent(trimmed.replace(/\s+/g, '-'));
       res = await serverFetchAPI(`/talent/${hyphenId}`, { cache: 'no-store' }).catch(() => null);
     }
     if (!res || res.status === 404 || !res.success) return null;
@@ -21,7 +53,7 @@ async function getTalentProfile(id: string) {
   }
 }
 
-export default async function TalentProfilePage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+export default async function TalentProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const id = resolvedParams.id;
   

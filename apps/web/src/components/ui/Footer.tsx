@@ -10,13 +10,7 @@ export function Footer() {
     pathname.startsWith("/super-admin") ||
     pathname.startsWith("/sushant") ||
     pathname.startsWith("/sushnat") ||
-    pathname.startsWith("/studio-8f2k") ||
-    pathname.startsWith("/talent-dashboard") ||
-    pathname.startsWith("/client-portal") ||
-    pathname.startsWith("/editor-portal") ||
-    pathname.startsWith("/employee-portal") ||
-    pathname.startsWith("/project-manager") ||
-    pathname.startsWith("/model/dashboard")
+    pathname.startsWith("/studio-8f2k")
   ) {
     return null;
   }

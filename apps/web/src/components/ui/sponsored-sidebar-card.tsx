@@ -154,35 +154,7 @@ export function SponsoredSidebarCard({
       : 'Want to feature here?';
 
   return (
-    <div className={`flex flex-col space-y-2.5 select-none ${className}`}>
-      {/* Top Header Pill & Pagination Dots */}
-      <div className="flex items-center justify-between px-1 shrink-0">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-mono font-bold tracking-wider uppercase">
-          <Sparkles className="w-3 h-3 text-amber-500" />
-          <span>Sponsored</span>
-        </div>
-
-        {partners.length > 1 && (
-          <div className="flex items-center gap-1.5">
-            {partners.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setDirection(i > activeIdx ? 1 : -1);
-                  setActiveIdx(i);
-                }}
-                className={`transition-all rounded-full cursor-pointer ${
-                  i === activeIdx
-                    ? 'w-4 h-1.5 bg-amber-500 shadow-xs'
-                    : 'w-1.5 h-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60'
-                }`}
-                title={`Slide ${i + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
+    <div className={`flex flex-col select-none ${className}`}>
       {/* Main Full-Height Card */}
       <div
         className="relative w-full h-full min-h-[460px] flex-1 rounded-3xl border border-border bg-card overflow-hidden shadow-lg group"
@@ -263,9 +235,31 @@ export function SponsoredSidebarCard({
                 {current?.badge || 'OFFICIAL PARTNER'}
               </span>
 
-              <span className="text-[10px] font-mono text-white/70 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/10">
-                {activeIdx + 1} / {partners.length}
-              </span>
+              {partners.length > 1 && (
+                <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                  <div className="flex items-center gap-1">
+                    {partners.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setDirection(i > activeIdx ? 1 : -1);
+                          setActiveIdx(i);
+                        }}
+                        className={`transition-all rounded-full cursor-pointer ${
+                          i === activeIdx
+                            ? 'w-3.5 h-1.5 bg-amber-500 shadow-xs'
+                            : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
+                        }`}
+                        title={`Slide ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-mono text-white/80 ml-0.5">
+                    {activeIdx + 1}/{partners.length}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Manual Next / Prev arrows on hover */}

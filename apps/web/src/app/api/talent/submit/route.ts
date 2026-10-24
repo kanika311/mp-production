@@ -43,10 +43,25 @@ export async function POST(req: Request) {
     const finalAvatar = (avatarUrl || profilePhotoPreview || '').trim();
     const finalCover = (coverBannerUrl || coverBannerPreview || '').trim();
 
+    // Resolve target user cleanly
+    let targetUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: userId },
+          { talentProfile: { id: userId } },
+          { talentProfile: { userId } },
+          session?.user?.id ? { id: session.user.id } : undefined,
+          session?.user?.email ? { email: session.user.email } : undefined,
+        ].filter(Boolean) as any,
+      },
+    });
+
+    const effectiveUserId = targetUser?.id || userId;
+
     // 1. Update User avatar & names in PostgreSQL
     if (finalAvatar && !finalAvatar.startsWith('blob:')) {
       await prisma.user.update({
-        where: { id: userId },
+        where: { id: effectiveUserId },
         data: {
           avatarUrl: finalAvatar,
           ...(stageName ? {
@@ -58,8 +73,13 @@ export async function POST(req: Request) {
     }
 
     // 2. Find or create TalentProfile
-    const existing = await prisma.talentProfile.findUnique({
-      where: { userId },
+    const existing = await prisma.talentProfile.findFirst({
+      where: {
+        OR: [
+          { userId: effectiveUserId },
+          { id: userId },
+        ],
+      },
     });
 
     const finalSlug = existing?.slug || `${(stageName || 'talent').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
@@ -86,10 +106,10 @@ export async function POST(req: Request) {
     }
 
     const profile = await prisma.talentProfile.upsert({
-      where: { userId },
+      where: { userId: effectiveUserId },
       update: updateData,
       create: {
-        userId,
+        userId: effectiveUserId,
         slug: finalSlug,
         stageName: stageName ? stageName.trim() : 'Talent Member',
         bio: bio || '',

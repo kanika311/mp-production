@@ -30,7 +30,8 @@ import {
   MessageSquare,
   ShieldCheck,
   TrendingUp,
-  FolderOpen
+  FolderOpen,
+  LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SponsoredSidebarCard } from '@/components/ui/sponsored-sidebar-card';
@@ -46,6 +47,24 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
   const [liveProfile, setLiveProfile] = useState<any>(profile);
   const [inboundRequests, setInboundRequests] = useState(profile.hireRequests || []);
   const [castingApplications, setCastingApplications] = useState(profile.castingApplications || []);
+
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+      localStorage.removeItem('token');
+      localStorage.removeItem('mdms_auth_token');
+      localStorage.removeItem('mdms_auth_role');
+      localStorage.removeItem('mdms_auth_user');
+      document.cookie = 'token=; path=/; max-age=0';
+      document.cookie = 'mdms_auth_token=; path=/; max-age=0';
+      document.cookie = 'next-auth.session-token=; path=/; max-age=0';
+      toast.success('Logged out successfully');
+      window.location.href = '/login';
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -113,7 +132,7 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <Link
               href={`/talent/${profile.slug || profile.id || ''}`}
               target="_blank"
@@ -129,6 +148,15 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
               <Sparkles className="w-3.5 h-3.5 text-amber-200" />
               <span>Edit Profile</span>
             </Link>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-xs font-bold transition-all cursor-pointer"
+              title="Logout from Account"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </div>
@@ -322,6 +350,20 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 opacity-70" />
               </Link>
+
+              <div className="pt-1.5 mt-1 border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <LogOut className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
+                    <span>Logout</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 opacity-70 text-rose-500/60" />
+                </button>
+              </div>
             </div>
           </aside>
 

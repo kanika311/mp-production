@@ -61,8 +61,49 @@ export function Navbar() {
   const { resolvedTheme } = useTheme();
   const [navItems, setNavItems] = useState(DEFAULT_NAV_ITEMS);
   const [studentUser, setStudentUser] = useState<{ name: string; email: string } | null>(null);
-  const [authUser, setAuthUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
+  const [authUser, setAuthUser] = useState<{ id: string; name: string; email: string; role: string; avatarUrl?: string } | null>(null);
+  const [userAvatar, setUserAvatar] = useState<string>('');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  const getDashboardUrl = (role?: string) => {
+    const r = (role || '').toUpperCase();
+    if (r === 'TALENT') return '/talent-dashboard';
+    if (r === 'CLIENT') return '/client-portal';
+    if (r === 'ADMIN') return '/admin';
+    if (r === 'SUPER_ADMIN') return '/super-admin';
+    if (r === 'EDITOR') return '/editor-portal';
+    if (r === 'EMPLOYEE') return '/employee-portal';
+    if (r === 'PROJECT_MANAGER') return '/project-manager';
+    return '/talent-dashboard';
+  };
+
+  const resolveAvatar = (user: any) => {
+    let av = user?.avatarUrl || '';
+    if (!av && typeof window !== 'undefined') {
+      const keys = [
+        'talent_profile_override_me',
+        'talent_profile_override_draft',
+        'talent_profile_draft',
+        user?.id ? `talent_profile_override_${user.id}` : null,
+        'talent_profile_override_kanika-aggarwal',
+      ].filter(Boolean) as string[];
+
+      for (const k of keys) {
+        const raw = localStorage.getItem(k);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            const found = parsed.avatarUrl || parsed.profilePhotoPreview;
+            if (found && !found.startsWith('blob:')) {
+              av = found;
+              break;
+            }
+          } catch {}
+        }
+      }
+    }
+    if (av) setUserAvatar(av);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -79,11 +120,31 @@ export function Navbar() {
         .then((data) => {
           if (data?.ok && data?.user) {
             setAuthUser(data.user);
+            resolveAvatar(data.user);
           }
         })
         .catch(() => {});
     }
   }, [pathname]);
+
+  // Real-time listener for profile avatar updates
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      const updated = e?.detail;
+      if (updated?.avatarUrl || updated?.profilePhotoPreview) {
+        const av = updated.avatarUrl || updated.profilePhotoPreview;
+        if (av && !av.startsWith('blob:')) {
+          setUserAvatar(av);
+        }
+      }
+    };
+    window.addEventListener('talent_profile_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('talent_profile_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   function handleSignOut() {
     if (typeof window !== 'undefined') {
@@ -245,19 +306,46 @@ export function Navbar() {
             </Link>
 
             {authUser ? (
-              <div className="relative">
-                <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand/30 bg-brand/10 hover:bg-brand/15 text-foreground text-xs font-bold shadow-xs transition-all cursor-pointer"
+              <div className="relative flex items-center">
+                {/* Single Click -> Directly open dashboard */}
+                <Link
+                  href={getDashboardUrl(authUser.role)}
+                  className="inline-flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-full border border-brand/30 bg-brand/10 hover:bg-brand/20 text-foreground text-xs font-bold shadow-xs transition-all group"
+                  title="Open Dashboard"
                 >
-                  <div className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-extrabold uppercase shadow-xs">
-                    {authUser.name ? authUser.name.charAt(0) : 'U'}
+                  <div className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-extrabold uppercase shadow-xs overflow-hidden shrink-0 ring-1 ring-brand/40">
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={authUser.name || 'Profile'}
+                        className="w-full h-full object-cover"
+                        onError={() => setUserAvatar('')}
+                      />
+                    ) : (
+                      <span>{authUser.name ? authUser.name.charAt(0).toUpperCase() : 'U'}</span>
+                    )}
                   </div>
-                  <span className="max-w-[120px] sm:max-w-[160px] truncate font-medium">{authUser.name || 'Account'}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand text-white uppercase font-bold tracking-wider">
+                  <span className="max-w-[120px] sm:max-w-[160px] truncate font-medium group-hover:text-brand transition-colors">
+                    {authUser.name || 'Account'}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand text-white uppercase font-bold tracking-wider shrink-0">
                     {authUser.role || 'USER'}
                   </span>
-                  <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-2 opacity-70" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6"/></svg>
+                </Link>
+
+                {/* Dropdown toggle chevron for Sign Out */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setUserDropdownOpen(!userDropdownOpen);
+                  }}
+                  aria-label="Account options"
+                  className="ml-1 p-1 rounded-full text-foreground/60 hover:text-brand hover:bg-muted/70 transition-colors cursor-pointer"
+                  title="Account Menu"
+                >
+                  <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-2 opacity-70" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6"/>
+                  </svg>
                 </button>
 
                 {userDropdownOpen && (
@@ -510,9 +598,23 @@ export function Navbar() {
                 {authUser ? (
                   <div className="space-y-2">
                     <div className="p-2.5 rounded-xl bg-surface border border-border flex items-center justify-between">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-brand text-white font-bold flex items-center justify-center text-xs shrink-0">
-                          {authUser.name ? authUser.name.charAt(0).toUpperCase() : 'U'}
+                      <Link
+                        href={getDashboardUrl(authUser.role)}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
+                        title="Open Dashboard"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-brand text-white font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden ring-1 ring-brand/40">
+                          {userAvatar ? (
+                            <img
+                              src={userAvatar}
+                              alt={authUser.name || 'Profile'}
+                              className="w-full h-full object-cover"
+                              onError={() => setUserAvatar('')}
+                            />
+                          ) : (
+                            <span>{authUser.name ? authUser.name.charAt(0).toUpperCase() : 'U'}</span>
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-xs text-foreground truncate">{authUser.name}</p>
@@ -520,7 +622,7 @@ export function Navbar() {
                             {authUser.role}
                           </span>
                         </div>
-                      </div>
+                      </Link>
                       <button
                         onClick={handleSignOut}
                         className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg text-xs font-semibold cursor-pointer shrink-0"

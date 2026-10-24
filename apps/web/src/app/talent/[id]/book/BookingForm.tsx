@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -11,13 +11,13 @@ import {
   Sparkles, 
   MessageCircle, 
   ArrowRight, 
-  Minus, 
-  Plus, 
   Phone, 
   Mail, 
   User, 
   MapPin, 
-  Briefcase 
+  Briefcase,
+  CreditCard,
+  Lock
 } from 'lucide-react';
 
 interface BookingFormProps {
@@ -26,6 +26,21 @@ interface BookingFormProps {
   talentAvatar?: string;
   categoryName?: string;
   dailyRate?: number;
+}
+
+// Dynamically load Razorpay checkout script
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 }
 
 export function BookingForm({
@@ -53,66 +68,146 @@ export function BookingForm({
   const [city, setCity] = useState('');
   const [projectType, setProjectType] = useState('Fashion Shoot & Campaign');
   const [briefDescription, setBriefDescription] = useState('');
+  const [overrideRate, setOverrideRate] = useState<number | null>(null);
+
+  // Pre-load Razorpay checkout script & check URL / localStorage rate
+  useEffect(() => {
+    loadRazorpayScript();
+
+    if (typeof window !== 'undefined') {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlRate = urlParams.get('rate');
+        if (urlRate) {
+          const parsedRate = parseInt(urlRate, 10);
+          if (!isNaN(parsedRate) && parsedRate > 0) {
+            setOverrideRate(parsedRate);
+            return;
+          }
+        }
+
+        const keys = [
+          `talent_profile_override_${talentProfileId}`,
+          'talent_profile_override_draft',
+          'talent_profile_override_me',
+          'talent_profile_draft',
+        ];
+        for (const k of keys) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed.pricingAmount !== undefined && parsed.pricingAmount !== null && parsed.pricingAmount !== '') {
+              const num = parseInt(String(parsed.pricingAmount).replace(/\D/g, ''), 10);
+              if (!isNaN(num) && num > 0) {
+                setOverrideRate(num);
+                break;
+              }
+            } else if (parsed.pricing?.perDay) {
+              const pd = Number(parsed.pricing.perDay);
+              const p = pd >= 100 && pd % 100 === 0 ? pd / 100 : pd;
+              if (p > 0) {
+                setOverrideRate(p);
+                break;
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+  }, [talentProfileId]);
 
   // Day-wise price calculation
-  const effectiveDailyRate = Number(dailyRate) || 4999;
+  const effectiveDailyRate = overrideRate !== null ? overrideRate : (Number(dailyRate) || 4999);
   const totalAmount = days * effectiveDailyRate;
 
-  const handleDaysChange = (newDays: number) => {
-    if (newDays >= 1 && newDays <= 30) {
-      setDays(newDays);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePaymentAndBook = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const payload = {
-      requesterName: name.trim(),
-      requesterPhone: phone.trim(),
-      requesterEmail: email.trim(),
-      days,
-      dailyRate: effectiveDailyRate,
-      totalAmount,
-      dateNeeded: dateNeeded || undefined,
-      projectType: projectType || 'Commercial Shoot',
-      city: city.trim() || undefined,
-      briefDescription: briefDescription.trim() || undefined,
-    };
+    if (!name.trim() || !phone.trim() || !email.trim()) {
+      setError('Please provide your Full Name, Phone Number, and Email.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      // 1. Submit to local Next.js BFF endpoint first
-      let res = await fetch(`/api/talent/${encodeURIComponent(talentProfileId)}/hire`, {
+      // 1. Ensure Razorpay SDK is loaded
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || !(window as any).Razorpay) {
+        throw new Error('Razorpay payment gateway failed to load. Please check your internet connection.');
+      }
+
+      // 2. Create Razorpay order on server for exact day-wise amount
+      const orderRes = await fetch('/api/payment/razorpay/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          amount: totalAmount,
+          currency: 'INR',
+          receipt: `bk_${Date.now()}`,
+          notes: {
+            talentName,
+            clientName: name,
+            clientPhone: phone,
+            days,
+            shootDate: dateNeeded,
+          },
+        }),
       });
 
-      let data = await res.json().catch(() => ({}));
+      const orderData = await orderRes.json();
+      if (!orderRes.ok || !orderData.success) {
+        throw new Error(orderData.message || 'Failed to initialize Razorpay payment order');
+      }
 
-      // 2. If local route failed, fallback to external backend
-      if (!res.ok || !data.success) {
-        const { fetchAPI } = await import('@/lib/api-client');
-        const fallbackRes = await fetchAPI(`/talent/${talentProfileId}/hire`, {
-          method: 'POST',
-          body: JSON.stringify({
-            requesterName: payload.requesterName,
-            requesterPhone: payload.requesterPhone,
-            requesterEmail: payload.requesterEmail,
-            projectType: payload.projectType,
-            dateNeeded: payload.dateNeeded,
-            city: payload.city,
-            budgetRange: `₹${totalAmount.toLocaleString('en-IN')} (${days} Days @ ₹${effectiveDailyRate}/day)`,
-            briefDescription: `[${days} Days Direct Booking] ${briefDescription}`,
-          }),
-        });
+      // 3. Launch Razorpay Checkout Modal
+      const options = {
+        key: orderData.key || 'rzp_live_Sk4qWthxF0XqKy',
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'MP Production Atelier',
+        description: `Booking for ${talentName} (${days} Days)`,
+        image: '/assets/mp-logo.png',
+        order_id: orderData.orderId,
+        prefill: {
+          name: name.trim(),
+          email: email.trim(),
+          contact: phone.trim(),
+        },
+        theme: {
+          color: '#E11D48',
+        },
+        handler: async function (response: any) {
+          // PAYMENT WAS SUCCESSFUL ON RAZORPAY!
+          // Now verify signature on server and confirm booking + dispatch WhatsApp
+          try {
+            const hireRes = await fetch(`/api/talent/${encodeURIComponent(talentProfileId)}/hire`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                requesterName: name.trim(),
+                requesterPhone: phone.trim(),
+                requesterEmail: email.trim(),
+                days,
+                dailyRate: effectiveDailyRate,
+                totalAmount,
+                dateNeeded,
+                projectType,
+                city: city.trim() || undefined,
+                briefDescription: briefDescription.trim() || undefined,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              }),
+            });
 
-        if (fallbackRes?.data || fallbackRes?.success) {
-          data = {
-            success: true,
-            bookingSummary: {
+            const hireData = await hireRes.json();
+            if (!hireRes.ok || !hireData.success) {
+              throw new Error(hireData.message || 'Payment verification failed on server');
+            }
+
+            setBookingSummary(hireData.bookingSummary || {
               talentName,
               requesterName: name,
               requesterPhone: phone,
@@ -122,37 +217,44 @@ export function BookingForm({
               totalAmount,
               dateNeeded,
               city,
-            },
-          };
-        } else {
-          throw new Error(data.message || fallbackRes?.message || 'Failed to submit booking inquiry');
-        }
-      }
+              paymentId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id,
+            });
 
-      setBookingSummary(data.bookingSummary || {
-        talentName,
-        requesterName: name,
-        requesterPhone: phone,
-        requesterEmail: email,
-        days,
-        dailyRate: effectiveDailyRate,
-        totalAmount,
-        dateNeeded,
-        city,
+            setSuccess(true);
+          } catch (serverErr: any) {
+            console.error('[Verification Error]:', serverErr);
+            setError(serverErr.message || 'Payment verification failed. Please contact support.');
+          } finally {
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+            setError('Payment was not completed. Booking was NOT placed and no confirmation messages were sent. Please complete payment to confirm your booking.');
+          },
+        },
+      };
+
+      const rzpInstance = new (window as any).Razorpay(options);
+
+      rzpInstance.on('payment.failed', function (failRes: any) {
+        setLoading(false);
+        setError(`Payment failed: ${failRes.error?.description || 'Transaction unsuccessful'}. No booking was placed and no messages were sent.`);
       });
 
-      setSuccess(true);
+      rzpInstance.open();
     } catch (err: any) {
-      console.error('[Booking Error]:', err);
-      setError(err.message || 'Unable to complete booking. Please try again or contact WhatsApp +91 831 053 1309 directly.');
-    } finally {
+      console.error('[Payment Init Error]:', err);
+      setError(err.message || 'Unable to open payment modal. Please try again.');
       setLoading(false);
     }
   };
 
   // WhatsApp chat text for admin
   const whatsappAdminLink = `https://wa.me/918310531309?text=${encodeURIComponent(
-    `Hi MP Production Atelier,\nI just submitted a direct booking for *${talentName}*!\n\n📋 *Details*:\n• Client Name: ${name}\n• Phone: ${phone}\n• Email: ${email}\n• Duration: ${days} Day(s)\n• Dates: ${dateNeeded}\n• Total Estimated Fee: ₹${totalAmount.toLocaleString('en-IN')}\n• Project: ${projectType}\n• City: ${city || 'N/A'}\n\nPlease confirm booking schedule.`
+    `Hi MP Production Atelier,\nI have completed the advance payment for *${talentName}* via Razorpay!\n\n📋 *Booking & Payment Details*:\n• Payment ID: ${bookingSummary?.paymentId || 'PAID'}\n• Client Name: ${name}\n• Phone: ${phone}\n• Email: ${email}\n• Duration: ${days} Day(s)\n• Dates: ${dateNeeded}\n• Total Amount Paid: ₹${totalAmount.toLocaleString('en-IN')}\n• Project: ${projectType}\n• City: ${city || 'N/A'}\n\nPlease share the shoot call-sheet and coordination schedule.`
   )}`;
 
   if (success) {
@@ -164,26 +266,36 @@ export function BookingForm({
 
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 mb-3">
-            <Sparkles className="w-3.5 h-3.5" /> Booking Received &amp; Verified
+            <Sparkles className="w-3.5 h-3.5" /> Payment Verified &amp; Booking Confirmed
           </span>
           <h2 className="text-3xl md:text-4xl font-serif text-foreground font-medium mb-3">
-            Booking Confirmed for {talentName}!
+            Payment Successful for {talentName}!
           </h2>
           <p className="text-muted-foreground font-light max-w-lg mx-auto text-sm md:text-base">
-            Your booking details have been registered into the MP Productions system. WhatsApp confirmations have been dispatched to your phone and the production team.
+            Your advance payment has been verified via Razorpay. WhatsApp confirmations have been sent to you and the MP Production Atelier team.
           </p>
         </div>
 
         {/* Booking Summary Box */}
         <div className="bg-[var(--color-surface-hover)] border border-[var(--color-border)] rounded-2xl p-6 text-left max-w-xl mx-auto shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
-            <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Booking Summary</span>
-            <span className="text-xs bg-[var(--color-surface)] px-2.5 py-1 rounded-md border border-[var(--color-border)] font-mono text-[var(--color-primary)]">
-              Status: Verified
+            <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Payment &amp; Booking Receipt</span>
+            <span className="text-xs bg-emerald-500/10 text-emerald-600 px-2.5 py-1 rounded-md border border-emerald-500/20 font-mono font-semibold">
+              PAID IN FULL
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Razorpay Payment ID</p>
+              <p className="font-mono text-xs text-foreground font-semibold mt-0.5 break-all">
+                {bookingSummary?.paymentId || 'Verified'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Amount Paid</p>
+              <p className="font-bold text-emerald-600 text-base mt-0.5">₹{totalAmount.toLocaleString('en-IN')}</p>
+            </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Talent Artist</p>
               <p className="font-semibold text-foreground mt-0.5">{talentName}</p>
@@ -197,14 +309,6 @@ export function BookingForm({
               <p className="font-semibold text-foreground mt-0.5">{dateNeeded || 'Immediate'}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Day-wise Fee</p>
-              <p className="font-bold text-emerald-600 text-base mt-0.5">₹{totalAmount.toLocaleString('en-IN')}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Client Name</p>
-              <p className="font-medium text-foreground mt-0.5">{name}</p>
-            </div>
-            <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Client Contact</p>
               <p className="font-medium text-foreground mt-0.5">{phone}</p>
             </div>
@@ -214,7 +318,7 @@ export function BookingForm({
           <div className="pt-3 border-t border-[var(--color-border)] space-y-2">
             <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2 rounded-lg border border-emerald-500/20">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>WhatsApp message dispatched to your number (<strong>{phone}</strong>)</span>
+              <span>WhatsApp payment confirmation sent to your number (<strong>{phone}</strong>)</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-sky-700 bg-sky-50/50 dark:bg-sky-950/20 px-3 py-2 rounded-lg border border-sky-500/20">
               <ShieldCheck className="w-4 h-4 text-sky-500 shrink-0" />
@@ -247,7 +351,7 @@ export function BookingForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handlePaymentAndBook} className="space-y-8">
       {/* Talent Info Mini Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
         <div className="flex items-center gap-3.5">
@@ -278,7 +382,7 @@ export function BookingForm({
         <div className="p-4 bg-red-500/10 border border-red-500/25 rounded-xl text-red-600 text-sm flex items-start gap-3">
           <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
           <div className="flex-1">
-            <p className="font-semibold">Booking Notice</p>
+            <p className="font-semibold">Notice</p>
             <p className="mt-0.5">{error}</p>
           </div>
         </div>
@@ -320,7 +424,7 @@ export function BookingForm({
               required
               className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
             />
-            <p className="text-[11px] text-muted-foreground">Booking confirmation &amp; schedule details will be sent on WhatsApp.</p>
+
           </div>
         </div>
 
@@ -366,82 +470,18 @@ export function BookingForm({
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-muted-foreground" /> Number of Days Required <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleDaysChange(days - 1)}
-                disabled={days <= 1}
-                className="w-11 h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] disabled:opacity-40 flex items-center justify-center text-foreground transition-colors"
-                title="Decrease days"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-
-              <div className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl py-2.5 px-4 text-center">
-                <span className="text-lg font-bold text-foreground">{days}</span>
-                <span className="text-xs text-muted-foreground ml-1.5">{days === 1 ? 'Day' : 'Days'}</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleDaysChange(days + 1)}
-                disabled={days >= 30}
-                className="w-11 h-11 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] disabled:opacity-40 flex items-center justify-center text-foreground transition-colors"
-                title="Increase days"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Day Pill Selector */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-xs text-muted-foreground mr-1">Quick Select:</span>
-          {[1, 2, 3, 5, 7, 10].map((count) => (
-            <button
-              key={count}
-              type="button"
-              onClick={() => handleDaysChange(count)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                days === count
-                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
-                  : 'bg-[var(--color-surface)] text-foreground border-[var(--color-border)] hover:bg-[var(--color-surface-hover)]'
-              }`}
+            <select
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all cursor-pointer font-medium"
             >
-              {count} {count === 1 ? 'Day' : 'Days'}
-            </button>
-          ))}
-        </div>
-
-        {/* DYNAMIC PRICE CALCULATION SUMMARY CARD */}
-        <div className="rounded-2xl border-2 border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> Day-Wise Calculation Breakdown
-            </span>
-            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-              ₹{effectiveDailyRate.toLocaleString('en-IN')} × {days} {days === 1 ? 'Day' : 'Days'}
-            </span>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14, 21, 30].map((num) => (
+                <option key={num} value={num}>
+                  {num} {num === 1 ? 'Day (1 Day Booking)' : `Days (${num} Days Booking)`}
+                </option>
+              ))}
+            </select>
           </div>
-
-          <div className="flex items-baseline justify-between pt-1 border-t border-emerald-500/20">
-            <div>
-              <p className="text-xs text-muted-foreground">Total Estimated Talent Fee</p>
-              <p className="text-2xl md:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
-                ₹{totalAmount.toLocaleString('en-IN')}
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                <CheckCircle2 className="w-3 h-3" /> Direct Booking Rate
-              </span>
-            </div>
-          </div>
-
-          <p className="text-[11px] text-muted-foreground">
-            Includes full day on-set availability, coordination with MP Productions studio, and immediate booking lock.
-          </p>
         </div>
       </div>
 
@@ -497,21 +537,43 @@ export function BookingForm({
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className="pt-4">
+      {/* Cart-Style Dynamic Price Summary */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-2.5 shadow-xs text-xs">
+        <div className="flex items-center justify-between text-muted-foreground">
+          <span>Daily Booking Rate</span>
+          <span className="font-semibold text-foreground">₹{effectiveDailyRate.toLocaleString('en-IN')} / Day</span>
+        </div>
+        <div className="flex items-center justify-between text-muted-foreground">
+          <span>Selected Duration</span>
+          <span className="font-semibold text-foreground">{days} {days === 1 ? 'Day' : 'Days'}</span>
+        </div>
+        <div className="pt-2 border-t border-[var(--color-border)] flex items-baseline justify-between">
+          <div>
+            <span className="font-bold text-sm text-foreground block">Total Payable Amount</span>
+            <span className="text-[10px] text-muted-foreground">Escrow protected via Razorpay</span>
+          </div>
+          <span className="font-extrabold text-2xl text-[var(--color-primary)] tracking-tight">
+            ₹{totalAmount.toLocaleString('en-IN')}
+          </span>
+        </div>
+      </div>
+
+      {/* Pay & Book Submit Button */}
+      <div className="pt-2">
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-4 px-8 rounded-xl bg-[var(--color-primary)] hover:opacity-95 text-white font-semibold text-base tracking-wide flex items-center justify-center gap-3 shadow-xl shadow-[var(--color-primary)]/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+          className="w-full py-4 px-8 rounded-xl bg-gradient-to-r from-[var(--color-primary)] to-rose-600 hover:opacity-95 text-white font-semibold text-base tracking-wide flex items-center justify-center gap-3 shadow-xl shadow-[var(--color-primary)]/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
         >
           {loading ? (
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Confirming Booking &amp; Sending WhatsApp...</span>
+              <span>Initializing Razorpay Secure Checkout...</span>
             </div>
           ) : (
             <>
-              <span>Book Directly • ₹{totalAmount.toLocaleString('en-IN')} for {days} {days === 1 ? 'Day' : 'Days'}</span>
+              <CreditCard className="w-5 h-5" />
+              <span>Pay &amp; Confirm Booking • ₹{totalAmount.toLocaleString('en-IN')} ({days} {days === 1 ? 'Day' : 'Days'})</span>
               <ArrowRight className="w-5 h-5" />
             </>
           )}
@@ -519,7 +581,7 @@ export function BookingForm({
 
         <p className="text-center text-xs text-muted-foreground mt-3 flex items-center justify-center gap-2">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Direct booking confirmation will be sent on WhatsApp. Admin hotline: <strong>+91 831 053 1309</strong></span>
+          <span>Payment secured by Razorpay. Booking &amp; WhatsApp messages will only be dispatched after successful payment.</span>
         </p>
       </div>
     </form>

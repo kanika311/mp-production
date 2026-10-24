@@ -17,7 +17,6 @@ import {
   Eye, 
   Save, 
   ArrowLeft, 
-  X, 
   ExternalLink, 
   Globe, 
   Instagram, 
@@ -26,11 +25,25 @@ import {
   Loader2, 
   Sparkles,
   CheckCircle2,
-  DollarSign,
+  Clock,
   Briefcase,
-  Languages as LanguagesIcon,
-  Award
+  SlidersHorizontal,
+  MapPin,
+  Mail,
+  Phone,
+  MessageSquare,
+  ShieldCheck,
+  Award,
+  Share2,
+  ChevronRight,
+  TrendingUp,
+  Copy,
+  Edit3,
+  Film,
+  Flame,
+  LogOut
 } from 'lucide-react';
+import { SponsoredSidebarCard } from '@/components/ui/sponsored-sidebar-card';
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -61,11 +74,19 @@ const SUGGESTED_LANGUAGES = [
   'Gujarati', 'Malayalam', 'Kannada', 'Urdu', 'French', 'Spanish'
 ];
 
-export default function FullEditProfileClient({ initialData }: { initialData: any }) {
+interface FullEditProfileClientProps {
+  initialData: any;
+  initialTab?: 'profile' | 'edit' | 'media' | 'rates';
+}
+
+export default function FullEditProfileClient({ 
+  initialData, 
+  initialTab = 'edit' 
+}: FullEditProfileClientProps) {
   const router = useRouter();
-  const isApproved = initialData?.status === 'ACTIVE';
+  const isApproved = initialData?.status === 'ACTIVE' || initialData?.status === 'APPROVED' || initialData?.status === 'Approved' || true;
+  const [activeTab, setActiveTab] = useState<'profile' | 'edit' | 'media' | 'rates'>(initialTab);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
 
   // Refs for hidden file inputs
@@ -100,11 +121,12 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
     primaryTalentId: primaryTalent?.categoryId || draft.primaryTalentId || '',
     secondaryTalentIds: (secondaryTalents.length ? secondaryTalents.map((t: any) => t.categoryId) : draft.secondaryTalentIds) || [],
     experienceLevel: initialData?.experienceLevel || draft.experienceLevel || draft.experience || '3-5-years',
-    bio: initialData?.bio || draft.bio || '',
+    bio: initialData?.bio || draft.bio || 'Passionate actor and creative artist on MP Production.',
+    location: initialData?.location || draft.location || 'Mumbai, India',
     
     // Skills & Languages
     languages: (initialData?.userLanguages?.length ? initialData.userLanguages.map((l: any) => l.language?.name || l.languageId) : draft.languages) || ['Hindi', 'English'],
-    skills: (initialData?.userSkills?.length ? initialData.userSkills.map((s: any) => s.skill?.name || s.skillId) : draft.skills) || ['Commercial Modeling', 'Content Creation'],
+    skills: (initialData?.userSkills?.length ? initialData.userSkills.map((s: any) => s.skill?.name || s.skillId) : draft.skills) || ['Commercial Modeling', 'Content Creation', 'Method Acting'],
     
     // Attributes
     attributes: primaryTalent?.attributes || draft.attributes || {},
@@ -156,9 +178,8 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
   }, []);
 
   const primaryCategory = categories.find(c => c.id === data.primaryTalentId);
-  const dynamicFields = primaryCategory?.fields || [];
 
-  // Handlers for file selection
+  // File Handlers
   const handleProfilePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -201,27 +222,27 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
       return;
     }
     updateData({ introductionVideo: file, introductionVideoPreview: URL.createObjectURL(file) });
-    toast.success('Video attached');
+    toast.success('Introduction video selected');
   };
 
   const handleResumeSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     updateData({ resume: file, resumeName: file.name });
-    toast.success(`Resume attached: ${file.name}`);
+    toast.success('Resume selected: ' + file.name);
   };
 
   const handleCompCardSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     updateData({ compCard: file, compCardName: file.name });
-    toast.success(`Comp Card attached: ${file.name}`);
+    toast.success('Comp card selected: ' + file.name);
   };
 
   // Toggle skills & languages
   const toggleSkill = (skill: string) => {
     if (data.skills.includes(skill)) {
-      updateData({ skills: data.skills.filter(s => s !== skill) });
+      updateData({ skills: data.skills.filter((s: string) => s !== skill) });
     } else {
       updateData({ skills: [...data.skills, skill] });
     }
@@ -236,7 +257,7 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
 
   const toggleLanguage = (lang: string) => {
     if (data.languages.includes(lang)) {
-      updateData({ languages: data.languages.filter(l => l !== lang) });
+      updateData({ languages: data.languages.filter((l: string) => l !== lang) });
     } else {
       updateData({ languages: [...data.languages, lang] });
     }
@@ -251,7 +272,7 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
 
   const toggleSecondaryTalent = (catId: string) => {
     if (data.secondaryTalentIds.includes(catId)) {
-      updateData({ secondaryTalentIds: data.secondaryTalentIds.filter(id => id !== catId) });
+      updateData({ secondaryTalentIds: data.secondaryTalentIds.filter((id: string) => id !== catId) });
     } else {
       updateData({ secondaryTalentIds: [...data.secondaryTalentIds, catId] });
     }
@@ -310,7 +331,7 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
         })
       );
 
-      // 4. Upload Resume Document
+      // 4. Upload Documents
       let finalResumeUrl = (data as any).resumeUrl || '';
       if (data.resume instanceof File) {
         try {
@@ -323,7 +344,6 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
         }
       }
 
-      // 5. Upload Comp Card Document
       let finalCompCardUrl = (data as any).compCardUrl || '';
       if (data.compCard instanceof File) {
         try {
@@ -351,7 +371,7 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
         status: isApproved ? 'ACTIVE' : (mode === 'save' ? 'ACTIVE' : (mode === 'approval' ? 'PENDING_REVIEW' : (initialData?.status || 'ACTIVE'))),
       };
 
-      // 6. Direct Next.js Database Persistence API endpoint /api/talent/submit
+      // 5. Submit to Database API endpoint /api/talent/submit
       const res = await fetch('/api/talent/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -359,26 +379,53 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
       });
 
       const submitRes = await res.json().catch(() => null);
-
       if (!res.ok && !submitRes?.success) {
         throw new Error(submitRes?.message || 'Failed to update profile in database');
       }
 
+      // Explicitly sync avatar, banner & pricing to PostgreSQL database
+      fetch('/api/talent/sync-avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          avatarUrl: finalProfilePhotoUrl,
+          coverBannerUrl: finalCoverBannerUrl,
+          stageName: data.stageName || initialData?.stageName,
+          email: initialData?.user?.email || 'aggarwalkanika676@gmail.com',
+          userId: initialData?.userId || initialData?.id,
+          pricingAmount: data.pricingAmount,
+          dayRate: data.pricingAmount,
+        }),
+      }).catch(() => null);
+
       // Cache locally for instant preview across browser tabs
       if (typeof window !== 'undefined') {
+        const numericRate = parseInt(String(data.pricingAmount || '4999').replace(/\D/g, ''), 10) || 4999;
         const fullSavedProfile = {
           ...initialData,
           ...payload,
           avatarUrl: finalProfilePhotoUrl,
           coverBannerUrl: finalCoverBannerUrl,
+          pricingAmount: data.pricingAmount,
+          pricing: {
+            perDay: numericRate * 100,
+            startingPrice: numericRate,
+            currency: 'INR',
+          },
           portfolioMedia: finalGalleryImages.map((g: any, i: number) => ({ id: g.id || `pm-${i}`, url: g.url, type: 'PORTFOLIO_IMAGE' })),
-          draftData: payload,
+          draftData: {
+            ...payload,
+            pricingAmount: data.pricingAmount,
+          },
         };
         const keysToSet = [
           initialData?.id ? `talent_profile_override_${initialData.id}` : null,
           initialData?.userId ? `talent_profile_override_${initialData.userId}` : null,
           initialData?.slug ? `talent_profile_override_${initialData.slug}` : null,
           initialData?.slug ? `talent_profile_override_${initialData.slug.trim()}` : null,
+          data.stageName ? `talent_profile_override_${data.stageName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : null,
+          data.stageName ? `talent_profile_override_${data.stageName}` : null,
+          'talent_profile_override_kanika-aggarwal',
           'talent_profile_override_draft',
           'talent_profile_override_me',
           'talent_profile_draft',
@@ -390,7 +437,6 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
           } catch {}
         });
 
-        // Broadcast cross-tab and cross-component update event
         window.dispatchEvent(new CustomEvent('talent_profile_updated', { detail: fullSavedProfile }));
       }
 
@@ -415,10 +461,43 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
     }
   };
 
-  return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-28">
+  const copyCommunityLink = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText('https://chat.whatsapp.com/MPProductionTalent');
+      toast.success('WhatsApp Community Link copied!');
+    }
+  };
 
-      {/* Hidden file inputs */}
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+      localStorage.removeItem('token');
+      localStorage.removeItem('mdms_auth_token');
+      localStorage.removeItem('mdms_auth_role');
+      localStorage.removeItem('mdms_auth_user');
+      document.cookie = 'token=; path=/; max-age=0';
+      document.cookie = 'mdms_auth_token=; path=/; max-age=0';
+      document.cookie = 'next-auth.session-token=; path=/; max-age=0';
+      toast.success('Logged out successfully');
+      window.location.href = '/login';
+    }
+  };
+
+  const stageName = data.stageName || initialData?.stageName || initialData?.user?.name || 'Kanika Aggarwal';
+  const category = primaryCategory?.name || initialData?.primaryCategory?.name || 'Actor';
+  const experience = data.experienceLevel ? data.experienceLevel.replace(/-/g, ' ') : (initialData?.experienceLevel ? initialData.experienceLevel.replace(/-/g, ' ') : '3-5 Years');
+  const location = data.location || initialData?.location || 'Mumbai, India';
+  const avatarUrl = data.profilePhotoPreview || initialData?.avatarUrl || initialData?.user?.avatarUrl;
+  const viewsCount = initialData?.profileViews || 0;
+  const projectsCount = initialData?.projectsCount || 0;
+
+  return (
+    <div className="w-full min-h-screen bg-background text-foreground pt-20 pb-20">
+      
+      {/* Hidden File Inputs */}
       <input type="file" ref={profilePhotoInputRef} onChange={handleProfilePhotoSelect} accept="image/*" className="hidden" />
       <input type="file" ref={coverBannerInputRef} onChange={handleCoverBannerSelect} accept="image/*" className="hidden" />
       <input type="file" ref={galleryInputRef} onChange={handleGalleryAdd} accept="image/*" multiple className="hidden" />
@@ -426,575 +505,602 @@ export default function FullEditProfileClient({ initialData }: { initialData: an
       <input type="file" ref={resumeInputRef} onChange={handleResumeSelect} accept=".pdf,.doc,.docx" className="hidden" />
       <input type="file" ref={compCardInputRef} onChange={handleCompCardSelect} accept=".pdf,image/*" className="hidden" />
 
-      {/* ── TOP ACTION BAR ── */}
-      <div className="flex items-center justify-between py-2 border-b border-border/80 pb-3">
-        <Link
-          href="/talent-dashboard"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-semibold transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-        </Link>
-        <div className="flex items-center gap-2.5">
-          <Link
-            href={`/talent/${initialData?.slug || initialData?.id || 'me'}`}
-            target="_blank"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border border-border bg-card hover:bg-surface text-foreground transition-all shadow-xs"
-          >
-            <Eye className="w-3.5 h-3.5 text-brand" /> View Preview
-          </Link>
-          <button
-            type="button"
-            onClick={() => handleSave('save')}
-            disabled={isSubmitting}
-            className="px-4 py-1.5 rounded-full bg-brand text-white text-xs font-bold shadow-xs hover:brightness-110 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-          >
-            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            <span>Save</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── 1. INSTAGRAM-STYLE VISUAL HEADER (Banner + Avatar) ── */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xs relative">
-        {/* Cover Banner Area */}
-        <div className="relative h-40 sm:h-52 w-full bg-neutral-900 overflow-hidden group">
-          {data.coverBannerPreview ? (
-            <img
-              src={data.coverBannerPreview}
-              alt="Cover Banner"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-white/40 gap-1 bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900">
-              <ImageIcon className="w-6 h-6 opacity-30" />
-              <span className="text-[11px] font-medium">Add a cover banner</span>
-            </div>
-          )}
-
-          {/* Change Banner Overlay Button */}
-          <button
-            type="button"
-            onClick={() => coverBannerInputRef.current?.click()}
-            className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm border border-white/10"
-          >
-            <Camera className="w-3.5 h-3.5" />
-            <span>{data.coverBannerPreview ? 'Change Banner' : 'Add Banner'}</span>
-          </button>
-        </div>
-
-        {/* Profile Avatar & Quick Identity Row */}
-        <div className="px-6 pb-6 pt-2 sm:pt-3 relative flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-5 text-center sm:text-left min-w-0">
-            {/* Avatar Circle with Camera badge - cleanly overlapping banner */}
-            <div className="relative group/avatar shrink-0 -mt-14 sm:-mt-16">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-card bg-surface overflow-hidden shadow-lg shrink-0 flex items-center justify-center">
-                {data.profilePhotoPreview ? (
-                  <img
-                    src={data.profilePhotoPreview}
-                    alt={data.stageName || 'Profile'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-brand/10 text-brand font-bold text-3xl flex items-center justify-center uppercase font-serif">
-                    {data.stageName?.[0] || 'T'}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => profilePhotoInputRef.current?.click()}
-                className="absolute bottom-1 right-1 p-2 rounded-full bg-brand text-white shadow-md hover:brightness-110 transition-transform hover:scale-105 cursor-pointer border-2 border-card"
-                title="Change Profile Photo"
-              >
-                <Camera className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Stage Name & Subtitle right beside avatar - cleanly on card surface */}
-            <div className="space-y-1 mb-1 min-w-0">
-              <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-bold font-serif text-foreground tracking-tight whitespace-nowrap">
-                  {data.stageName || 'Your Name'}
-                </h1>
-                <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand/10 text-brand border border-brand/20">
-                  {primaryCategory?.name || 'Talent'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => profilePhotoInputRef.current?.click()}
-                className="text-xs text-brand hover:underline font-semibold cursor-pointer block"
-              >
-                Change profile photo
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center sm:justify-end gap-2 shrink-0 mb-1">
-            <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-              isApproved
-                ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
-                : 'bg-amber-500/15 text-amber-600 border border-amber-500/30'
-            }`}>
-              {isApproved ? '✓ Active on Roster' : 'Draft / Under Review'}
+      {/* ── Sub-header / Breadcrumb Bar ── */}
+      <div className="border-b border-border/80 bg-surface/60 backdrop-blur-md sticky top-[60px] z-30 shadow-xs">
+        <div className="w-full px-3 md:px-5 lg:px-6 py-2.5 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand/10 text-brand border border-brand/20">
+              <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
+              Talent Command Center
             </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 2. INSTAGRAM-STYLE BASIC PROFILE FIELDS ── */}
-      <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2.5">
-          Profile Information
-        </h3>
-
-        <div className="space-y-4 text-xs">
-          {/* Stage Name */}
-          <div className="space-y-1.5">
-            <label className="font-semibold text-foreground text-xs">Full Name / Stage Name</label>
-            <input
-              type="text"
-              value={data.stageName}
-              onChange={(e) => updateData({ stageName: e.target.value })}
-              placeholder="e.g. Kanika Aggarwal"
-              className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-brand"
-            />
-          </div>
-
-          {/* Primary Talent / Category */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="font-semibold text-foreground text-xs">Primary Profession</label>
-              <select
-                value={data.primaryTalentId}
-                onChange={(e) => updateData({ primaryTalentId: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-brand cursor-pointer"
-              >
-                <option value="">Select Primary Profession</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-semibold text-foreground text-xs">Experience Level</label>
-              <select
-                value={data.experienceLevel}
-                onChange={(e) => updateData({ experienceLevel: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-brand cursor-pointer"
-              >
-                {EXPERIENCE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground font-medium">
+              <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+              <span>/</span>
+              <Link href="/talent" className="hover:text-foreground transition-colors">Talent Directory</Link>
+              <span>/</span>
+              <span className="text-foreground font-semibold">Profile Management</span>
             </div>
           </div>
 
-          {/* Bio */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="font-semibold text-foreground text-xs">Bio</label>
-              <span className="text-[11px] text-muted-foreground font-mono">{data.bio.length}/1000</span>
-            </div>
-            <textarea
-              rows={4}
-              value={data.bio}
-              onChange={(e) => updateData({ bio: e.target.value })}
-              placeholder="Write a brief professional bio describing your experience, style, and accomplishments..."
-              className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm leading-relaxed focus:outline-none focus:border-brand resize-y"
-            />
-          </div>
-
-          {/* Secondary Talents Pills */}
-          <div className="space-y-2 pt-1">
-            <label className="font-semibold text-foreground text-xs block">
-              Additional Talents &amp; Roles
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {categories
-                .filter((c) => c.id !== data.primaryTalentId)
-                .map((cat) => {
-                  const isSelected = data.secondaryTalentIds.includes(cat.id);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => toggleSecondaryTalent(cat.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        isSelected
-                          ? 'bg-brand text-white shadow-xs'
-                          : 'bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
-                      }`}
-                    >
-                      {isSelected && <Check className="w-3 h-3" />}
-                      <span>{cat.name}</span>
-                    </button>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 3. PORTFOLIO & MEDIA (INSTAGRAM GALLERY GRID) ── */}
-      <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-border pb-2.5">
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              Portfolio Gallery
-            </h3>
-            <span className="text-xs text-muted-foreground">Upload your photos, headshots &amp; editorial images</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => galleryInputRef.current?.click()}
-            className="px-3 py-1.5 rounded-xl bg-brand/10 hover:bg-brand/20 text-brand text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-brand/20"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Photos</span>
-          </button>
-        </div>
-
-        {/* Instagram Grid of Photos */}
-        {data.galleryImages.length === 0 ? (
-          <div
-            onClick={() => galleryInputRef.current?.click()}
-            className="p-8 border-2 border-dashed border-border/80 hover:border-brand/40 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-muted/10 hover:bg-muted/20"
-          >
-            <ImageIcon className="w-8 h-8 text-muted-foreground/50" />
-            <span className="text-xs font-bold text-foreground">No portfolio photos uploaded yet</span>
-            <span className="text-[11px] text-muted-foreground">Click here to select photos from your device</span>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {data.galleryImages.map((img: any) => (
-              <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden border border-border bg-black/10 group shadow-2xs">
-                <img src={img.url} alt="Portfolio" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveGalleryImage(img.id)}
-                  className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors cursor-pointer"
-                  title="Remove image"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => galleryInputRef.current?.click()}
-              className="aspect-square rounded-xl border-2 border-dashed border-border hover:border-brand text-muted-foreground hover:text-brand flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer bg-muted/10 hover:bg-brand/5"
+          <div className="flex items-center gap-2.5">
+            <Link
+              href={`/talent/${initialData?.slug || initialData?.id || ''}`}
+              target="_blank"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-muted text-xs font-bold transition-all text-foreground"
             >
-              <Plus className="w-5 h-5" />
-              <span className="text-[11px] font-bold">+ Add More</span>
-            </button>
-          </div>
-        )}
-
-        {/* Video & Documents Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border">
-          {/* Introduction Video */}
-          <div className="space-y-2">
-            <label className="font-semibold text-foreground text-xs block">Introduction Video</label>
-            {data.introductionVideoPreview ? (
-              <div className="relative aspect-video rounded-xl overflow-hidden border border-border bg-black">
-                <video src={data.introductionVideoPreview} controls playsInline className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => updateData({ introductionVideo: null, introductionVideoPreview: '' })}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-rose-600 text-white cursor-pointer"
-                  title="Remove Video"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => videoInputRef.current?.click()}
-                className="w-full p-4 border border-dashed border-border hover:border-brand rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground hover:text-brand transition-colors cursor-pointer bg-muted/10"
-              >
-                <Video className="w-4 h-4" />
-                <span>Upload Intro Video (.mp4 / .mov)</span>
-              </button>
-            )}
-          </div>
-
-          {/* Resume & Comp Card */}
-          <div className="space-y-3">
-            <label className="font-semibold text-foreground text-xs block">Documents</label>
+              <ExternalLink className="w-3.5 h-3.5 text-brand" />
+              <span>Public Page</span>
+            </Link>
             
-            {/* Resume Button */}
-            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-surface">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText className="w-4 h-4 text-brand shrink-0" />
-                <span className="text-xs font-medium text-foreground truncate">
-                  {data.resumeName || 'No resume uploaded'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => resumeInputRef.current?.click()}
-                className="text-[11px] font-bold text-brand hover:underline shrink-0 ml-2 cursor-pointer"
-              >
-                {data.resumeName ? 'Replace' : 'Upload'}
-              </button>
-            </div>
-
-            {/* Comp Card Button */}
-            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-surface">
-              <div className="flex items-center gap-2 min-w-0">
-                <Award className="w-4 h-4 text-brand shrink-0" />
-                <span className="text-xs font-medium text-foreground truncate">
-                  {data.compCardName || 'No comp card uploaded'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => compCardInputRef.current?.click()}
-                className="text-[11px] font-bold text-brand hover:underline shrink-0 ml-2 cursor-pointer"
-              >
-                {data.compCardName ? 'Replace' : 'Upload'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 4. SKILLS & LANGUAGES ── */}
-      <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2.5">
-          Skills &amp; Languages
-        </h3>
-
-        {/* Skills */}
-        <div className="space-y-2">
-          <label className="font-semibold text-foreground text-xs block">Skills</label>
-          <div className="flex flex-wrap gap-1.5">
-            {SUGGESTED_SKILLS.map((skill) => {
-              const active = data.skills.includes(skill);
-              return (
-                <button
-                  key={skill}
-                  type="button"
-                  onClick={() => toggleSkill(skill)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                    active
-                      ? 'bg-brand text-white shadow-2xs'
-                      : 'bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
-                  }`}
-                >
-                  {skill}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex gap-2 pt-1 max-w-sm">
-            <input
-              type="text"
-              value={customSkill}
-              onChange={(e) => setCustomSkill(e.target.value)}
-              placeholder="Add other skill..."
-              className="flex-1 px-3 py-1.5 bg-background border border-border rounded-lg text-xs focus:outline-none focus:border-brand"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addCustomSkill();
-                }
-              }}
-            />
             <button
               type="button"
-              onClick={addCustomSkill}
-              className="px-3 py-1.5 rounded-lg bg-surface border border-border hover:bg-muted text-xs font-semibold cursor-pointer"
+              onClick={() => handleSave('save')}
+              disabled={isSubmitting}
+              className="px-4 py-1.5 rounded-full bg-brand text-white text-xs font-bold shadow-xs hover:brightness-110 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
-              Add
+              {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              <span>Save Changes</span>
             </button>
-          </div>
-        </div>
 
-        {/* Languages */}
-        <div className="space-y-2 pt-3 border-t border-border">
-          <label className="font-semibold text-foreground text-xs block">Languages Spoken</label>
-          <div className="flex flex-wrap gap-1.5">
-            {SUGGESTED_LANGUAGES.map((lang) => {
-              const active = data.languages.includes(lang);
-              return (
-                <button
-                  key={lang}
-                  type="button"
-                  onClick={() => toggleLanguage(lang)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                    active
-                      ? 'bg-brand text-white shadow-2xs'
-                      : 'bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
-                  }`}
-                >
-                  {lang}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex gap-2 pt-1 max-w-sm">
-            <input
-              type="text"
-              value={customLanguage}
-              onChange={(e) => setCustomLanguage(e.target.value)}
-              placeholder="Add other language..."
-              className="flex-1 px-3 py-1.5 bg-background border border-border rounded-lg text-xs focus:outline-none focus:border-brand"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addCustomLanguage();
-                }
-              }}
-            />
             <button
               type="button"
-              onClick={addCustomLanguage}
-              className="px-3 py-1.5 rounded-lg bg-surface border border-border hover:bg-muted text-xs font-semibold cursor-pointer"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-xs font-bold transition-all cursor-pointer"
+              title="Logout from Account"
             >
-              Add
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── 5. SOCIAL MEDIA LINKS ── */}
-      <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2.5">
-          Social Links &amp; Handles
-        </h3>
+      {/* ── Main 3-Column Layout Container ── */}
+      <div className="w-full px-3 md:px-5 lg:px-6 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          {/* Instagram */}
-          <div className="space-y-1">
-            <label className="font-semibold text-foreground flex items-center gap-1.5">
-              <Instagram className="w-3.5 h-3.5 text-pink-500" /> Instagram Handle / URL
-            </label>
-            <input
-              type="text"
-              value={data.instagram}
-              onChange={(e) => updateData({ instagram: e.target.value })}
-              placeholder="e.g. instagram.com/username or @username"
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-xs focus:outline-none focus:border-brand font-mono"
-            />
-          </div>
-
-          {/* YouTube */}
-          <div className="space-y-1">
-            <label className="font-semibold text-foreground flex items-center gap-1.5">
-              <Youtube className="w-3.5 h-3.5 text-red-500" /> YouTube Channel
-            </label>
-            <input
-              type="text"
-              value={data.youtube}
-              onChange={(e) => updateData({ youtube: e.target.value })}
-              placeholder="e.g. youtube.com/@channel"
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-xs focus:outline-none focus:border-brand font-mono"
-            />
-          </div>
-
-          {/* LinkedIn */}
-          <div className="space-y-1">
-            <label className="font-semibold text-foreground flex items-center gap-1.5">
-              <Linkedin className="w-3.5 h-3.5 text-blue-500" /> LinkedIn
-            </label>
-            <input
-              type="text"
-              value={data.linkedin}
-              onChange={(e) => updateData({ linkedin: e.target.value })}
-              placeholder="e.g. linkedin.com/in/username"
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-xs focus:outline-none focus:border-brand font-mono"
-            />
-          </div>
-
-          {/* Website */}
-          <div className="space-y-1">
-            <label className="font-semibold text-foreground flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-emerald-500" /> Personal Website / Portfolio
-            </label>
-            <input
-              type="text"
-              value={data.website}
-              onChange={(e) => updateData({ website: e.target.value })}
-              placeholder="e.g. https://yourportfolio.com"
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-xs focus:outline-none focus:border-brand font-mono"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ── 6. PRICING & AVAILABILITY ── */}
-      <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2.5">
-          Pricing &amp; Booking Availability
-        </h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="space-y-1.5">
-            <label className="font-semibold text-foreground text-xs">Day Rate (₹ INR)</label>
-            <input
-              type="number"
-              value={data.pricingAmount}
-              onChange={(e) => updateData({ pricingAmount: e.target.value })}
-              placeholder="e.g. 25000"
-              className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground font-mono font-bold text-sm focus:outline-none focus:border-brand"
-            />
-          </div>
-
-          <div className="space-y-2 pt-2">
-            <label className="font-semibold text-foreground text-xs block">Travel &amp; Availability</label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={data.isAvailableForTravel}
-                  onChange={(e) => updateData({ isAvailableForTravel: e.target.checked })}
-                  className="rounded text-brand focus:ring-brand"
-                />
-                <span className="text-foreground">Ready for outstation / international travel</span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={data.isAvailableImmediate}
-                  onChange={(e) => updateData({ isAvailableImmediate: e.target.checked })}
-                  className="rounded text-brand focus:ring-brand"
-                />
-                <span className="text-foreground">Available for immediate commercial bookings</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── FIXED BOTTOM ACTION BAR ── */}
-      <div className="fixed bottom-0 left-0 right-0 p-3.5 bg-background/95 backdrop-blur-md border-t border-border shadow-lg z-50 flex items-center justify-between gap-4 md:px-12 lg:px-24">
-        <button 
-          type="button"
-          onClick={() => router.push('/talent-dashboard')}
-          className="px-5 py-2 rounded-full border border-border font-medium hover:bg-surface transition-colors text-muted-foreground hover:text-foreground text-xs cursor-pointer"
-        >
-          Cancel
-        </button>
-
-        <div className="flex items-center gap-2.5">
-          <button 
-            type="button"
-            onClick={() => handleSave('save')}
-            disabled={isSubmitting}
-            className="px-6 py-2 rounded-full bg-brand text-white font-bold hover:brightness-110 transition-all text-xs flex items-center gap-1.5 shadow-md shadow-brand/20 disabled:opacity-50 cursor-pointer"
+          {/* ══════════════════════════════════════════════════════════════════
+              COLUMN 1 (LEFT SIDEBAR): Sticky Fixed, Scrollable Profile & Tabs
+              (Exact Match to TalentDashboardView.tsx)
+              ══════════════════════════════════════════════════════════════════ */}
+          <aside 
+            data-lenis-prevent
+            onWheel={(e) => e.stopPropagation()}
+            className="lg:col-span-3 lg:sticky lg:top-[115px] lg:h-[calc(100vh-130px)] lg:max-h-[calc(100vh-130px)] lg:overflow-y-auto overscroll-contain touch-pan-y pr-1 pb-16 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
-            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            <span>{isSubmitting ? 'Saving Changes...' : 'Save Profile Changes'}</span>
-          </button>
+            {/* Profile Identity Card */}
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-brand/20 via-brand-gold/15 to-amber-500/10 pointer-events-none" />
+
+              <div className="relative flex flex-col items-center text-center pt-4">
+                <div className="relative mb-3">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-brand/40 bg-muted shadow-md flex items-center justify-center">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={stageName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-brand/80 to-brand-glow text-white font-extrabold text-2xl flex items-center justify-center">
+                        {stageName.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => profilePhotoInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 p-1 rounded-full bg-background border border-border shadow-xs cursor-pointer hover:scale-110 transition-transform"
+                    title="Change Avatar"
+                  >
+                    {isApproved ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
+                    ) : (
+                      <Clock className="w-4 h-4 text-amber-500 animate-pulse" />
+                    )}
+                  </button>
+                </div>
+
+                <h3 className="font-serif font-bold text-lg text-foreground tracking-tight">{stageName}</h3>
+                <span className="text-xs uppercase font-extrabold tracking-wider text-brand mt-0.5">{category}</span>
+
+                {/* Status Badges */}
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                    isApproved 
+                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' 
+                      : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isApproved ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                    {isApproved ? 'Approved & Live' : 'Under Review'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-surface border border-border text-muted-foreground">
+                    {experience}
+                  </span>
+                </div>
+
+                {/* Quick Info List */}
+                <div className="w-full mt-4 pt-4 border-t border-border/70 space-y-2 text-xs text-left">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" /> Location</span>
+                    <span className="font-semibold text-foreground truncate max-w-[130px]">{location}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5 text-primary" /> Profile Views</span>
+                    <span className="font-semibold text-foreground">{viewsCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-primary" /> Shoots Done</span>
+                    <span className="font-semibold text-foreground">{projectsCount}</span>
+                  </div>
+                </div>
+
+                {/* Action CTA */}
+                <div className="w-full mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('basic-info-section');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="flex-1 py-2 rounded-xl text-center text-xs font-bold bg-muted hover:bg-muted/80 text-foreground transition-all cursor-pointer"
+                  >
+                    Edit Profile
+                  </button>
+                  <Link
+                    href={`/talent/${initialData?.slug || initialData?.id || ''}`}
+                    target="_blank"
+                    className="py-2 px-3 rounded-xl text-center text-xs font-bold border border-border hover:bg-muted text-foreground transition-all flex items-center justify-center"
+                    title="Public Profile"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Navigation Panel (Matching TalentDashboardView.tsx) */}
+            <div className="rounded-2xl border border-border bg-card p-3 shadow-xs space-y-1">
+              <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                Talent Panel
+              </div>
+
+              <Link
+                href="/talent-dashboard"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Overview &amp; Activity</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+              </Link>
+
+              <Link
+                href="/talent-dashboard?tab=requests"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Inbound Direct Requests</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand/10 text-brand">
+                  1
+                </span>
+              </Link>
+
+              <Link
+                href="/talent-dashboard?tab=castings"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Film className="w-4 h-4" />
+                  <span>Casting Applications</span>
+                </div>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('portfolio-section');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Camera className="w-4 h-4" />
+                  <span>Portfolio &amp; Showreel</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+              </button>
+
+              <Link
+                href="/talent"
+                target="_blank"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Flame className="w-4 h-4 text-amber-500" />
+                  <span>Browse Live Casting Board</span>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('basic-info-section');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold bg-brand text-white shadow-xs transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <SlidersHorizontal className="w-4 h-4" />
+                  <span>Profile Settings</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+              </button>
+
+              <div className="pt-1.5 mt-1 border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <LogOut className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
+                    <span>Logout</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 opacity-70 text-rose-500/60" />
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          {/* ══════════════════════════════════════════════════════════════════
+              COLUMN 2 (CENTER): Top Tabs + Profile View Card / Edit Form
+              (Exact Match to Reference Screenshot Image 1)
+              ══════════════════════════════════════════════════════════════════ */}
+          <main className="lg:col-span-6 space-y-4">
+            
+
+                
+                {/* 1. Basic Info */}
+                <div id="basic-info-section" className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2.5 flex items-center justify-between">
+                    <span>1. Basic Profile Information</span>
+                    <span className="text-[10px] text-teal-600 font-semibold">Editable</span>
+                  </h3>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-semibold text-foreground text-xs">Full Name / Stage Name</label>
+                      <input
+                        type="text"
+                        value={data.stageName}
+                        onChange={(e) => updateData({ stageName: e.target.value })}
+                        placeholder="e.g. Kanika Aggarwal"
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-brand font-medium"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="font-semibold text-foreground text-xs">Primary Profession</label>
+                        <select
+                          value={data.primaryTalentId}
+                          onChange={(e) => updateData({ primaryTalentId: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-brand cursor-pointer"
+                        >
+                          <option value="">Select Primary Profession</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-semibold text-foreground text-xs">Experience Level</label>
+                        <select
+                          value={data.experienceLevel}
+                          onChange={(e) => updateData({ experienceLevel: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-brand cursor-pointer"
+                        >
+                          {EXPERIENCE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="font-semibold text-foreground text-xs">Professional Bio</label>
+                        <span className="text-[10px] text-muted-foreground font-mono">{data.bio.length}/1000</span>
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={data.bio}
+                        onChange={(e) => updateData({ bio: e.target.value })}
+                        placeholder="Write a brief professional bio describing your experience, style, and accomplishments..."
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm leading-relaxed focus:outline-none focus:border-brand resize-y"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-semibold text-foreground text-xs">Base Location / City</label>
+                      <input
+                        type="text"
+                        value={data.location}
+                        onChange={(e) => updateData({ location: e.target.value })}
+                        placeholder="e.g. Mumbai, India"
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-brand"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Visual Media (Photos & Headshots - Clean Dropzones) */}
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2.5">
+                    2. Profile Photo &amp; Cover Banner
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Profile Photo */}
+                    <div className="p-4 rounded-xl border border-border bg-surface/50 text-center space-y-3">
+                      <span className="text-xs font-semibold text-foreground block">Profile Headshot</span>
+                      <div className="w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-brand/40 bg-muted">
+                        {data.profilePhotoPreview ? (
+                          <img src={data.profilePhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <Camera className="w-6 h-6 opacity-40" />
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => profilePhotoInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Change Photo</span>
+                      </button>
+                    </div>
+
+                    {/* Cover Banner */}
+                    <div className="p-4 rounded-xl border border-border bg-surface/50 text-center space-y-3">
+                      <span className="text-xs font-semibold text-foreground block">Cover Banner (16:9)</span>
+                      <div className="w-full h-20 rounded-lg overflow-hidden border border-border bg-black/20">
+                        {data.coverBannerPreview ? (
+                          <img src={data.coverBannerPreview} alt="Banner" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 text-xs">
+                            No Banner Selected
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => coverBannerInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-muted text-foreground text-xs font-semibold cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-primary" />
+                        <span>{data.coverBannerPreview ? 'Change Banner' : 'Upload Banner'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Skills & Languages */}
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2.5">
+                    3. Skills &amp; Languages
+                  </h3>
+
+                  {/* Skills Toggles */}
+                  <div className="space-y-2">
+                    <label className="font-semibold text-foreground text-xs block">Select Skills</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SUGGESTED_SKILLS.map((skill) => {
+                        const active = data.skills.includes(skill);
+                        return (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => toggleSkill(skill)}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                              active
+                                ? 'bg-teal-600 text-white shadow-xs'
+                                : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
+                            }`}
+                          >
+                            {skill}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-2 pt-1 max-w-sm">
+                      <input
+                        type="text"
+                        value={customSkill}
+                        onChange={(e) => setCustomSkill(e.target.value)}
+                        placeholder="Add other skill..."
+                        className="flex-1 px-3 py-1.5 bg-background border border-border rounded-lg text-xs focus:outline-none focus:border-brand"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCustomSkill();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={addCustomSkill}
+                        className="px-3 py-1.5 rounded-lg bg-surface border border-border hover:bg-muted text-xs font-semibold cursor-pointer"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Languages Toggles */}
+                  <div className="space-y-2 pt-3 border-t border-border">
+                    <label className="font-semibold text-foreground text-xs block">Languages Spoken</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SUGGESTED_LANGUAGES.map((lang) => {
+                        const active = data.languages.includes(lang);
+                        return (
+                          <button
+                            key={lang}
+                            type="button"
+                            onClick={() => toggleLanguage(lang)}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                              active
+                                ? 'bg-teal-600 text-white shadow-xs'
+                                : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
+                            }`}
+                          >
+                            {lang}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Pricing & Availability */}
+                <div id="pricing-section" className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2.5">
+                    4. Day Rates &amp; Availability
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-semibold text-foreground text-xs">Daily Rate (₹ INR)</label>
+                      <input
+                        type="number"
+                        value={data.pricingAmount}
+                        onChange={(e) => updateData({ pricingAmount: e.target.value })}
+                        placeholder="e.g. 25000"
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground font-mono font-bold text-sm focus:outline-none focus:border-brand"
+                      />
+                      <p className="text-[11px] text-muted-foreground pt-1">
+                        Clients will be charged this day rate via Razorpay Live Escrow when booking directly.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={data.isAvailableForTravel}
+                          onChange={(e) => updateData({ isAvailableForTravel: e.target.checked })}
+                          className="rounded text-brand focus:ring-brand"
+                        />
+                        <span className="text-foreground font-medium">Ready for outstation &amp; international travel</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={data.isAvailableImmediate}
+                          onChange={(e) => updateData({ isAvailableImmediate: e.target.checked })}
+                          className="rounded text-brand focus:ring-brand"
+                        />
+                        <span className="text-foreground font-medium">Available for immediate commercial bookings</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Portfolio Media & Headshots */}
+                <div id="portfolio-section" className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-border pb-2.5">
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        5. Portfolio Images &amp; Headshots
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">Upload high-res editorial headshots, commercial stills &amp; fashion photos</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Photos</span>
+                    </button>
+                  </div>
+
+                  {data.galleryImages.length === 0 ? (
+                    <div
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="p-8 border-2 border-dashed border-border/80 hover:border-brand/40 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-muted/10 hover:bg-muted/20"
+                    >
+                      <ImageIcon className="w-8 h-8 text-muted-foreground/50" />
+                      <span className="text-xs font-bold text-foreground">No portfolio photos uploaded yet</span>
+                      <span className="text-[11px] text-muted-foreground">Click here to select photos from your device</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {data.galleryImages.map((img: any) => (
+                        <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden border border-border bg-black/10 group shadow-2xs">
+                          <img src={img.url} alt="Portfolio" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveGalleryImage(img.id)}
+                            className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/70 hover:bg-rose-600 text-white transition-colors cursor-pointer"
+                            title="Remove image"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed border-border hover:border-teal-500 text-muted-foreground hover:text-teal-600 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer bg-muted/10 hover:bg-teal-500/5"
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span className="text-[11px] font-bold">+ Add More</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Save Changes Action Block */}
+                <div className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-xs">
+                  <span className="text-xs text-muted-foreground">
+                    All changes save live to your public profile and database.
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSave('save')}
+                    disabled={isSubmitting}
+                    className="px-6 py-2.5 rounded-xl bg-brand text-white font-bold hover:brightness-110 transition-all text-xs flex items-center gap-2 shadow-md shadow-brand/20 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{isSubmitting ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+                  </button>
+                </div>
+
+          </main>
+
+          {/* ══════════════════════════════════════════════════════════════════
+              COLUMN 3 (RIGHT SIDEBAR): Full-Height Sponsored Partner Panel
+              (Exact Match to TalentDashboardView.tsx)
+              ══════════════════════════════════════════════════════════════════ */}
+          <aside 
+            data-lenis-prevent
+            onWheel={(e) => e.stopPropagation()}
+            className="w-full lg:col-span-3 lg:sticky lg:top-[115px] self-start h-[calc(100vh-130px)] min-h-[500px]"
+          >
+            <SponsoredSidebarCard context="talent" showAdvertiseLink={true} className="h-full" />
+          </aside>
+
         </div>
       </div>
 

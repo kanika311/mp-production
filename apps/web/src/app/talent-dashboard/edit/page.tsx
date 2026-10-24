@@ -40,11 +40,18 @@ async function getTalentProfile(sessionUser: any) {
   return null;
 }
 
-export default async function EditTalentProfilePage() {
+export default async function EditTalentProfilePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id || session.user.role !== 'TALENT') {
     redirect('/login');
   }
+
+  const resolvedParams = searchParams ? await searchParams : {};
+  const currentTab = (resolvedParams.tab as any) || 'edit';
 
   const metadata = (session.user as any)?.user_metadata || {};
   let profile = await getTalentProfile(session.user);
@@ -74,11 +81,7 @@ export default async function EditTalentProfilePage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-background pt-20 md:pt-24 pb-20">
-        <Container>
-          <FullEditProfileClient initialData={profile} />
-        </Container>
-      </main>
+      <FullEditProfileClient initialData={profile} initialTab={currentTab} />
     </>
   );
 }

@@ -11,15 +11,7 @@ async function getTalentProfile(id: string) {
   const slugHyphen = trimmed.replace(/\s+/g, '-');
   const slugSpace = trimmed.replace(/-/g, ' ');
 
-  // 1. Try serverFetchAPI first
-  try {
-    const data = await serverFetchAPI(`/talent/${encodeURIComponent(trimmed)}`, { cache: 'no-store' });
-    if (data && (data.data || data.user)) {
-      return data.data ? data.data : data;
-    }
-  } catch (error) {}
-
-  // 2. Direct Prisma fallback for 100% reliable server rendering
+  // 1. Direct Prisma check first for latest local pricing & updates
   try {
     const profile = await prisma.talentProfile.findFirst({
       where: {
@@ -29,6 +21,7 @@ async function getTalentProfile(id: string) {
           { slug: slugHyphen },
           { slug: slugSpace },
           { userId: trimmed },
+          { stageName: { equals: slugSpace, mode: 'insensitive' } },
         ],
       },
       include: {
@@ -43,10 +36,18 @@ async function getTalentProfile(id: string) {
     if (profile) return profile;
   } catch (dbErr) {}
 
+  // 2. Fallback to serverFetchAPI
+  try {
+    const data = await serverFetchAPI(`/talent/${encodeURIComponent(trimmed)}`, { cache: 'no-store' });
+    if (data && (data.data || data.user)) {
+      return data.data ? data.data : data;
+    }
+  } catch (error) {}
+
   return null;
 }
 
-export default async function BookTalentPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+export default async function BookTalentPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const id = resolvedParams.id;
 
@@ -59,7 +60,10 @@ export default async function BookTalentPage({ params }: { params: Promise<{ id:
   const talentName = `${profile.user?.firstName || ''} ${profile.user?.lastName || ''}`.trim() || profile.stageName || 'Talent';
   const avatarUrl = profile.user?.avatarUrl || profile.avatarUrl || '';
   const categoryName = profile.userTalents?.[0]?.category?.name || 'Artist / Model';
-  const dailyRate = profile.pricing?.perDay || 4999;
+  
+  const dailyRate = profile.pricing?.perDay 
+    ? (profile.pricing.perDay >= 100 && profile.pricing.perDay % 100 === 0 ? profile.pricing.perDay / 100 : profile.pricing.perDay)
+    : (profile.draftData?.pricingAmount ? parseInt(String(profile.draftData.pricingAmount).replace(/\D/g, ''), 10) : (profile.pricing?.startingPrice || 4999));
 
   return (
     <>

@@ -98,6 +98,7 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
       : (Array.isArray(profile.draftData?.education) ? profile.draftData.education : [])
   );
   const [localGallery, setLocalGallery] = useState<any[]>([]);
+  const [localDayRate, setLocalDayRate] = useState<number | null>(null);
 
   // Instant sync from localStorage if user just edited their profile
   useEffect(() => {
@@ -109,7 +110,9 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
         profile.slug ? `talent_profile_override_${profile.slug}` : null,
         profile.slug ? `talent_profile_override_${profile.slug.replace(/\s+/g, '-')}` : null,
         profile.slug ? `talent_profile_override_${profile.slug.replace(/-/g, ' ')}` : null,
+        name ? `talent_profile_override_${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : null,
         'talent_profile_override_draft',
+        'talent_profile_override_me',
         'talent_profile_draft',
       ].filter(Boolean) as string[];
 
@@ -144,6 +147,17 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
             if (parsed.education && Array.isArray(parsed.education) && parsed.education.length > 0) {
               setLocalEducation(parsed.education);
             }
+            if (parsed.pricingAmount !== undefined && parsed.pricingAmount !== null && parsed.pricingAmount !== '') {
+              const num = parseInt(String(parsed.pricingAmount).replace(/\D/g, ''), 10);
+              if (!isNaN(num) && num > 0) setLocalDayRate(num);
+            } else if (parsed.pricing?.perDay) {
+              const pd = Number(parsed.pricing.perDay);
+              const p = pd >= 100 && pd % 100 === 0 ? pd / 100 : pd;
+              if (p > 0) setLocalDayRate(p);
+            } else if (parsed.draftData?.pricingAmount) {
+              const num = parseInt(String(parsed.draftData.pricingAmount).replace(/\D/g, ''), 10);
+              if (!isNaN(num) && num > 0) setLocalDayRate(num);
+            }
             if (parsed.galleryImages && Array.isArray(parsed.galleryImages) && parsed.galleryImages.length > 0) {
               const parsedGallery = parsed.galleryImages
                 .map((g: any, i: number) => ({
@@ -163,6 +177,27 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
       console.warn('Error reading talent local override:', e);
     }
   }, [profile, name]);
+
+  // Real-time listener when profile updates in dashboard
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      const updated = e?.detail;
+      if (updated) {
+        if (updated.pricingAmount !== undefined && updated.pricingAmount !== null && updated.pricingAmount !== '') {
+          const num = parseInt(String(updated.pricingAmount).replace(/\D/g, ''), 10);
+          if (!isNaN(num) && num > 0) setLocalDayRate(num);
+        } else if (updated.pricing?.perDay) {
+          const pd = Number(updated.pricing.perDay);
+          const p = pd >= 100 && pd % 100 === 0 ? pd / 100 : pd;
+          if (p > 0) setLocalDayRate(p);
+        }
+        if (updated.avatarUrl && isValidImg(updated.avatarUrl)) setAvatarSrc(updated.avatarUrl);
+        if (updated.coverBannerUrl && isValidImg(updated.coverBannerUrl)) setCoverSrc(updated.coverBannerUrl);
+      }
+    };
+    window.addEventListener('talent_profile_updated', handleUpdate);
+    return () => window.removeEventListener('talent_profile_updated', handleUpdate);
+  }, []);
 
   const category = 
     profile.userTalents?.[0]?.category?.name || 
@@ -293,10 +328,13 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
       ? profile.draftData.languages
       : ['English (Fluent)', 'Hindi (Native)'];
 
-  const rawDayRate = profile.pricing?.perDay 
-    ? profile.pricing.perDay / 100 
-    : (profile.pricing?.startingPrice || (profile.draftData?.pricingAmount ? parseInt(String(profile.draftData.pricingAmount).replace(/\D/g, ''), 10) : 15000));
-  const formattedDayRate = `₹${(rawDayRate || 15000).toLocaleString('en-IN')}`;
+  const baseDayRate = profile.pricing?.perDay 
+    ? (profile.pricing.perDay >= 100 && profile.pricing.perDay % 100 === 0 ? profile.pricing.perDay / 100 : profile.pricing.perDay)
+    : (profile.draftData?.pricingAmount ? parseInt(String(profile.draftData.pricingAmount).replace(/\D/g, ''), 10) : (profile.pricing?.startingPrice || 4999));
+
+  const rawDayRate = localDayRate !== null ? localDayRate : baseDayRate;
+  const formattedDayRate = `₹${(rawDayRate || 4999).toLocaleString('en-IN')}`;
+  const bookUrl = `/talent/${profile.slug || profile.id}/book?rate=${rawDayRate || 4999}`;
 
   const instagramUrl = profile.socialLinks?.find((s: any) => s.platform === 'INSTAGRAM')?.url || profile.draftData?.instagram || 'https://instagram.com';
   const youtubeUrl = profile.socialLinks?.find((s: any) => s.platform === 'YOUTUBE')?.url || profile.draftData?.youtube || 'https://youtube.com';
@@ -380,7 +418,7 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
               {/* Action Buttons: Book Now (Primary) + View Rates + Resume */}
               <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5">
                 <Link
-                  href={`/talent/${profile.slug || profile.id}/book`}
+                  href={bookUrl}
                   className="px-6 py-2.5 rounded-xl bg-brand hover:bg-[#c7301c] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>Book Now</span>
@@ -1078,7 +1116,7 @@ export default function InstagramTalentProfile({ profile }: InstagramTalentProfi
                   {/* CTA Button */}
                   <div className="pt-6">
                     <Link
-                      href={`/talent/${profile.slug || profile.id}/book`}
+                      href={bookUrl}
                       className="w-full sm:w-auto px-10 py-4 rounded-xl bg-brand hover:bg-[#c7301c] text-white font-bold text-sm uppercase tracking-wider shadow-lg transition-all inline-flex items-center justify-center gap-2"
                     >
                       <span>Proceed to Booking & Availability</span>

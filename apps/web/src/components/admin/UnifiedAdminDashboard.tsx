@@ -328,6 +328,8 @@ export function UnifiedAdminDashboard() {
   const [editFaqData, setEditFaqData] = useState({ question: '', answer: '', category: 'General' });
   const heroFileInputRef = React.useRef<HTMLInputElement | null>(null);
   const heroVideoFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const desktopNavRef = React.useRef<HTMLElement | null>(null);
+  const mobileNavRef = React.useRef<HTMLElement | null>(null);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
   // Force pure light White & Red theme so system dark mode does NOT tint the dashboard
@@ -1586,7 +1588,14 @@ export function UnifiedAdminDashboard() {
   const renderSidebarContent = (isMobile = false) => (
     <>
       {/* Brand Header with Official Site Logo */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between gap-3 bg-white shrink-0">
+      <div 
+        onWheel={(e) => {
+          e.stopPropagation();
+          const nav = isMobile ? mobileNavRef.current : desktopNavRef.current;
+          if (nav) nav.scrollTop += e.deltaY;
+        }}
+        className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between gap-3 bg-white shrink-0"
+      >
         <Link
           href="/super-admin"
           onClick={() => isMobile && setIsMobileNavOpen(false)}
@@ -1640,7 +1649,14 @@ export function UnifiedAdminDashboard() {
       </div>
 
       {/* Tab Search Bar */}
-      <div className="p-3 border-b border-slate-200 bg-white shrink-0">
+      <div 
+        onWheel={(e) => {
+          e.stopPropagation();
+          const nav = isMobile ? mobileNavRef.current : desktopNavRef.current;
+          if (nav) nav.scrollTop += e.deltaY;
+        }}
+        className="p-3 border-b border-slate-200 bg-white shrink-0"
+      >
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           <input
@@ -1661,10 +1677,14 @@ export function UnifiedAdminDashboard() {
         </div>
       </div>
 
-      {/* Navigation Tabs List - Enhanced with smooth visible scrolling */}
+      {/* Navigation Tabs List - Enhanced with smooth mouse-wheel scroll & hidden native scrollbar */}
       <nav
-        className="flex-1 p-3 overflow-y-auto overscroll-contain bg-white space-y-3"
-        style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f8fafc' }}
+        ref={isMobile ? mobileNavRef : desktopNavRef}
+        data-lenis-prevent
+        onWheel={(e) => {
+          e.stopPropagation();
+        }}
+        className="flex-1 p-3 overflow-y-auto overscroll-contain bg-white space-y-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {groupedFilteredTabs ? (
           // Grouped view (no search active)
@@ -1794,7 +1814,14 @@ export function UnifiedAdminDashboard() {
       </nav>
 
       {/* Sidebar Footer Controls */}
-      <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 text-xs shrink-0">
+      <div 
+        onWheel={(e) => {
+          e.stopPropagation();
+          const nav = isMobile ? mobileNavRef.current : desktopNavRef.current;
+          if (nav) nav.scrollTop += e.deltaY;
+        }}
+        className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 text-xs shrink-0"
+      >
         <div className="flex items-center justify-between px-2 py-1 text-slate-700">
           <span className="flex items-center gap-1.5 text-xs font-bold">
             <Globe size={14} className="text-red-600" />
@@ -1840,7 +1867,16 @@ export function UnifiedAdminDashboard() {
       {/* ═══════════════════════════════════════════════════════════
           DESKTOP SIDEBAR (Visible on md and above)
           ═══════════════════════════════════════════════════════════ */}
-      <aside className="hidden md:flex w-64 lg:w-72 fixed inset-y-0 left-0 h-screen max-h-screen bg-white border-r border-slate-200 flex-col z-40 shadow-sm overflow-hidden">
+      <aside 
+        data-lenis-prevent
+        onWheel={(e) => {
+          e.stopPropagation();
+          if (desktopNavRef.current && e.target !== desktopNavRef.current && !desktopNavRef.current.contains(e.target as Node)) {
+            desktopNavRef.current.scrollTop += e.deltaY;
+          }
+        }}
+        className="hidden md:flex w-64 lg:w-72 fixed inset-y-0 left-0 h-screen max-h-screen bg-white border-r border-slate-200 flex-col z-40 shadow-sm overflow-hidden"
+      >
         {renderSidebarContent(false)}
       </aside>
 
@@ -1858,6 +1894,13 @@ export function UnifiedAdminDashboard() {
 
       {/* Drawer */}
       <aside
+        data-lenis-prevent
+        onWheel={(e) => {
+          e.stopPropagation();
+          if (mobileNavRef.current && e.target !== mobileNavRef.current && !mobileNavRef.current.contains(e.target as Node)) {
+            mobileNavRef.current.scrollTop += e.deltaY;
+          }
+        }}
         className={cn(
           "fixed inset-y-0 left-0 w-72 max-w-[85vw] h-full bg-white border-r border-slate-200 flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-in-out md:hidden",
           isMobileNavOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"

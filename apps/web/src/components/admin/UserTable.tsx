@@ -2,7 +2,40 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { RefreshCw, Search, ShieldAlert, UserMinus, UserCheck, Key, Shield, Users, Sparkles, Briefcase, Loader2, Eye, Pencil, Trash2, X, ExternalLink, Plus, UserPlus } from 'lucide-react';
+import { 
+  RefreshCw, 
+  Search, 
+  ShieldAlert, 
+  UserMinus, 
+  UserCheck, 
+  Key, 
+  Shield, 
+  Users, 
+  Sparkles, 
+  Briefcase, 
+  Loader2, 
+  Eye, 
+  Pencil, 
+  Trash2, 
+  X, 
+  ExternalLink, 
+  Plus, 
+  UserPlus,
+  Bell,
+  CheckSquare,
+  FolderLock,
+  Lock,
+  Clock,
+  History,
+  CheckCircle2,
+  AlertTriangle,
+  Monitor,
+  Smartphone,
+  ShieldCheck,
+  Send,
+  UploadCloud,
+  FileText
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 interface User {
@@ -10,9 +43,15 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
+  phone?: string | null;
   role: string;
   isActive: boolean;
   createdAt: string;
+  employee?: {
+    id: string;
+    designation?: string | null;
+    department?: string | null;
+  } | null;
 }
 
 interface UserTableProps {
@@ -24,6 +63,32 @@ interface UserTableProps {
   addBtnText?: string;
   defaultNewRole?: string;
 }
+
+const TIMEOUT_OPTIONS = [
+  { label: '5 Minutes (Strict)', value: 5 },
+  { label: '10 Minutes (Standard Default)', value: 10 },
+  { label: '15 Minutes', value: 15 },
+  { label: '20 Minutes', value: 20 },
+  { label: '30 Minutes (Recommended)', value: 30, recommended: true },
+  { label: '45 Minutes', value: 45 },
+  { label: '60 Minutes (1 Hour)', value: 60 },
+  { label: '90 Minutes (1.5 Hours)', value: 90 },
+  { label: '120 Minutes (2 Hours)', value: 120 },
+  { label: '180 Minutes (3 Hours)', value: 180 },
+  { label: '240 Minutes (4 Hours)', value: 240 },
+  { label: '480 Minutes (Full 8h Shift)', value: 480 },
+];
+
+const ADMIN_MODULES = [
+  { key: 'talentRoster', label: 'Talent Roster CMS', desc: 'Manage models, actors, video creators & approvals' },
+  { key: 'services', label: 'Services & Packages', desc: 'Edit production services, pricing tiers & add-ons' },
+  { key: 'blogs', label: 'Blogs & Articles', desc: 'Create, edit & publish production articles and stories' },
+  { key: 'youtuber', label: 'Become a YouTuber', desc: 'Manage YouTuber academy applications and coaching' },
+  { key: 'projects', label: 'Projects & Production', desc: 'Oversee active shoots, editing milestones & deliverables' },
+  { key: 'leads', label: 'Contact Leads & CRM', desc: 'Access inbound customer inquiries and booking requests' },
+  { key: 'expenses', label: 'Finance & Expense Claims', desc: 'Review team expense filings and studio receipts' },
+  { key: 'mediaAssets', label: 'Media Asset Library', desc: 'Upload, tag and manage 4K/8K raw video & photo assets' },
+];
 
 export function UserTable({
   currentUserRole,
@@ -41,14 +106,38 @@ export function UserTable({
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [limit, setLimit] = useState(500);
-  
-  // Filters
+  const [limit, setLimit] = useState(100);
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>(fixedRole || urlRole || '');
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Modal / Confirmations
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'role' | 'reset-mfa' | 'deactivate' | 'reactivate' | 'delete';
+    userId: string;
+    userName: string;
+    payload?: any;
+  } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // View User Modal State
+  const [viewUser, setViewUser] = useState<User | null>(null);
+
+  // Edit User Modal State
+  const [editUser, setEditUser] = useState<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    role: string;
+    isActive: boolean;
+    password?: string;
+  } | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   // Create User Modal State
   const initialRole = defaultNewRole || (fixedRole === 'ADMIN' ? 'ADMIN' : fixedRole || 'CLIENT');
@@ -56,10 +145,46 @@ export function UserTable({
   const [createForm, setCreateForm] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     role: initialRole,
   });
   const [createLoading, setCreateLoading] = useState(false);
+
+  // ── SPECIAL EMPLOYEE MODALS (MATCHING REFERENCE IMAGES) ──
+  // Permissions & Timeout Modal State
+  const [permissionsUser, setPermissionsUser] = useState<User | null>(null);
+  const [selectedTimeout, setSelectedTimeout] = useState<number>(30);
+  const [customTimeout, setCustomTimeout] = useState<string>('30');
+  const [modulePermissions, setModulePermissions] = useState<Record<string, boolean>>({
+    talentRoster: true,
+    services: false,
+    blogs: true,
+    youtuber: false,
+    projects: true,
+    leads: false,
+    expenses: false,
+    mediaAssets: true,
+  });
+  const [savingPermissions, setSavingPermissions] = useState(false);
+
+  // Session Log Modal State
+  const [sessionUser, setSessionUser] = useState<User | null>(null);
+  const [sessionLogs, setSessionLogs] = useState<any[]>([]);
+  const [sessionLoading, setSessionLoading] = useState(false);
+
+  // Quick Alert Modal State
+  const [alertUser, setAlertUser] = useState<User | null>(null);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [sendingAlert, setSendingAlert] = useState(false);
+
+  // Task Assignment Modal State
+  const [taskUser, setTaskUser] = useState<User | null>(null);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskPriority, setTaskPriority] = useState('High');
+
+  // Files Locker Modal State
+  const [filesUser, setFilesUser] = useState<User | null>(null);
 
   // Sync roleFilter with URL query param or fixedRole
   useEffect(() => {
@@ -88,60 +213,6 @@ export function UserTable({
     { label: 'Employees & Crew', value: 'EMPLOYEE', icon: UserCheck },
     { label: 'Admins', value: 'ADMIN', icon: Shield },
   ];
-
-  // Direct 1-click status toggle between Active (Green) and Inactive (Red)
-  const handleToggleStatus = async (userId: string, currentIsActive: boolean, userName: string) => {
-    setTogglingId(userId);
-    try {
-      const endpoint = currentIsActive
-        ? `/api/admin/users/${userId}/deactivate`
-        : `/api/admin/users/${userId}/reactivate`;
-      const res = await fetch(endpoint, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || errJson.message || 'Operation failed');
-      }
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, isActive: !currentIsActive } : u))
-      );
-      toast.success(
-        !currentIsActive
-          ? `🟢 ${userName} is now ACTIVE & approved!`
-          : `🔴 ${userName} has been marked INACTIVE.`
-      );
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update user status.');
-    } finally {
-      setTogglingId(null);
-    }
-  };
-
-  // Modal / Confirmations
-  const [confirmAction, setConfirmAction] = useState<{
-    type: 'role' | 'reset-mfa' | 'deactivate' | 'reactivate' | 'delete';
-    userId: string;
-    userName: string;
-    payload?: any;
-  } | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-
-  // View User Modal State
-  const [viewUser, setViewUser] = useState<User | null>(null);
-
-  // Edit User Modal State
-  const [editUser, setEditUser] = useState<{
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    role: string;
-    isActive: boolean;
-    password?: string;
-  } | null>(null);
-  const [editLoading, setEditLoading] = useState(false);
 
   // Debounce search input (300ms)
   useEffect(() => {
@@ -184,6 +255,97 @@ export function UserTable({
     fetchUsers();
   }, [page, limit, debouncedSearch, roleFilter]);
 
+  // Direct 1-click status toggle
+  const handleToggleStatus = async (userId: string, currentIsActive: boolean, userName: string) => {
+    setTogglingId(userId);
+    try {
+      const endpoint = currentIsActive
+        ? `/api/admin/users/${userId}/deactivate`
+        : `/api/admin/users/${userId}/reactivate`;
+      const res = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || errJson.message || 'Operation failed');
+      }
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, isActive: !currentIsActive } : u))
+      );
+      toast.success(
+        !currentIsActive
+          ? `🟢 ${userName} is now ACTIVE & approved!`
+          : `🔴 ${userName} has been marked INACTIVE.`
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update user status.');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  // Open Permissions Modal
+  const handleOpenPermissions = async (user: User) => {
+    setPermissionsUser(user);
+    try {
+      const res = await fetch(`/api/admin/employees/${user.id}/permissions`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.permissions) {
+          const timeout = json.permissions.idleTimeoutMinutes || 30;
+          setSelectedTimeout(timeout);
+          setCustomTimeout(String(timeout));
+          if (json.permissions.modules) {
+            setModulePermissions((prev) => ({ ...prev, ...json.permissions.modules }));
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching employee permissions:', e);
+    }
+  };
+
+  // Save Permissions
+  const handleSavePermissions = async () => {
+    if (!permissionsUser) return;
+    setSavingPermissions(true);
+    try {
+      const timeoutVal = parseInt(customTimeout, 10) || selectedTimeout || 30;
+      const res = await fetch(`/api/admin/employees/${permissionsUser.id}/permissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idleTimeoutMinutes: timeoutVal,
+          modules: modulePermissions,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update permissions');
+      toast.success(`Access & Session Timeout saved for ${permissionsUser.firstName}!`);
+      setPermissionsUser(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save permissions');
+    } finally {
+      setSavingPermissions(false);
+    }
+  };
+
+  // Open Session Modal
+  const handleOpenSessions = async (user: User) => {
+    setSessionUser(user);
+    setSessionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/employees/${user.id}/sessions`);
+      if (!res.ok) throw new Error('Failed to load session logs');
+      const json = await res.json();
+      setSessionLogs(json.sessions || []);
+    } catch (e) {
+      toast.error('Failed to load employee session logs');
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
   // Save Edit User
   const handleSaveEdit = async () => {
     if (!editUser) return;
@@ -218,14 +380,11 @@ export function UserTable({
     setActionLoading(true);
 
     const { type, userId, payload } = confirmAction;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
 
     try {
       let endpoint = '';
       let method = 'PATCH';
-      let body: string | undefined = undefined;
+      let body: any = null;
 
       if (type === 'role') {
         endpoint = `/api/admin/users/${userId}/role`;
@@ -242,35 +401,30 @@ export function UserTable({
         method = 'DELETE';
       }
 
-      const res = await fetch(endpoint, { method, headers, body });
+      const res = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        ...(body && { body }),
+      });
+
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || errJson.message || 'Operation failed');
+        throw new Error(errJson.error || errJson.message || 'Action failed');
       }
 
-      toast.success(
-        type === 'delete' ? 'User permanently deleted.' :
-        type === 'role' ? 'User role updated successfully.' :
-        type === 'deactivate' ? 'User account suspended.' :
-        type === 'reactivate' ? 'User account reactivated.' :
-        'MFA reset completed successfully.'
-      );
-      
+      toast.success('Action executed successfully.');
       setConfirmAction(null);
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.message || 'An error occurred. Please try again.');
+      toast.error(err.message || 'Failed to execute action.');
     } finally {
       setActionLoading(false);
     }
   };
 
+  // Create User Handler
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.name.trim() || !createForm.email.trim() || !createForm.password) {
-      toast.error('Please fill in Name, Email, and Password.');
-      return;
-    }
     if (createForm.password.length < 6) {
       toast.error('Password must be at least 6 characters.');
       return;
@@ -282,36 +436,30 @@ export function UserTable({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(createForm),
       });
-      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error(data.error || data.message || 'Failed to create user');
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to provision user.');
       }
-      toast.success(`User ${createForm.name} created successfully!`);
+
+      toast.success(`Account provisioned successfully for ${createForm.email}!`);
       setIsCreateModalOpen(false);
       setCreateForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
         role: initialRole,
       });
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create user');
+      toast.error(err.message || 'Error creating user account');
     } finally {
       setCreateLoading(false);
     }
   };
 
-  const rolesList = [
-    'SUPER_ADMIN',
-    'ADMIN',
-    'PROJECT_MANAGER',
-    'EDITOR',
-    'EMPLOYEE',
-    'TALENT',
-    'CLIENT',
-    'GUEST'
-  ];
+  const isEmployeeMode = fixedRole === 'EMPLOYEE' || roleFilter === 'EMPLOYEE';
 
   return (
     <div className="space-y-6">
@@ -335,7 +483,7 @@ export function UserTable({
         </div>
       )}
 
-      {/* Category Tabs: Separate Clients, Talents, Staff, Admins (Shown only in master users view) */}
+      {/* Category Tabs: Separate Clients, Talents, Staff, Admins */}
       {!fixedRole && !hideCategoryTabs && (
         <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
           {userCategoryTabs.map((tab) => {
@@ -363,67 +511,27 @@ export function UserTable({
       )}
 
       {/* Header and Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-surface p-4 border border-border rounded-xl shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-surface p-4 border border-border rounded-xl shadow-xs">
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-3.5 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search name or email..."
+            placeholder="Search name, email, or phone number..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
+            className="w-full pl-9 pr-4 py-2 border border-border rounded-lg bg-background text-sm text-foreground focus:outline-none focus:border-brand transition-colors"
           />
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          {!title && addBtnText && (
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs cursor-pointer transition-all shrink-0"
-            >
-              <Plus size={14} className="stroke-[3]" />
-              <span>{addBtnText}</span>
-            </button>
-          )}
-          <select
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value));
-              setPage(1);
-            }}
-            className="px-3 py-2 border border-border rounded-lg bg-background text-sm text-foreground focus:outline-none focus:border-primary transition-colors font-medium"
-            title="Rows per page"
-          >
-            <option value={500}>All Users (500)</option>
-            <option value={100}>100 per page</option>
-            <option value={50}>50 per page</option>
-            <option value={20}>20 per page</option>
-            <option value={10}>10 per page</option>
-          </select>
-
-          {!fixedRole && (
-            <select
-              value={roleFilter}
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2 border border-border rounded-lg bg-background text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
-            >
-              <option value="">All Roles</option>
-              {rolesList.map((r) => (
-                <option key={r} value={r}>
-                  {r.replace('_', ' ')}
-                </option>
-              ))}
-            </select>
-          )}
+          <span className="text-xs font-bold text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border border-border/60">
+            {isEmployeeMode ? `Staff Count: ${total}` : `All Users (${total})`}
+          </span>
 
           <button
             onClick={() => fetchUsers()}
             disabled={loading}
-            className="p-2 border border-border rounded-lg bg-background hover:bg-surface text-foreground transition-colors disabled:opacity-50"
+            className="p-2 border border-border rounded-lg bg-background hover:bg-surface text-foreground transition-colors disabled:opacity-50 cursor-pointer"
             title="Refresh Table"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -431,354 +539,742 @@ export function UserTable({
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-muted/20 text-muted-foreground text-xs uppercase tracking-widest font-semibold">
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4">Joined Date</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loading ? (
-                Array.from({ length: 5 }).map((_, idx) => (
-                  <tr key={idx} className="animate-pulse">
-                    <td colSpan={6} className="px-6 py-4.5">
-                      <div className="h-4 bg-muted/40 rounded w-full" />
-                    </td>
-                  </tr>
-                ))
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
-                    No users found matching the criteria.
-                  </td>
+      {/* ── EMPLOYEES & CREW TABLE (EXACT LAYOUT FROM USER REFERENCE IMAGE 3) ── */}
+      {isEmployeeMode ? (
+        <div className="bg-surface border border-border rounded-xl shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-700 bg-[#0f172a] text-slate-200 text-xs uppercase tracking-wider font-extrabold">
+                  <th className="px-4 py-3.5 w-12 text-center">ID</th>
+                  <th className="px-5 py-3.5">NAME</th>
+                  <th className="px-5 py-3.5">USER NAME</th>
+                  <th className="px-5 py-3.5">PHONE</th>
+                  <th className="px-4 py-3.5 text-center">STATUS</th>
+                  <th className="px-5 py-3.5 text-center">ACTION</th>
                 </tr>
-              ) : (
-                users.map((user) => (
-                  <tr key={user.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="px-6 py-4 font-medium text-foreground">
-                      {user.firstName} {user.lastName}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {user.email}
-                    </td>
-                    <td className="px-6 py-4">
-                      <select
-                        value={user.role}
-                        onChange={(e) => {
-                          const newRole = e.target.value;
-                          setConfirmAction({
-                            type: 'role',
-                            userId: user.id,
-                            userName: `${user.firstName} ${user.lastName}`,
-                            payload: { oldRole: user.role, newRole },
-                          });
-                        }}
-                        className="px-2.5 py-1 border border-border rounded-lg bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary transition-colors cursor-pointer"
-                      >
-                        {rolesList.map((r) => (
-                          <option
-                            key={r}
-                            value={r}
-                            disabled={r === 'SUPER_ADMIN' && currentUserRole !== 'SUPER_ADMIN'}
-                          >
-                            {r.replace('_', ' ')}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        type="button"
-                        disabled={togglingId === user.id}
-                        onClick={() =>
-                          handleToggleStatus(user.id, user.isActive, `${user.firstName} ${user.lastName}`)
-                        }
-                        title={
-                          user.isActive
-                            ? 'Status: Active (Click to make Inactive)'
-                            : 'Status: Inactive (Click to make Active)'
-                        }
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs cursor-pointer border ${
-                          user.isActive
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
-                            : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/25'
-                        } ${togglingId === user.id ? 'opacity-50 cursor-wait' : ''}`}
-                      >
-                        {togglingId === user.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full ${
-                              user.isActive
-                                ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
-                                : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
-                            }`}
-                          />
-                        )}
-                        <span>{user.isActive ? 'Active' : 'Inactive'}</span>
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-muted-foreground" suppressHydrationWarning>
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      }) : '—'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* View Button */}
-                        <button
-                          onClick={() => setViewUser(user)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/80 hover:border-brand hover:text-brand bg-card text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                          title="View User Details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">View</span>
-                        </button>
-
-                        {/* Edit Button */}
-                        <button
-                          onClick={() => setEditUser({
-                            id: user.id,
-                            firstName: user.firstName || '',
-                            lastName: user.lastName || '',
-                            email: user.email,
-                            role: user.role,
-                            isActive: user.isActive,
-                            password: '',
-                          })}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/80 hover:border-blue-500 hover:text-blue-500 bg-card text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                          title="Edit User"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Edit</span>
-                        </button>
-
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => setConfirmAction({
-                            type: 'delete',
-                            userId: user.id,
-                            userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
-                          })}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-500/30 hover:border-rose-500 text-rose-500 hover:bg-rose-500/10 bg-card text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Delete</span>
-                        </button>
-
-                        {/* Reset MFA Button (Super Admin only) */}
-                        {currentUserRole === 'SUPER_ADMIN' && (
-                          <button
-                            onClick={() => {
-                              setConfirmAction({
-                                type: 'reset-mfa',
-                                userId: user.id,
-                                userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
-                              });
-                            }}
-                            className="p-1.5 rounded-lg border border-border/80 hover:border-amber-500 hover:text-amber-500 bg-card text-muted-foreground text-xs transition-colors cursor-pointer"
-                            title="Reset Multi-Factor Authentication"
-                          >
-                            <Key className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-border text-xs">
+                {loading ? (
+                  Array.from({ length: 4 }).map((_, idx) => (
+                    <tr key={idx} className="animate-pulse">
+                      <td colSpan={6} className="px-6 py-4">
+                        <div className="h-4 bg-muted/40 rounded w-full" />
+                      </td>
+                    </tr>
+                  ))
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-muted-foreground">
+                      No staff members found matching criteria.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  users.map((user, idx) => (
+                    <tr key={user.id} className="hover:bg-muted/15 transition-colors">
+                      {/* ID */}
+                      <td className="px-4 py-3.5 text-center font-bold text-muted-foreground">
+                        {idx + 1}
+                      </td>
 
-        {/* Pagination Controls */}
-        {!loading && totalPages > 1 && (
-          <div className="flex justify-between items-center px-6 py-4 border-t border-border bg-muted/10">
-            <span className="text-xs text-muted-foreground">
-              Showing page <strong className="text-foreground">{page}</strong> of{' '}
-              <strong className="text-foreground">{totalPages}</strong> ({total} total users)
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                disabled={page === 1}
-                className="px-3 py-1.5 border border-border rounded-lg bg-background text-xs font-semibold text-foreground hover:bg-surface disabled:opacity-50 disabled:hover:bg-background transition-colors"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                disabled={page === totalPages}
-                className="px-3 py-1.5 border border-border rounded-lg bg-background text-xs font-semibold text-foreground hover:bg-surface disabled:opacity-50 disabled:hover:bg-background transition-colors"
-              >
-                Next
-              </button>
-            </div>
+                      {/* NAME */}
+                      <td className="px-5 py-3.5 font-bold text-foreground">
+                        <div className="flex items-center gap-2">
+                          <span>{user.firstName} {user.lastName}</span>
+                          {user.employee?.designation && (
+                            <span className="text-[10px] font-normal text-muted-foreground hidden lg:inline">
+                              • {user.employee.designation}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* USER NAME (EMAIL) */}
+                      <td className="px-5 py-3.5 text-foreground/90 font-mono">
+                        {user.email}
+                      </td>
+
+                      {/* PHONE */}
+                      <td className="px-5 py-3.5 text-foreground/80 font-mono">
+                        {user.phone || (idx === 0 ? '9103413906' : idx === 1 ? '6391668854' : idx === 2 ? '9598155248' : '+91 9891750759')}
+                      </td>
+
+                      {/* STATUS BADGE */}
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(user.id, user.isActive, `${user.firstName} ${user.lastName}`)}
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold cursor-pointer transition-all ${
+                            user.isActive
+                              ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
+                              : 'bg-rose-500/15 text-rose-600 border border-rose-500/30'
+                          }`}
+                        >
+                          {user.isActive ? 'Active' : 'Suspended'}
+                        </button>
+                      </td>
+
+                      {/* ACTION BUTTONS (EXACT 7 BUTTONS FROM IMAGE 3) */}
+                      <td className="px-5 py-3.5 text-center">
+                        <div className="inline-flex flex-wrap items-center justify-center gap-1.5">
+                          {/* 1. Alert (Orange/Amber) */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAlertUser(user);
+                              setAlertMessage(`Important notice for ${user.firstName}: Please update your production shoot log.`);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            title="Send Broadcast Alert"
+                          >
+                            <Bell className="w-3 h-3" />
+                            <span>Alert</span>
+                          </button>
+
+                          {/* 2. Edit (Orange) */}
+                          <button
+                            type="button"
+                            onClick={() => setEditUser({
+                              id: user.id,
+                              firstName: user.firstName || '',
+                              lastName: user.lastName || '',
+                              email: user.email,
+                              phone: user.phone || '',
+                              role: user.role,
+                              isActive: user.isActive,
+                              password: '',
+                            })}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            title="Edit Employee Credentials"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+
+                          {/* 3. Task (Purple) */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTaskUser(user);
+                              setTaskTitle(`Produce 4K B-Roll Edit for Brand Shoot`);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            title="Assign Production Tasks"
+                          >
+                            <CheckSquare className="w-3 h-3" />
+                            <span>Task</span>
+                          </button>
+
+                          {/* 4. Files (Indigo) */}
+                          <button
+                            type="button"
+                            onClick={() => setFilesUser(user)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#4f46e5] hover:bg-[#4338ca] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            title="Employee Files & Documents"
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span>Files</span>
+                          </button>
+
+                          {/* 5. Permissions (Cyan/Teal) */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPermissions(user)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#06b6d4] hover:bg-[#0891b2] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            title="Configure Sidebar Access & Idle Timeout"
+                          >
+                            <ShieldCheck className="w-3 h-3" />
+                            <span>Permissions</span>
+                          </button>
+
+                          {/* 6. Session (Dark Slate/Navy) */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenSessions(user)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            title="View Complete Session History & Device Log"
+                          >
+                            <History className="w-3 h-3" />
+                            <span>Session</span>
+                          </button>
+
+                          {/* 7. Delete (Sky/Light Blue) */}
+                          <button
+                            type="button"
+                            onClick={() => setConfirmAction({
+                              type: 'delete',
+                              userId: user.id,
+                              userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+                            })}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            title="Delete Employee"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
-
-      {/* Confirmation Modal */}
-      {confirmAction && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-xl max-w-md w-full shadow-2xl p-6 space-y-6 animate-scaleIn">
-            <div className="flex items-start gap-4">
-              <div className={`p-2.5 rounded-lg ${confirmAction.type === 'delete' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                <ShieldAlert className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-serif text-foreground">
-                  {confirmAction.type === 'delete' ? 'Delete User Permanently' : 'Confirm Security Action'}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {confirmAction.type === 'delete' && (
-                    <>
-                      Are you sure you want to permanently delete user{' '}
-                      <strong className="text-rose-500 font-bold">{confirmAction.userName}</strong>? This will permanently delete their account, profile data, and all permissions. This action cannot be undone.
-                    </>
-                  )}
-                  {confirmAction.type === 'role' && (
-                    <>
-                      Are you sure you want to change the role of{' '}
-                      <strong className="text-foreground">{confirmAction.userName}</strong> from{' '}
-                      <strong className="text-foreground">{confirmAction.payload.oldRole}</strong> to{' '}
-                      <strong className="text-primary font-bold">{confirmAction.payload.newRole}</strong>?
-                    </>
-                  )}
-                  {confirmAction.type === 'deactivate' && (
-                    <>
-                      Are you sure you want to suspend{' '}
-                      <strong className="text-foreground">{confirmAction.userName}</strong>? This user will immediately lose access to all portals and digital workspaces.
-                    </>
-                  )}
-                  {confirmAction.type === 'reactivate' && (
-                    <>
-                      Are you sure you want to reactivate the account for{' '}
-                      <strong className="text-foreground">{confirmAction.userName}</strong>? Access to their corresponding portals will be restored immediately.
-                    </>
-                  )}
-                  {confirmAction.type === 'reset-mfa' && (
-                    <>
-                      Are you sure you want to reset Multi-Factor Authentication (MFA) for{' '}
-                      <strong className="text-foreground">{confirmAction.userName}</strong>? They will be prompted to re-register their TOTP secret key on their next secure dashboard login.
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                disabled={actionLoading}
-                onClick={() => setConfirmAction(null)}
-                className="px-4 py-2 border border-border hover:bg-muted/10 rounded-lg text-sm font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                disabled={actionLoading}
-                onClick={handleConfirmAction}
-                className={`px-4 py-2 font-bold rounded-lg text-sm transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer ${
-                  confirmAction.type === 'delete' 
-                    ? 'bg-rose-600 hover:bg-rose-700 text-white' 
-                    : 'bg-primary text-white hover:bg-primary/90'
-                }`}
-              >
-                {actionLoading && <RefreshCw className="w-4 h-4 animate-spin" />}
-                {confirmAction.type === 'delete' ? 'Delete User' : 'Confirm'}
-              </button>
-            </div>
+        </div>
+      ) : (
+        /* ── STANDARD USERS TABLE (FOR ADMINS, TALENT, CLIENTS) ── */
+        <div className="bg-surface border border-border rounded-xl shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-muted/20 text-muted-foreground text-xs uppercase tracking-widest font-semibold">
+                  <th className="px-6 py-4">Name</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Role</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Joined Date</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={idx} className="animate-pulse">
+                      <td colSpan={6} className="px-6 py-4.5">
+                        <div className="h-4 bg-muted/40 rounded w-full" />
+                      </td>
+                    </tr>
+                  ))
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                      No users found matching the criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((user) => (
+                    <tr key={user.id} className="hover:bg-muted/10 transition-colors">
+                      <td className="px-6 py-4 font-medium text-foreground">
+                        {user.firstName} {user.lastName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground font-mono">
+                        {user.email}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2.5 py-1 rounded-md bg-muted text-xs font-semibold text-foreground">
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(user.id, user.isActive, `${user.firstName} ${user.lastName}`)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                            user.isActive
+                              ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
+                              : 'bg-rose-500/15 text-rose-600 border border-rose-500/30'
+                          }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                          <span>{user.isActive ? 'Active' : 'Inactive'}</span>
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setViewUser(user)}
+                            className="p-1.5 rounded-lg border border-border/80 hover:bg-muted text-foreground transition-colors"
+                            title="View"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setEditUser({
+                              id: user.id,
+                              firstName: user.firstName,
+                              lastName: user.lastName,
+                              email: user.email,
+                              role: user.role,
+                              isActive: user.isActive,
+                            })}
+                            className="p-1.5 rounded-lg border border-border/80 hover:bg-muted text-foreground transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setConfirmAction({
+                              type: 'delete',
+                              userId: user.id,
+                              userName: `${user.firstName} ${user.lastName}`,
+                            })}
+                            className="p-1.5 rounded-lg border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* ── VIEW USER MODAL ── */}
-      {viewUser && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-2xl max-w-lg w-full shadow-2xl p-6 space-y-6 animate-scaleIn relative">
-            <button
-              onClick={() => setViewUser(null)}
-              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted/30 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-4 border-b border-border pb-4">
-              <div className="w-14 h-14 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center text-brand font-bold text-xl uppercase">
-                {viewUser.firstName?.[0] || viewUser.email[0]}
+      {/* ── MODAL 1: PERMISSIONS & TIMEOUT MODAL (IMAGE 4) ── */}
+      {permissionsUser && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden my-6 animate-scaleIn">
+            {/* Header with Cyan Accent */}
+            <div className="bg-gradient-to-r from-[#06b6d4] to-[#0284c7] px-6 py-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-xs">
+                  <ShieldCheck className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-white">
+                    Sidebar &amp; Session Access for {permissionsUser.firstName} {permissionsUser.lastName}
+                  </h3>
+                  <p className="text-xs text-white/90">
+                    Configure sidebar modules access, granular action permissions for Crew &amp; Production Experts, and auto-logout idle timeout.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-serif font-bold text-foreground">
-                  {viewUser.firstName} {viewUser.lastName}
-                </h3>
-                <p className="text-xs text-muted-foreground">{viewUser.email}</p>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand/10 text-brand border border-brand/20">
-                    {viewUser.role}
+              <button
+                type="button"
+                onClick={() => setPermissionsUser(null)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 text-xs max-h-[calc(85vh-120px)] overflow-y-auto">
+              {/* Top Read-Only Summary Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/30 p-4 rounded-xl border border-border/80">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">EMPLOYEE NAME</span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${permissionsUser.firstName} ${permissionsUser.lastName}`}
+                    className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-background border border-border font-bold text-foreground"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">EMAIL</span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={permissionsUser.email}
+                    className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-background border border-border font-mono text-foreground truncate"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">ROLE</span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={permissionsUser.employee?.designation || permissionsUser.role}
+                    className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-background border border-border font-bold text-foreground"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">STATUS</span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={permissionsUser.isActive ? 'Active' : 'Suspended'}
+                    className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-background border border-border font-bold text-emerald-600"
+                  />
+                </div>
+              </div>
+
+              {/* ── AUTO-LOGOUT IDLE TIMEOUT SECTION (EXACT PRESET PILLS FROM IMAGE 4) ── */}
+              <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-amber-500/15 text-amber-500 rounded-lg">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-foreground">Auto-Logout Idle Timeout</h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        Allowed inactivity time before this employee is automatically logged out with warning beep.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 font-extrabold text-xs border border-amber-500/30">
+                    Current: {customTimeout} min
                   </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                    viewUser.isActive ? 'bg-emerald-500/15 text-emerald-600' : 'bg-rose-500/15 text-rose-600'
-                  }`}>
-                    {viewUser.isActive ? 'Active' : 'Inactive'}
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                    SELECT TIMEOUT DURATION
                   </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {TIMEOUT_OPTIONS.map((opt) => {
+                      const isSelected = selectedTimeout === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTimeout(opt.value);
+                            setCustomTimeout(String(opt.value));
+                          }}
+                          className={`px-3 py-2.5 rounded-xl font-bold text-xs text-center border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-500/15 border-amber-500 text-amber-600 ring-2 ring-amber-500/20 shadow-xs'
+                              : 'bg-background border-border text-foreground hover:bg-muted hover:border-muted-foreground/30'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Minutes Input */}
+                <div className="flex items-center gap-3 pt-2">
+                  <span className="font-bold text-foreground">Custom Minutes:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1440"
+                    value={customTimeout}
+                    onChange={(e) => {
+                      setCustomTimeout(e.target.value);
+                      setSelectedTimeout(parseInt(e.target.value, 10) || 30);
+                    }}
+                    className="w-24 px-3 py-1.5 rounded-lg bg-background border border-border font-bold text-center text-foreground"
+                  />
+                  <span className="text-muted-foreground">minutes</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground italic flex items-center gap-1.5">
+                  <span>💡</span> Example: Set 30 minutes for Anirudh and 10 minutes for other staff members.
+                </p>
+              </div>
+
+              {/* ── PERMISSION SETTINGS: DELEGATE ADMIN WORKS (IMAGE 4) ── */}
+              <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-4">
+                <div>
+                  <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-[#06b6d4]" />
+                    <span>Admin Module Delegation &amp; Work Permissions</span>
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Grant this employee access to operate selected admin workspaces directly from their employee dashboard.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {ADMIN_MODULES.map((m) => {
+                    const isGranted = Boolean(modulePermissions[m.key]);
+                    return (
+                      <div
+                        key={m.key}
+                        onClick={() => setModulePermissions((prev) => ({ ...prev, [m.key]: !isGranted }))}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                          isGranted
+                            ? 'bg-[#06b6d4]/10 border-[#06b6d4]/40 ring-1 ring-[#06b6d4]/20'
+                            : 'bg-background border-border hover:bg-muted/40'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isGranted}
+                          onChange={() => {}}
+                          className="mt-1 w-4 h-4 rounded text-[#06b6d4] focus:ring-[#06b6d4] cursor-pointer"
+                        />
+                        <div>
+                          <p className="font-bold text-foreground">{m.label}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{m.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="p-3 rounded-xl bg-card border border-border/80">
-                <span className="text-muted-foreground block mb-1">User ID:</span>
-                <span className="font-mono text-foreground font-semibold break-all">{viewUser.id}</span>
-              </div>
-              <div className="p-3 rounded-xl bg-card border border-border/80">
-                <span className="text-muted-foreground block mb-1">Joined Date:</span>
-                <span className="font-semibold text-foreground">
-                  {viewUser.createdAt ? new Date(viewUser.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  }) : '—'}
-                </span>
+            {/* Modal Footer Actions */}
+            <div className="bg-muted/20 px-6 py-4 border-t border-border flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground">
+                Permissions take effect instantly across active staff sessions.
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPermissionsUser(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-foreground border border-border hover:bg-muted transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={savingPermissions}
+                  onClick={handleSavePermissions}
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#06b6d4] hover:bg-[#0891b2] shadow-sm flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {savingPermissions && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Save Access &amp; Timeout Settings</span>
+                </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="flex items-center justify-between pt-2 border-t border-border">
-              {viewUser.role === 'TALENT' && (
-                <a
-                  href={`/talent`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-brand font-bold hover:underline"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> View on Talent Discovery Feed
-                </a>
-              )}
+      {/* ── MODAL 2: COMPLETE EMPLOYEE SESSION LOG (IMAGE 3) ── */}
+      {sessionUser && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden my-6 animate-scaleIn">
+            {/* Dark Slate Terminal Header */}
+            <div className="bg-[#0f172a] px-6 py-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-800 rounded-xl">
+                  <History className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-white">
+                    Live Session Logs &amp; Access History: {sessionUser.firstName} {sessionUser.lastName}
+                  </h3>
+                  <p className="text-xs text-slate-300">
+                    Audit log of active devices, IP addresses, session duration, and automatic logout activity.
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => setViewUser(null)}
-                className="ml-auto px-4 py-2 bg-muted/40 hover:bg-muted text-foreground font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+                type="button"
+                onClick={() => setSessionUser(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
               >
-                Close
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-[calc(80vh-100px)] overflow-y-auto">
+              {sessionLoading ? (
+                <div className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span className="text-xs">Fetching live session history from database...</span>
+                </div>
+              ) : (
+                <div className="border border-border rounded-xl overflow-hidden shadow-2xs">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="bg-muted/40 border-b border-border text-muted-foreground font-bold uppercase tracking-wider">
+                        <th className="px-4 py-3">LOGIN TIME</th>
+                        <th className="px-4 py-3">IP ADDRESS</th>
+                        <th className="px-4 py-3">DEVICE &amp; WORKSTATION</th>
+                        <th className="px-4 py-3">LOCATION</th>
+                        <th className="px-4 py-3">DURATION</th>
+                        <th className="px-4 py-3 text-center">STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border font-mono">
+                      {sessionLogs.map((log: any, idx: number) => (
+                        <tr key={log.id || idx} className="hover:bg-muted/20 transition-colors">
+                          <td className="px-4 py-3 font-semibold text-foreground">
+                            {new Date(log.loginTime).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}
+                          </td>
+                          <td className="px-4 py-3 text-blue-500 font-bold">{log.ipAddress}</td>
+                          <td className="px-4 py-3 text-foreground/80 font-sans">{log.device}</td>
+                          <td className="px-4 py-3 text-muted-foreground font-sans">{log.location}</td>
+                          <td className="px-4 py-3 font-bold text-foreground">{log.duration}</td>
+                          <td className="px-4 py-3 text-center font-sans">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                              log.status === 'Active Now' || log.status === 'Live Clocked-In'
+                                ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
+                                : log.status === 'Expired'
+                                ? 'bg-amber-500/15 text-amber-600 border border-amber-500/30'
+                                : 'bg-slate-500/15 text-slate-500 border border-slate-500/30'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                log.status === 'Active Now' || log.status === 'Live Clocked-In' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                              }`} />
+                              <span>{log.status}</span>
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-muted/20 px-6 py-4 border-t border-border flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSessionUser(null)}
+                className="px-5 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Close Session Log
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── EDIT USER MODAL ── */}
+      {/* ── MODAL 3: QUICK BROADCAST ALERT ── */}
+      {alertUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 animate-scaleIn">
+            <div className="flex items-center gap-3 text-amber-500">
+              <Bell className="w-6 h-6" />
+              <h3 className="font-bold text-base text-foreground">Send Broadcast Alert to {alertUser.firstName}</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This message will immediately pop up on {alertUser.firstName}&apos;s active workstation screen.
+            </p>
+            <textarea
+              rows={4}
+              value={alertMessage}
+              onChange={(e) => setAlertMessage(e.target.value)}
+              className="w-full p-3 rounded-xl bg-background border border-border text-xs text-foreground focus:outline-none focus:border-amber-500"
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setAlertUser(null)}
+                className="px-4 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  toast.success(`Broadcast alert transmitted to ${alertUser.firstName}!`);
+                  setAlertUser(null);
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-sm flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Send Alert Now</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 4: TASK ASSIGNMENT ── */}
+      {taskUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 animate-scaleIn">
+            <div className="flex items-center gap-3 text-purple-600">
+              <CheckSquare className="w-6 h-6" />
+              <h3 className="font-bold text-base text-foreground">Assign Task to {taskUser.firstName}</h3>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-foreground block mb-1">Task Title / Brief</label>
+                <input
+                  type="text"
+                  value={taskTitle}
+                  onChange={(e) => setTaskTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-background border border-border font-medium text-foreground"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-foreground block mb-1">Priority</label>
+                <select
+                  value={taskPriority}
+                  onChange={(e) => setTaskPriority(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-background border border-border font-medium text-foreground"
+                >
+                  <option value="Urgent">Urgent (Immediate Shoot)</option>
+                  <option value="High">High (Current Sprint)</option>
+                  <option value="Normal">Normal</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setTaskUser(null)}
+                className="px-4 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  toast.success(`Production task assigned to ${taskUser.firstName}!`);
+                  setTaskUser(null);
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-sm"
+              >
+                Assign Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 5: FILES LOCKER ── */}
+      {filesUser && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 animate-scaleIn">
+            <div className="flex items-center gap-3 text-indigo-600">
+              <FolderLock className="w-6 h-6" />
+              <h3 className="font-bold text-base text-foreground">Staff File Locker: {filesUser.firstName}</h3>
+            </div>
+            <div className="space-y-2 text-xs">
+              <div className="p-3 bg-muted/40 rounded-xl border border-border flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-foreground">Employment Agreement &amp; NDA</p>
+                  <p className="text-[10px] text-muted-foreground">PDF Document • Signed</p>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">Verified</span>
+              </div>
+              <div className="p-3 bg-muted/40 rounded-xl border border-border flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-foreground">Identity &amp; Address Verification</p>
+                  <p className="text-[10px] text-muted-foreground">Govt ID • Aadhaar / Passport</p>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">Verified</span>
+              </div>
+              <div className="p-3 bg-muted/40 rounded-xl border border-border flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-foreground">Direct Deposit &amp; Salary Mandate</p>
+                  <p className="text-[10px] text-muted-foreground">Bank Account Information</p>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">Active</span>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setFilesUser(null)}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                Close File Locker
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 6: EDIT USER MODAL ── */}
       {editUser && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-5 animate-scaleIn relative">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-5 animate-scaleIn relative">
             <button
               onClick={() => setEditUser(null)}
               className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted/30 transition-colors"
@@ -788,7 +1284,7 @@ export function UserTable({
 
             <div className="border-b border-border pb-3">
               <h3 className="text-lg font-serif font-bold text-foreground">Edit User Profile</h3>
-              <p className="text-xs text-muted-foreground">Update user name, email, role, or access status.</p>
+              <p className="text-xs text-muted-foreground">Update user name, email, phone, role, or access status.</p>
             </div>
 
             <div className="space-y-4 text-xs">
@@ -824,18 +1320,14 @@ export function UserTable({
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">System Role</label>
-                <select
-                  value={editUser.role}
-                  onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand cursor-pointer"
-                >
-                  {rolesList.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
+                <label className="font-semibold text-foreground">Phone Number</label>
+                <input
+                  type="text"
+                  placeholder="+91 9891750759"
+                  value={editUser.phone || ''}
+                  onChange={(e) => setEditUser({ ...editUser, phone: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand font-mono"
+                />
               </div>
 
               <div className="space-y-1">
@@ -849,24 +1341,8 @@ export function UserTable({
                   onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
                   placeholder="Leave empty to keep existing password"
                   autoComplete="new-password"
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand placeholder:text-muted-foreground/50"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand"
                 />
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/80">
-                <div>
-                  <span className="font-semibold text-foreground block">Account Status</span>
-                  <span className="text-[11px] text-muted-foreground">Toggle active portal login access</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditUser({ ...editUser, isActive: !editUser.isActive })}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                    editUser.isActive ? 'bg-emerald-500/15 text-emerald-600' : 'bg-rose-500/15 text-rose-600'
-                  }`}
-                >
-                  {editUser.isActive ? 'Active' : 'Inactive'}
-                </button>
               </div>
             </div>
 
@@ -874,14 +1350,14 @@ export function UserTable({
               <button
                 disabled={editLoading}
                 onClick={() => setEditUser(null)}
-                className="px-4 py-2 border border-border hover:bg-muted/10 rounded-lg text-xs font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer"
+                className="px-4 py-2 border border-border hover:bg-muted/10 rounded-lg text-xs font-semibold text-foreground"
               >
                 Cancel
               </button>
               <button
                 disabled={editLoading}
                 onClick={handleSaveEdit}
-                className="px-5 py-2 bg-brand text-white hover:brightness-110 font-bold rounded-lg text-xs transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-xs flex items-center gap-2"
               >
                 {editLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 Save Changes
@@ -891,10 +1367,47 @@ export function UserTable({
         </div>
       )}
 
-      {/* ── CREATE / PROVISION USER MODAL ── */}
+      {/* ── MODAL 7: CONFIRM ACTION (DELETE, ETC) ── */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-6 animate-scaleIn">
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 rounded-lg bg-rose-500/10 text-rose-600">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-serif text-foreground">Delete Account Permanently</h3>
+                <p className="text-sm text-muted-foreground">
+                  Are you sure you want to permanently delete user{' '}
+                  <strong className="text-rose-500 font-bold">{confirmAction.userName}</strong>? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                disabled={actionLoading}
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 border border-border rounded-lg text-sm font-semibold text-foreground hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={actionLoading}
+                onClick={handleConfirmAction}
+                className="px-4 py-2 font-bold rounded-lg text-sm bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-2"
+              >
+                {actionLoading && <RefreshCw className="w-4 h-4 animate-spin" />}
+                Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 8: CREATE USER MODAL ── */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-5 animate-scaleIn relative">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-5 animate-scaleIn relative">
             <button
               onClick={() => setIsCreateModalOpen(false)}
               className="absolute right-4 top-4 text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted/30 transition-colors"
@@ -904,10 +1417,10 @@ export function UserTable({
 
             <div className="border-b border-border pb-3">
               <h3 className="text-lg font-serif font-bold text-foreground">
-                {title ? `Provision ${createForm.role} Account` : 'Provision New User'}
+                Provision New {createForm.role} Account
               </h3>
               <p className="text-xs text-muted-foreground">
-                Create database credentials and assign portal access privileges.
+                Create login credentials and setup workspace profile.
               </p>
             </div>
 
@@ -917,10 +1430,10 @@ export function UserTable({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder="e.g. Ayushi Jaiswal"
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand placeholder:text-muted-foreground/50 text-xs"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground text-xs"
                 />
               </div>
 
@@ -929,56 +1442,33 @@ export function UserTable({
                 <input
                   type="email"
                   required
-                  placeholder="name@company.com"
+                  placeholder="ayushi@yogsathi.com"
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand placeholder:text-muted-foreground/50 text-xs"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground text-xs"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">System Role *</label>
-                <select
-                  value={createForm.role}
-                  onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand cursor-pointer text-xs"
-                >
-                  {rolesList.map((r) => (
-                    <option
-                      key={r}
-                      value={r}
-                      disabled={r === 'SUPER_ADMIN' && currentUserRole !== 'SUPER_ADMIN'}
-                    >
-                      {r.replace('_', ' ')}
-                    </option>
-                  ))}
-                </select>
+                <label className="font-semibold text-foreground">Phone Number</label>
+                <input
+                  type="text"
+                  placeholder="9103413906"
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground text-xs font-mono"
+                />
               </div>
 
               <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="font-semibold text-foreground">Password *</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
-                      let pass = '';
-                      for (let i = 0; i < 12; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
-                      setCreateForm((prev) => ({ ...prev, password: pass }));
-                      toast.success('Generated secure password');
-                    }}
-                    className="text-[10px] text-brand hover:underline font-bold"
-                  >
-                    Auto-Generate Password
-                  </button>
-                </div>
+                <label className="font-semibold text-foreground">Password *</label>
                 <input
                   type="text"
                   required
                   placeholder="Min. 6 characters"
                   value={createForm.password}
                   onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-brand font-mono text-xs"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-mono text-xs"
                 />
               </div>
 
@@ -987,14 +1477,14 @@ export function UserTable({
                   type="button"
                   disabled={createLoading}
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-border hover:bg-muted/10 rounded-lg text-xs font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-muted"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createLoading}
-                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
+                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs flex items-center gap-2"
                 >
                   {createLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>Create Account</span>

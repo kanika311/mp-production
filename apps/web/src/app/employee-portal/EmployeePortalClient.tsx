@@ -1,0 +1,1317 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { 
+  Users, 
+  Clock, 
+  Calendar, 
+  Receipt, 
+  Briefcase, 
+  CheckCircle2, 
+  XCircle, 
+  AlertCircle, 
+  LogOut, 
+  Sparkles, 
+  ArrowRight, 
+  Plus, 
+  MapPin, 
+  TrendingUp, 
+  FileText, 
+  ChevronRight, 
+  Timer,
+  Send,
+  Loader2,
+  ExternalLink,
+  ShieldCheck,
+  Building,
+  Film,
+  Camera,
+  Video,
+  FolderOpen,
+  MessageSquare,
+  Shield,
+  UploadCloud,
+  Check,
+  X,
+  Radio,
+  Bell
+} from 'lucide-react';
+import { SponsoredSidebarCard } from '@/components/ui/sponsored-sidebar-card';
+
+interface EmployeePortalClientProps {
+  initialEmployee: any;
+  user: any;
+}
+
+export default function EmployeePortalClient({ initialEmployee, user }: EmployeePortalClientProps) {
+  const router = useRouter();
+  const [employee, setEmployee] = useState<any>(initialEmployee);
+  const [activeTab, setActiveTab] = useState<string>('attendance');
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Leave Form State
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveType, setLeaveType] = useState('Casual');
+  const [leaveStart, setLeaveStart] = useState('');
+  const [leaveEnd, setLeaveEnd] = useState('');
+  const [leaveReason, setLeaveReason] = useState('');
+
+  // Expense Form State
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('Production Travel');
+  const [expenseDescription, setExpenseDescription] = useState('');
+
+  // Delegated Admin Permissions State
+  const [permissions, setPermissions] = useState<any>({
+    idleTimeoutMinutes: 30,
+    modules: {
+      talentRoster: true,
+      services: true,
+      blogs: true,
+      youtuber: false,
+      projects: true,
+      leads: true,
+      expenses: true,
+      mediaAssets: true,
+    },
+  });
+
+  // Auto-Logout Idle Timer State
+  const [idleSecondsRemaining, setIdleSecondsRemaining] = useState<number>(30 * 60);
+  const totalIdleSecondsRef = useRef<number>(30 * 60);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  // Fetch Employee Permissions & Idle Timeout from Admin Config
+  useEffect(() => {
+    async function loadPermissions() {
+      try {
+        const res = await fetch('/api/employee/permissions');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.permissions) {
+            setPermissions(json.permissions);
+            const minutes = json.permissions.idleTimeoutMinutes || 30;
+            totalIdleSecondsRef.current = minutes * 60;
+            setIdleSecondsRemaining(minutes * 60);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching employee permissions:', err);
+      }
+    }
+    loadPermissions();
+  }, []);
+
+  // Idle Activity Tracker
+  useEffect(() => {
+    const handleActivity = () => {
+      lastActivityRef.current = Date.now();
+      setIdleSecondsRemaining(totalIdleSecondsRef.current);
+    };
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach((ev) => window.addEventListener(ev, handleActivity));
+
+    const interval = setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - lastActivityRef.current) / 1000);
+      const remaining = Math.max(0, totalIdleSecondsRef.current - elapsedSec);
+      setIdleSecondsRemaining(remaining);
+
+      // Warning beep when 2 minutes remaining
+      if (remaining === 120) {
+        toast.warning('⚠️ Idle Warning: You will be logged out in 2 minutes due to inactivity.', {
+          duration: 8000,
+        });
+      }
+
+      // Auto logout when 0
+      if (remaining === 0) {
+        clearInterval(interval);
+        toast.error('Session timed out due to inactivity.');
+        handleSignOut();
+      }
+    }, 1000);
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, handleActivity));
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Live Digital Clock
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+      localStorage.removeItem('token');
+      localStorage.removeItem('mdms_auth_token');
+      localStorage.removeItem('mdms_auth_role');
+      localStorage.removeItem('mdms_auth_user');
+      document.cookie = 'token=; path=/; max-age=0';
+      document.cookie = 'mdms_auth_token=; path=/; max-age=0';
+      document.cookie = 'next-auth.session-token=; path=/; max-age=0';
+      toast.success('Logged out successfully');
+      window.location.href = '/login';
+    }
+  };
+
+  // Check if currently checked in today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const activeCheckIn = employee?.attendance?.find((a: any) => {
+    const checkInDate = new Date(a.checkInAt);
+    return checkInDate >= today && !a.checkOutAt;
+  });
+
+  const isCheckedIn = Boolean(activeCheckIn);
+
+  // Calculate elapsed time if checked in
+  const getElapsedTime = () => {
+    if (!activeCheckIn) return '0h 0m';
+    const start = new Date(activeCheckIn.checkInAt).getTime();
+    const now = currentTime.getTime();
+    const diffMin = Math.max(0, Math.floor((now - start) / 60000));
+    const hours = Math.floor(diffMin / 60);
+    const mins = diffMin % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const handlePunchAction = async () => {
+    setIsSubmitting(true);
+    const action = isCheckedIn ? 'check-out' : 'check-in';
+
+    try {
+      let lat: number | null = null;
+      let lng: number | null = null;
+
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        try {
+          const pos: any = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
+          }).catch(() => null);
+          if (pos?.coords) {
+            lat = pos.coords.latitude;
+            lng = pos.coords.longitude;
+          }
+        } catch {}
+      }
+
+      const res = await fetch('/api/employee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          lat,
+          lng,
+          notes: action === 'check-in' ? 'Production Shift Check-in' : 'Shift Completed',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update attendance');
+
+      toast.success(data.message);
+      // Refresh employee data
+      const refreshRes = await fetch('/api/employee');
+      const refreshJson = await refreshRes.json();
+      if (refreshJson.employee) {
+        setEmployee(refreshJson.employee);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error updating attendance');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateLeave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leaveStart || !leaveEnd || !leaveReason) {
+      toast.error('Please fill all fields');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/employee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'request-leave',
+          leaveType,
+          startDate: leaveStart,
+          endDate: leaveEnd,
+          reason: leaveReason,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit leave request');
+
+      toast.success(data.message || 'Leave request submitted!');
+      setShowLeaveModal(false);
+      setLeaveReason('');
+      setLeaveStart('');
+      setLeaveEnd('');
+
+      const refreshRes = await fetch('/api/employee');
+      const refreshJson = await refreshRes.json();
+      if (refreshJson.employee) {
+        setEmployee(refreshJson.employee);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error submitting leave request');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountVal = parseFloat(expenseAmount);
+    if (!amountVal || amountVal <= 0 || !expenseDescription) {
+      toast.error('Please enter a valid amount and description');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/employee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'submit-expense',
+          amount: amountVal,
+          category: expenseCategory,
+          description: expenseDescription,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit expense claim');
+
+      toast.success(data.message || 'Expense claim submitted!');
+      setShowExpenseModal(false);
+      setExpenseAmount('');
+      setExpenseDescription('');
+
+      const refreshRes = await fetch('/api/employee');
+      const refreshJson = await refreshRes.json();
+      if (refreshJson.employee) {
+        setEmployee(refreshJson.employee);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error submitting expense claim');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const fullName = `${employee?.user?.firstName || user?.name || 'Staff Member'} ${employee?.user?.lastName || ''}`.trim();
+  const department = employee?.department || 'Production';
+  const designation = employee?.designation || 'Senior Producer';
+  const attendances = employee?.attendance || [];
+  const leaveRequests = employee?.leaveRequests || [];
+  const expenseClaims = employee?.expenseClaims || [];
+
+  const formatIdleTime = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}m ${s < 10 ? '0' : ''}${s}s`;
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground pb-20">
+      {/* ── Top Command Bar (Identical to Talent Dashboard Header) ── */}
+      <div className="w-full border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
+        <div className="w-full px-3 md:px-5 lg:px-6 py-2.5 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Staff Command Center
+            </span>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground font-medium">
+              <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+              <span>/</span>
+              <span className="text-foreground font-semibold">Employee Workspace</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Live Clock & Auto-Logout Countdown */}
+            <div className="hidden md:flex items-center gap-3 text-xs bg-muted/40 px-3 py-1.5 rounded-full border border-border/60">
+              <span className="font-mono font-bold text-foreground flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                {currentTime.toLocaleTimeString()}
+              </span>
+              <span className="w-px h-3 bg-border" />
+              <span className={`font-mono text-[11px] font-bold flex items-center gap-1 ${
+                idleSecondsRemaining < 120 ? 'text-rose-500 animate-pulse' : 'text-amber-500'
+              }`}>
+                <Timer className="w-3.5 h-3.5" />
+                Idle: {formatIdleTime(idleSecondsRemaining)}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-xs font-bold transition-all cursor-pointer"
+              title="Logout from Account"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main 3-Column Layout: Matching TalentDashboardView Exactly ── */}
+      <div className="w-full px-2 sm:px-3 lg:px-4 mt-3">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-start">
+
+          {/* ══════════════════════════════════════════════════════════════════
+              COLUMN 1 (LEFT SIDEBAR): Sticky Fixed, Scrollable Profile & Tabs
+              ══════════════════════════════════════════════════════════════════ */}
+          <aside 
+            data-lenis-prevent
+            onWheel={(e) => e.stopPropagation()}
+            className="lg:col-span-3 lg:sticky lg:top-[65px] lg:h-[calc(100vh-80px)] lg:max-h-[calc(100vh-80px)] lg:overflow-y-auto overscroll-contain touch-pan-y pr-1 pb-16 space-y-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          >
+            {/* Staff Profile Identity Card */}
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-xs relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-blue-500/10 pointer-events-none" />
+
+              <div className="relative flex flex-col items-center text-center pt-2">
+                <div className="relative mb-3">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-emerald-500/40 bg-muted shadow-md flex items-center justify-center">
+                    {employee?.user?.avatarUrl ? (
+                      <img src={employee.user.avatarUrl} alt={fullName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-extrabold text-2xl flex items-center justify-center">
+                        {fullName.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-background border border-border shadow-xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
+                  </span>
+                </div>
+
+                <h3 className="font-serif font-bold text-base text-foreground tracking-tight">{fullName}</h3>
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{designation} • {department}</span>
+                <span className="text-[11px] font-mono text-muted-foreground mt-0.5">{employee?.user?.email || user?.email}</span>
+
+                {/* Status Badges */}
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    ACTIVE STAFF
+                  </span>
+                </div>
+
+                {/* Shift Status & Punch In/Out button */}
+                <div className="w-full mt-3 p-3 rounded-xl bg-muted/40 border border-border/80 text-left space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">Shift Status:</span>
+                    <span className={`font-bold flex items-center gap-1.5 ${isCheckedIn ? 'text-emerald-500' : 'text-amber-500'}`}>
+                      <span className={`w-2 h-2 rounded-full ${isCheckedIn ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                      {isCheckedIn ? 'Checked In' : 'Not Clocked In'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">Shift Duration:</span>
+                    <span className="font-mono font-bold text-emerald-500">{getElapsedTime()}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handlePunchAction}
+                    disabled={isSubmitting}
+                    className={`w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50 ${
+                      isCheckedIn
+                        ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Timer className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isCheckedIn ? 'Punch Out' : 'Punch In'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Navigation Panel */}
+            <div className="rounded-2xl border border-border bg-card p-2.5 shadow-xs space-y-1">
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Employee Workspace
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('attendance')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'attendance'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span>Attendance &amp; Shifts</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('leaves')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'leaves'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>Leave Requests</span>
+                </div>
+                {leaveRequests.length > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    activeTab === 'leaves' ? 'bg-white text-emerald-600' : 'bg-emerald-500/10 text-emerald-600'
+                  }`}>
+                    {leaveRequests.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('expenses')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'expenses'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Receipt className="w-4 h-4" />
+                  <span>Expense Claims</span>
+                </div>
+                {expenseClaims.length > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    activeTab === 'expenses' ? 'bg-white text-emerald-600' : 'bg-emerald-500/10 text-emerald-600'
+                  }`}>
+                    {expenseClaims.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('projects')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'projects'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4" />
+                  <span>Studio Projects &amp; Tasks</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+              </button>
+
+              {/* ── DELEGATED ADMIN WORKSPACES (CONFIGURED BY ADMIN!) ── */}
+              <div className="pt-3 pb-1 border-t border-border/70">
+                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#06b6d4] flex items-center gap-1.5">
+                  <Shield className="w-3 h-3" />
+                  <span>Permitted Admin Modules</span>
+                </div>
+
+                {permissions?.modules?.talentRoster && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('admin_talent')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'admin_talent'
+                        ? 'bg-[#06b6d4] text-white shadow-xs'
+                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span>Talent Roster CMS</span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                  </button>
+                )}
+
+                {permissions?.modules?.blogs && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('admin_blogs')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'admin_blogs'
+                        ? 'bg-[#06b6d4] text-white shadow-xs'
+                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                      <span>Blogs &amp; Editorial</span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                  </button>
+                )}
+
+                {permissions?.modules?.services && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('admin_services')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'admin_services'
+                        ? 'bg-[#06b6d4] text-white shadow-xs'
+                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-teal-500" />
+                      <span>Services &amp; Packages</span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                  </button>
+                )}
+
+                {permissions?.modules?.leads && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('admin_leads')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'admin_leads'
+                        ? 'bg-[#06b6d4] text-white shadow-xs'
+                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-purple-500" />
+                      <span>Contact Leads &amp; CRM</span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                  </button>
+                )}
+
+                {permissions?.modules?.mediaAssets && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('admin_media')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'admin_media'
+                        ? 'bg-[#06b6d4] text-white shadow-xs'
+                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Film className="w-4 h-4 text-rose-500" />
+                      <span>Media Vault (4K/8K)</span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </aside>
+
+          {/* ══════════════════════════════════════════════════════════════════
+              COLUMN 2 (CENTER PANEL): Live Views, Shift Clock & Operations
+              ══════════════════════════════════════════════════════════════════ */}
+          <main className="lg:col-span-6 space-y-4">
+            {/* 4 Metric Stats Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="bg-card border border-border rounded-xl p-3 shadow-2xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Attendance</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-xl font-serif font-extrabold text-foreground">{attendances.length}</span>
+                  <span className="text-[10px] text-muted-foreground">days</span>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl p-3 shadow-2xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Leaves</span>
+                  <Calendar className="w-3.5 h-3.5 text-teal-500" />
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-xl font-serif font-extrabold text-teal-500">18</span>
+                  <span className="text-[10px] text-muted-foreground">avail</span>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl p-3 shadow-2xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Expenses</span>
+                  <Receipt className="w-3.5 h-3.5 text-amber-500" />
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-xl font-serif font-extrabold text-foreground">{expenseClaims.length}</span>
+                  <span className="text-[10px] text-muted-foreground">filed</span>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl p-3 shadow-2xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Department</span>
+                  <Building className="w-3.5 h-3.5 text-brand" />
+                </div>
+                <div className="mt-1">
+                  <span className="text-xs font-bold text-foreground block truncate">{department}</span>
+                  <span className="text-[10px] text-muted-foreground block truncate">{designation}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── TAB 1: ATTENDANCE & SHIFTS ── */}
+            {activeTab === 'attendance' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground">Production Attendance &amp; Shift Register</h3>
+                    <p className="text-xs text-muted-foreground">Realtime GPS punch check-ins synced with studio operations</p>
+                  </div>
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-bold">
+                    GPS Active
+                  </span>
+                </div>
+
+                {attendances.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground text-xs">
+                    <Clock className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                    <p className="font-semibold text-foreground">No attendance records logged yet</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Use the Punch In button in the left panel to begin your work shift.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-border/70 rounded-xl">
+                    <table className="w-full text-xs text-left">
+                      <thead>
+                        <tr className="bg-muted/40 border-b border-border text-muted-foreground font-bold">
+                          <th className="px-4 py-2.5">Date</th>
+                          <th className="px-4 py-2.5">Check In</th>
+                          <th className="px-4 py-2.5">Check Out</th>
+                          <th className="px-4 py-2.5">Duration</th>
+                          <th className="px-4 py-2.5 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {attendances.map((att: any) => {
+                          const inDate = new Date(att.checkInAt);
+                          const outDate = att.checkOutAt ? new Date(att.checkOutAt) : null;
+                          return (
+                            <tr key={att.id} className="hover:bg-muted/15 transition-colors">
+                              <td className="px-4 py-3 font-semibold text-foreground">
+                                {inDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </td>
+                              <td className="px-4 py-3 font-mono text-foreground/90">
+                                {inDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td className="px-4 py-3 font-mono text-foreground/90">
+                                {outDate ? outDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                              </td>
+                              <td className="px-4 py-3 font-mono font-bold text-emerald-500">
+                                {att.durationMin ? `${Math.floor(att.durationMin / 60)}h ${att.durationMin % 60}m` : (outDate ? 'Completed' : 'Ongoing')}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  outDate
+                                    ? 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
+                                    : 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
+                                }`}>
+                                  {outDate ? 'Completed' : 'Checked In'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── TAB 2: LEAVE REQUESTS ── */}
+            {activeTab === 'leaves' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground">Leave Requests &amp; Holidays</h3>
+                    <p className="text-xs text-muted-foreground">Submit leaves for studio approval</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLeaveModal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Request Leave</span>
+                  </button>
+                </div>
+
+                {leaveRequests.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground text-xs">
+                    <Calendar className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                    <p className="font-semibold text-foreground">No leave applications filed</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Click &apos;Request Leave&apos; to apply for casual, sick or production off days.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {leaveRequests.map((lr: any) => (
+                      <div key={lr.id} className="p-3.5 rounded-xl border border-border bg-muted/20 flex items-center justify-between text-xs">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground">{lr.leaveType || 'Casual Leave'}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(lr.startDate).toLocaleDateString()} to {new Date(lr.endDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{lr.reason}</p>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          lr.status === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' :
+                          lr.status === 'REJECTED' ? 'bg-rose-500/15 text-rose-600 border border-rose-500/30' :
+                          'bg-amber-500/15 text-amber-600 border border-amber-500/30'
+                        }`}>
+                          {lr.status || 'PENDING'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── TAB 3: EXPENSE CLAIMS ── */}
+            {activeTab === 'expenses' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground">Production Expenses &amp; Petty Cash</h3>
+                    <p className="text-xs text-muted-foreground">Claim travel, camera equipment rentals, and studio meal vouchers</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowExpenseModal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Submit Claim</span>
+                  </button>
+                </div>
+
+                {expenseClaims.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground text-xs">
+                    <Receipt className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                    <p className="font-semibold text-foreground">No expense claims filed yet</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Click &apos;Submit Claim&apos; to submit an invoice or receipt.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {expenseClaims.map((claim: any) => (
+                      <div key={claim.id} className="p-3.5 rounded-xl border border-border bg-muted/20 flex items-center justify-between text-xs">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground">₹{((claim.amount || 0) / 100).toLocaleString('en-IN')}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono">• {claim.category}</span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{claim.description}</p>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          claim.status === 'APPROVED' || claim.status === 'PAID' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' :
+                          claim.status === 'REJECTED' ? 'bg-rose-500/15 text-rose-600 border border-rose-500/30' :
+                          'bg-amber-500/15 text-amber-600 border border-amber-500/30'
+                        }`}>
+                          {claim.status || 'SUBMITTED'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── TAB 4: STUDIO PROJECTS ── */}
+            {activeTab === 'projects' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="border-b border-border/70 pb-3">
+                  <h3 className="font-serif font-bold text-base text-foreground">Active Production Assignments</h3>
+                  <p className="text-xs text-muted-foreground">Commercial line production, post-production color passes &amp; VFX</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 text-xs">
+                  <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500/15 text-rose-600 border border-rose-500/30">
+                        In Production
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">Shoot Date: Next Monday</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-foreground">Commercial Shoot: Urban Fashion Campaign</h4>
+                    <p className="text-muted-foreground text-[11px]">
+                      Studio line production and cinematography setup for client brand commercial. Location: Mehboob Studio, Mumbai.
+                    </p>
+                    <div className="pt-2 flex items-center justify-between text-muted-foreground border-t border-border/50">
+                      <span>Department: Production</span>
+                      <span className="text-brand font-bold cursor-pointer hover:underline">View Brief ↗</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-teal-500/15 text-teal-600 border border-teal-500/30">
+                        Post-Production
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">Deadline: Friday</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-foreground">Documentary Color Grading &amp; Sound Mix</h4>
+                    <p className="text-muted-foreground text-[11px]">
+                      DaVinci Resolve Studio color pass and audio track leveling review for upcoming OTT release.
+                    </p>
+                    <div className="pt-2 flex items-center justify-between text-muted-foreground border-t border-border/50">
+                      <span>Role: Senior Producer</span>
+                      <span className="text-brand font-bold cursor-pointer hover:underline">View Project ↗</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB 5: DELEGATED ADMIN WORKSPACE (TALENT ROSTER) ── */}
+            {activeTab === 'admin_talent' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span>Delegated Workspace: Talent Directory &amp; Roster</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to manage studio talent profiles, castings, and roster approvals.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=talents"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Full Admin View</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                <div className="p-4 rounded-xl border border-dashed border-border bg-muted/10 space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground">Quick Talent Search &amp; Review</span>
+                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full">Permission Granted</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search talent roster by category, name, or city..."
+                    className="w-full px-3 py-2 rounded-xl bg-background border border-border text-xs"
+                  />
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="p-3 bg-card border border-border rounded-xl">
+                      <p className="font-bold text-foreground">Actor &amp; Model Profiles</p>
+                      <p className="text-[10px] text-muted-foreground">50+ approved creator profiles active</p>
+                    </div>
+                    <div className="p-3 bg-card border border-border rounded-xl">
+                      <p className="font-bold text-foreground">Pending Submissions</p>
+                      <p className="text-[10px] text-muted-foreground">4 new talent review applications</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB 6: DELEGATED ADMIN WORKSPACE (BLOGS & EDITORIAL) ── */}
+            {activeTab === 'admin_blogs' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                      <span>Delegated Workspace: Blogs &amp; CMS Editorial</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to write, edit and schedule production news and stories.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=blogs"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Admin Blog Studio</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                <div className="p-4 rounded-xl border border-dashed border-border bg-muted/10 space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground">Recent Blog Articles</span>
+                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full">Editor Access</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="p-3 bg-card border border-border rounded-xl flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-foreground">How We Shot the OTT Action Sequence in Mehboob Studio</p>
+                        <p className="text-[10px] text-muted-foreground">Published • 1.2k reads</p>
+                      </div>
+                      <span className="text-xs text-brand font-bold">Edit Article ↗</span>
+                    </div>
+                    <div className="p-3 bg-card border border-border rounded-xl flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-foreground">Choosing the Best Lens Package for 4K Commercials</p>
+                        <p className="text-[10px] text-muted-foreground">Draft • In review</p>
+                      </div>
+                      <span className="text-xs text-brand font-bold">Edit Draft ↗</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB 7: DELEGATED ADMIN WORKSPACE (SERVICES & PACKAGES) ── */}
+            {activeTab === 'admin_services' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <Building className="w-4 h-4 text-teal-500" />
+                      <span>Delegated Workspace: Production Services &amp; Packages</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to adjust pricing cards and production deliverable specs.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=services"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Edit Services</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Active Studio Services</p>
+                  <p className="text-muted-foreground">
+                    Video Production, Sound Post-Production, DaVinci Color Grading, VFX &amp; CGI, YouTuber Studio Coaching.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB 8: DELEGATED ADMIN WORKSPACE (LEADS & CRM) ── */}
+            {activeTab === 'admin_leads' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-purple-500" />
+                      <span>Delegated Workspace: Inbound Leads &amp; Brand Inquiries</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to review new client production briefs and assign account managers.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=leads"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Full Leads CRM</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Recent Client Inquiries</p>
+                  <p className="text-muted-foreground">
+                    5 new inbound quote requests received this week for commercial production and music video shoots.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB 9: DELEGATED ADMIN WORKSPACE (MEDIA VAULT) ── */}
+            {activeTab === 'admin_media' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <Film className="w-4 h-4 text-rose-500" />
+                      <span>Delegated Workspace: Media Vault &amp; 4K/8K Renders</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to upload raw shoot footage and master export renders.
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Media Cloud Storage: 1.4 TB / 5 TB Used</p>
+                  <p className="text-muted-foreground">
+                    Apple ProRes 4444XQ masters, ARRIRAW passes, and social media exports are archived safely.
+                  </p>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* ══════════════════════════════════════════════════════════════════
+              COLUMN 3 (RIGHT SIDEBAR): Shift Info, Announcements & Sponsor
+              ══════════════════════════════════════════════════════════════════ */}
+          <aside 
+            data-lenis-prevent
+            onWheel={(e) => e.stopPropagation()}
+            className="w-full lg:col-span-3 lg:sticky lg:top-[65px] self-start space-y-3 pb-16"
+          >
+            {/* Auto-Logout Idle Timeout Card */}
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`p-1.5 rounded-lg ${idleSecondsRemaining < 120 ? 'bg-rose-500/20 text-rose-500 animate-pulse' : 'bg-amber-500/15 text-amber-500'}`}>
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <h4 className="font-bold text-xs text-foreground">Session Security</h4>
+                </div>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  Limit: {permissions?.idleTimeoutMinutes || 30}m
+                </span>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-muted-foreground">Auto-Logout Timer</span>
+                  <span className={`font-mono font-bold ${idleSecondsRemaining < 120 ? 'text-rose-500 font-extrabold' : 'text-emerald-500'}`}>
+                    {formatIdleTime(idleSecondsRemaining)}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-1000 ${
+                      idleSecondsRemaining < 120 ? 'bg-rose-500' : 'bg-emerald-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, (idleSecondsRemaining / totalIdleSecondsRef.current) * 100))}%`
+                    }}
+                  />
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Activity on keyboard/mouse continuously resets your session. Moving mouse resets timeout.
+              </p>
+            </div>
+
+            {/* Studio Bulletin & Notice Board */}
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
+              <div className="flex items-center gap-2 border-b border-border/70 pb-2">
+                <Bell className="w-4 h-4 text-brand" />
+                <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">Studio Announcements</h4>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="p-2.5 bg-muted/30 rounded-xl border border-border/60">
+                  <p className="font-bold text-foreground text-[11px]">Studio Floor B Maintenance</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Floor B lighting grid is reserved for rigging from 8 PM tonight.
+                  </p>
+                </div>
+                <div className="p-2.5 bg-muted/30 rounded-xl border border-border/60">
+                  <p className="font-bold text-foreground text-[11px]">New Sony FX6 Cinema Rig</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Available in equipment locker room #2 for certified camera crew.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Full Height Sponsored Partner Panel (Matching Talent Dashboard) */}
+            <div className="min-h-[300px]">
+              <SponsoredSidebarCard context="talent" showAdvertiseLink={true} className="h-full" />
+            </div>
+          </aside>
+
+        </div>
+      </div>
+
+      {/* ── MODAL: REQUEST LEAVE ── */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 animate-scaleIn">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-bold text-base text-foreground">Apply for Work Leave</h3>
+              <button onClick={() => setShowLeaveModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateLeave} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-foreground block mb-1">Leave Type</label>
+                <select
+                  value={leaveType}
+                  onChange={(e) => setLeaveType(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-background border border-border"
+                >
+                  <option value="Casual">Casual Leave (1 day)</option>
+                  <option value="Sick">Sick / Medical Leave</option>
+                  <option value="Earned">Earned Vacation Leave</option>
+                  <option value="CompOff">Compensatory Off (Weekend Shoot)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold text-foreground block mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={leaveStart}
+                    onChange={(e) => setLeaveStart(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-background border border-border"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-foreground block mb-1">End Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={leaveEnd}
+                    onChange={(e) => setLeaveEnd(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-background border border-border"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-foreground block mb-1">Reason for Leave</label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Explain brief reason for studio scheduling..."
+                  value={leaveReason}
+                  onChange={(e) => setLeaveReason(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-background border border-border"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLeaveModal(false)}
+                  className="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Application'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: SUBMIT EXPENSE CLAIM ── */}
+      {showExpenseModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 animate-scaleIn">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-bold text-base text-foreground">File Production Expense Claim</h3>
+              <button onClick={() => setShowExpenseModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateExpense} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-foreground block mb-1">Amount (₹ INR)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  placeholder="e.g. 1500"
+                  value={expenseAmount}
+                  onChange={(e) => setExpenseAmount(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-background border border-border font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-foreground block mb-1">Expense Category</label>
+                <select
+                  value={expenseCategory}
+                  onChange={(e) => setExpenseCategory(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-background border border-border"
+                >
+                  <option value="Production Travel">Production Travel (Cab / Fuel)</option>
+                  <option value="Equipment Rental">Camera / Lens Equipment Rental</option>
+                  <option value="Studio Food & Catering">Studio Crew Catering &amp; Meals</option>
+                  <option value="Props & Wardrobe">Props, Wardrobe &amp; Makeup</option>
+                  <option value="Hard Drives & Storage">Hard Drives &amp; Media Cards</option>
+                  <option value="Miscellaneous">Miscellaneous Production Cost</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-foreground block mb-1">Description / Bill Memo</label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Mention shoot name, location, and invoice reference..."
+                  value={expenseDescription}
+                  onChange={(e) => setExpenseDescription(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-background border border-border"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowExpenseModal(false)}
+                  className="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                >
+                  {isSubmitting ? 'Filing...' : 'Submit Claim'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -195,6 +195,18 @@ export default function TalentDiscoveryFeed({ initialTalents }: TalentDiscoveryF
   const [activeSponsorIdx, setActiveSponsorIdx] = useState(0);
   const [direction, setDirection] = useState<number>(1);
   const [isSponsorPaused, setIsSponsorPaused] = useState(false);
+  const [updateTick, setUpdateTick] = useState(0);
+
+  // Listen to talent profile updates in real-time across tabs / same window
+  useEffect(() => {
+    const handleUpdate = () => setUpdateTick((t) => t + 1);
+    window.addEventListener('talent_profile_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('talent_profile_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   // Fallback high-res profile placeholders
   const fallbackAvatars = [
@@ -225,6 +237,35 @@ export default function TalentDiscoveryFeed({ initialTalents }: TalentDiscoveryF
       })
       .catch(() => {});
   }, []);
+
+  // Auto-sync local storage overrides to real PostgreSQL database so live site also updates
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const keys = Object.keys(localStorage).filter((k) => k.startsWith('talent_profile_override_'));
+      for (const k of keys) {
+        const val = localStorage.getItem(k);
+        if (val) {
+          const parsed = JSON.parse(val);
+          const avatar = parsed.avatarUrl || parsed.profilePhotoPreview;
+          if ((avatar && !avatar.startsWith('blob:')) || parsed.pricingAmount) {
+            fetch('/api/talent/sync-avatar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                avatarUrl: avatar,
+                coverBannerUrl: parsed.coverBannerUrl || parsed.coverBannerPreview,
+                stageName: parsed.stageName || 'Kanika Aggarwal',
+                email: parsed.user?.email || 'aggarwalkanika676@gmail.com',
+                userId: parsed.userId || parsed.id,
+                pricingAmount: parsed.pricingAmount,
+              }),
+            }).catch(() => null);
+          }
+        }
+      }
+    } catch {}
+  }, [updateTick]);
 
   // Auto-scroll / rotate sponsored card horizontally every 4.5 seconds
   useEffect(() => {
@@ -667,15 +708,51 @@ export default function TalentDiscoveryFeed({ initialTalents }: TalentDiscoveryF
                 {paginatedTalents.map((talent, idx) => {
                   let overrideAvatar = talent.user?.avatarUrl;
                   let overrideCategory = talent.userTalents?.[0]?.category?.name;
+                  let overrideRate: number | null = null;
+
                   if (typeof window !== 'undefined') {
                     try {
-                      const raw = localStorage.getItem(`talent_profile_override_${talent.id}`) ||
-                        localStorage.getItem(`talent_profile_override_${talent.userId}`) ||
-                        (talent.slug ? localStorage.getItem(`talent_profile_override_${talent.slug}`) : null);
-                      if (raw) {
-                        const parsed = JSON.parse(raw);
-                        if (parsed.avatarUrl || parsed.profilePhotoPreview) overrideAvatar = parsed.avatarUrl || parsed.profilePhotoPreview;
-                        if (parsed.primaryCategory?.name || parsed.category) overrideCategory = parsed.primaryCategory?.name || parsed.category;
+                      const possibleKeys = [
+                        `talent_profile_override_${talent.id}`,
+                        `talent_profile_override_${(talent as any).userId}`,
+                        talent.slug ? `talent_profile_override_${talent.slug}` : null,
+                        talent.stageName ? `talent_profile_override_${talent.stageName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : null,
+                        talent.stageName ? `talent_profile_override_${talent.stageName}` : null,
+                        'talent_profile_override_draft',
+                        'talent_profile_override_me',
+                        'talent_profile_draft',
+                      ].filter(Boolean) as string[];
+
+                      for (const k of possibleKeys) {
+                        const raw = localStorage.getItem(k);
+                        if (raw) {
+                          const parsed = JSON.parse(raw);
+                          const isMatch = 
+                            parsed.id === talent.id || 
+                            parsed.userId === (talent as any).userId || 
+                            parsed.slug === talent.slug ||
+                            (parsed.stageName && talent.stageName && parsed.stageName.toLowerCase() === talent.stageName.toLowerCase()) ||
+                            (parsed.email && (talent.user as any)?.email && parsed.email.toLowerCase() === (talent.user as any).email.toLowerCase()) ||
+                            k.includes(talent.id) || 
+                            (talent.slug && k.includes(talent.slug));
+
+                          if (isMatch) {
+                            if (parsed.avatarUrl || parsed.profilePhotoPreview) overrideAvatar = parsed.avatarUrl || parsed.profilePhotoPreview;
+                            if (parsed.primaryCategory?.name || parsed.category) overrideCategory = parsed.primaryCategory?.name || parsed.category;
+                            
+                            if (parsed.pricingAmount !== undefined && parsed.pricingAmount !== null && parsed.pricingAmount !== '') {
+                              const num = parseInt(String(parsed.pricingAmount).replace(/\D/g, ''), 10);
+                              if (!isNaN(num) && num > 0) overrideRate = num;
+                            } else if (parsed.pricing?.perDay) {
+                              const pd = Number(parsed.pricing.perDay);
+                              overrideRate = pd >= 100 && pd % 100 === 0 ? pd / 100 : pd;
+                            } else if (parsed.draftData?.pricingAmount) {
+                              const num = parseInt(String(parsed.draftData.pricingAmount).replace(/\D/g, ''), 10);
+                              if (!isNaN(num) && num > 0) overrideRate = num;
+                            }
+                            break;
+                          }
+                        }
                       }
                     } catch {}
                   }
@@ -711,9 +788,14 @@ export default function TalentDiscoveryFeed({ initialTalents }: TalentDiscoveryF
                           ? talent.brandsWorkedWith.slice(0, 2).join(' • ')
                           : 'Editorial • Commercial');
 
-                  const rawRate = talent.pricing?.perDay ? talent.pricing.perDay / 100 : (talent.pricing?.startingPrice || 4999);
-                  const formattedRate = rawRate ? `₹${rawRate.toLocaleString('en-IN')}` : '₹4,999';
+                  const dbRate = talent.pricing?.perDay 
+                    ? (talent.pricing.perDay >= 100 && talent.pricing.perDay % 100 === 0 ? talent.pricing.perDay / 100 : talent.pricing.perDay)
+                    : ((talent as any).draftData?.pricingAmount ? parseInt(String((talent as any).draftData.pricingAmount).replace(/\D/g, ''), 10) : (talent.pricing?.startingPrice || null));
+
+                  const finalRate = overrideRate !== null ? overrideRate : (dbRate !== null ? dbRate : 4999);
+                  const formattedRate = `₹${finalRate.toLocaleString('en-IN')}`;
                   const profileUrl = `/talent/${talent.slug || talent.id}`;
+                  const bookUrl = `/talent/${talent.slug || talent.id}/book?rate=${finalRate}`;
 
                   return (
                     <div
@@ -791,7 +873,7 @@ export default function TalentDiscoveryFeed({ initialTalents }: TalentDiscoveryF
 
                         <div className="space-y-1.5 pt-0.5">
                           <Link
-                            href={`/talent/${talent.slug || talent.id}/book`}
+                            href={bookUrl}
                             className="w-full py-2 rounded-xl bg-brand hover:bg-brand/90 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <span>Book Now</span>

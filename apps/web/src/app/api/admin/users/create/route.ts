@@ -1,16 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/cms/server/guard';
-import { PrismaClient } from '@prisma/client';
-
-function getPrisma() {
-  const poolerUrl = (process.env.DATABASE_URL || '').replace(':5432/', ':6543/') + 
-    (process.env.DATABASE_URL?.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
-  return new PrismaClient({
-    datasources: {
-      db: { url: poolerUrl },
-    },
-  });
-}
+import { prisma } from '@/lib/prisma';
 
 const bcrypt = eval("require('bcryptjs')");
 
@@ -24,7 +14,7 @@ export async function POST(req: Request) {
   const actorRole = adminAuth.role;
 
   const body = await req.json().catch(() => ({}));
-  const { name, email, password } = body;
+  const { name, email, password, phone } = body;
   const role = String(body.role || '').toUpperCase();
 
   if (!name || !email || !password || !ROLES.includes(role)) {
@@ -41,7 +31,6 @@ export async function POST(req: Request) {
   const [firstName, ...rest] = String(name).trim().split(' ');
   const lastName = rest.join(' ') || '';
 
-  const prisma = getPrisma();
   try {
     const existing = await prisma.user.findFirst({
       where: { email: { equals: email.trim(), mode: 'insensitive' } },
@@ -57,16 +46,30 @@ export async function POST(req: Request) {
         passwordHash,
         firstName,
         lastName,
+        phone: phone ? String(phone).trim() : null,
         role: role as any,
         isActive: true,
       },
     });
 
+    // If role is EMPLOYEE, auto-create Employee profile
+    if (role === 'EMPLOYEE' || role === 'EDITOR' || role === 'PROJECT_MANAGER') {
+      try {
+        await prisma.employee.create({
+          data: {
+            userId: user.id,
+            designation: role === 'EDITOR' ? 'Video Editor' : role === 'PROJECT_MANAGER' ? 'Project Manager' : 'Production Crew',
+            department: 'Production',
+          },
+        });
+      } catch (empErr) {
+        console.warn('Could not auto-create employee profile:', empErr);
+      }
+    }
+
     return NextResponse.json({ ok: true, data: user });
   } catch (e: any) {
     console.error('Error creating user:', e);
     return NextResponse.json({ ok: false, error: e?.message || 'Failed to create user' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

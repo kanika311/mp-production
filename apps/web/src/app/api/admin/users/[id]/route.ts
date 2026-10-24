@@ -1,16 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/cms/server/guard';
-import { PrismaClient } from '@prisma/client';
-
-function getPrisma() {
-  const poolerUrl = (process.env.DATABASE_URL || '').replace(':5432/', ':6543/') + 
-    (process.env.DATABASE_URL?.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
-  return new PrismaClient({
-    datasources: {
-      db: { url: poolerUrl },
-    },
-  });
-}
+import { prisma } from '@/lib/prisma';
 
 // GET: Get user details for View Modal
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
@@ -20,7 +10,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const resolved = await params;
   const userId = resolved.id;
-  const prisma = getPrisma();
 
   try {
     const user = await prisma.user.findUnique({
@@ -45,14 +34,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   } catch (error: any) {
     console.error('Error fetching user:', error);
     return NextResponse.json({ ok: false, error: error.message || 'Failed to fetch user' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
 const bcrypt = eval("require('bcryptjs')");
 
-// PATCH: Edit user details (Name, Email, Role, Status, Password)
+// PATCH: Edit user details (Name, Email, Role, Status, Password, Phone)
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -61,14 +48,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const resolved = await params;
   const userId = resolved.id;
   const body = await req.json().catch(() => ({}));
-  const { firstName, lastName, email, role, isActive, password } = body;
-
-  const prisma = getPrisma();
+  const { firstName, lastName, email, role, isActive, password, phone } = body;
 
   try {
     const updateData: any = {};
     if (firstName !== undefined) updateData.firstName = String(firstName).trim();
     if (lastName !== undefined) updateData.lastName = String(lastName).trim();
+    if (phone !== undefined) updateData.phone = String(phone).trim() || null;
     if (email !== undefined) {
       const cleanEmail = String(email).trim().toLowerCase();
       const existing = await prisma.user.findFirst({
@@ -99,6 +85,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         email: true,
         firstName: true,
         lastName: true,
+        phone: true,
         role: true,
         isActive: true,
         createdAt: true,
@@ -109,8 +96,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   } catch (error: any) {
     console.error('Error updating user:', error);
     return NextResponse.json({ ok: false, error: error.message || 'Failed to update user' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -122,7 +107,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   const resolved = await params;
   const userId = resolved.id;
-  const prisma = getPrisma();
 
   try {
     // 1. If user has a talentProfile, delete child records first
@@ -150,7 +134,5 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   } catch (error: any) {
     console.error('Error deleting user:', error);
     return NextResponse.json({ ok: false, error: error.message || 'Failed to delete user' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
