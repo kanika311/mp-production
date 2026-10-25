@@ -414,14 +414,22 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
 
             {/* Slide Drawer Content */}
             <motion.div
+              data-lenis-prevent="true"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="fixed inset-y-0 left-0 w-[85%] max-w-[340px] bg-background border-r border-border p-4 shadow-2xl z-50 overflow-y-auto space-y-4"
+              className="fixed inset-y-0 left-0 h-[100dvh] max-h-[100dvh] w-[88%] max-w-[340px] bg-background border-r border-border shadow-2xl z-50 flex flex-col overflow-hidden"
+              style={{
+                touchAction: 'pan-y',
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+              }}
+              onWheel={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
             >
-              {/* Drawer Top Bar */}
-              <div className="flex items-center justify-between pb-3 border-b border-border">
+              {/* Drawer Top Bar (Fixed Header) */}
+              <div className="flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-md shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl border-2 border-brand bg-brand/10 text-brand flex items-center justify-center">
                     <SlidersHorizontal className="w-4 h-4 stroke-[2.4]" />
@@ -441,8 +449,21 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
                 </button>
               </div>
 
-              {/* Render identical Left Panel content inside Drawer */}
-              {renderSidebarContent(true)}
+              {/* Scrollable Content Container */}
+              <div 
+                data-lenis-prevent="true"
+                className="flex-1 overflow-y-auto overscroll-contain touch-pan-y p-4 space-y-4 pb-20 select-text"
+                style={{
+                  touchAction: 'pan-y',
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
+                }}
+                onWheel={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
+              >
+                {/* Render identical Left Panel content inside Drawer */}
+                {renderSidebarContent(true)}
+              </div>
             </motion.div>
           </div>
         )}
