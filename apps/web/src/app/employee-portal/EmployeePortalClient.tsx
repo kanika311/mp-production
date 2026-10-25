@@ -1559,76 +1559,15 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           </main>
 
           {/* ══════════════════════════════════════════════════════════════════
-              COLUMN 3 (RIGHT SIDEBAR): Shift Info, Announcements & Sponsor
+              COLUMN 3 (RIGHT SIDEBAR): Sponsored Partner Panel Only
               ══════════════════════════════════════════════════════════════════ */}
           <aside 
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
             className="w-full lg:col-span-3 lg:sticky lg:top-[125px] self-start space-y-3 pb-16"
           >
-            {/* Auto-Logout Idle Timeout Card */}
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`p-1.5 rounded-lg ${idleSecondsRemaining < 120 ? 'bg-rose-500/20 text-rose-500 animate-pulse' : 'bg-amber-500/15 text-amber-500'}`}>
-                    <Clock className="w-4 h-4" />
-                  </div>
-                  <h4 className="font-bold text-xs text-foreground">Session Security</h4>
-                </div>
-                <span className="text-[10px] font-mono text-muted-foreground">
-                  Limit: {permissions?.idleTimeoutMinutes || 30}m
-                </span>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-muted-foreground">Auto-Logout Timer</span>
-                  <span className={`font-mono font-bold ${idleSecondsRemaining < 120 ? 'text-rose-500 font-extrabold' : 'text-brand'}`}>
-                    {formatIdleTime(idleSecondsRemaining)}
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-1000 ${
-                      idleSecondsRemaining < 120 ? 'bg-rose-500' : 'bg-brand'
-                    }`}
-                    style={{
-                      width: `${Math.min(100, Math.max(0, (idleSecondsRemaining / totalIdleSecondsRef.current) * 100))}%`
-                    }}
-                  />
-                </div>
-              </div>
-
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Activity on keyboard/mouse continuously resets your session. Moving mouse resets timeout.
-              </p>
-            </div>
-
-            {/* Studio Bulletin & Notice Board */}
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 border-b border-border/70 pb-2">
-                <Bell className="w-4 h-4 text-brand" />
-                <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">Studio Announcements</h4>
-              </div>
-
-              <div className="space-y-2.5 text-xs">
-                <div className="p-2.5 bg-muted/30 rounded-xl border border-border/60">
-                  <p className="font-bold text-foreground text-[11px]">Studio Floor B Maintenance</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Floor B lighting grid is reserved for rigging from 8 PM tonight.
-                  </p>
-                </div>
-                <div className="p-2.5 bg-muted/30 rounded-xl border border-border/60">
-                  <p className="font-bold text-foreground text-[11px]">New Sony FX6 Cinema Rig</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Available in equipment locker room #2 for certified camera crew.
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Full Height Sponsored Partner Panel (Matching Talent Dashboard) */}
-            <div className="min-h-[300px]">
+            <div className="min-h-[420px]">
               <SponsoredSidebarCard context="talent" showAdvertiseLink={true} className="h-full" />
             </div>
           </aside>
