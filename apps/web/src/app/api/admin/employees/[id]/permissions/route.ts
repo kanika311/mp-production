@@ -65,17 +65,41 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const allPerms = loadPermissions();
-    const userPerms = allPerms[userId] || {
-      idleTimeoutMinutes: 30,
+    const existing = allPerms[userId] || {};
+    const existingModules = existing.modules || {};
+
+    const userPerms = {
+      idleTimeoutMinutes: existing.idleTimeoutMinutes || 30,
       modules: {
-        talentRoster: true,
-        services: false,
-        blogs: true,
-        youtuber: false,
-        projects: true,
-        leads: false,
-        expenses: false,
-        mediaAssets: true,
+        // Content & CMS
+        blogs: existingModules.blogs ?? true,
+        talent: existingModules.talent ?? existingModules.talentRoster ?? true,
+        talentRoster: existingModules.talentRoster ?? existingModules.talent ?? true,
+        services: existingModules.services ?? false,
+        'become-a-youtuber': existingModules['become-a-youtuber'] ?? existingModules.youtuber ?? false,
+        youtuber: existingModules.youtuber ?? existingModules['become-a-youtuber'] ?? false,
+        projects: existingModules.projects ?? true,
+
+        // Site Management
+        'home-page': existingModules['home-page'] ?? existingModules.homePage ?? false,
+        homePage: existingModules.homePage ?? existingModules['home-page'] ?? false,
+        'footer-cms': existingModules['footer-cms'] ?? existingModules.footerCms ?? false,
+        footerCms: existingModules.footerCms ?? existingModules['footer-cms'] ?? false,
+        sponsored: existingModules.sponsored ?? false,
+
+        // CRM & Leads
+        'contact-leads': existingModules['contact-leads'] ?? existingModules.leads ?? false,
+        leads: existingModules.leads ?? existingModules['contact-leads'] ?? false,
+
+        // User Accounts
+        clients: existingModules.clients ?? false,
+        talents: existingModules.talents ?? false,
+        employees: existingModules.employees ?? false,
+        users: existingModules.users ?? false,
+
+        // Operations
+        mediaAssets: existingModules.mediaAssets ?? true,
+        expenses: existingModules.expenses ?? false,
       },
     };
 
@@ -100,10 +124,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json().catch(() => ({}));
 
   try {
+    const rawModules = body.modules || {};
+    // Normalize aliases so both dash and camelCase keys work seamlessly
+    const normalizedModules: Record<string, boolean> = {
+      ...rawModules,
+      talent: rawModules.talent ?? rawModules.talentRoster ?? false,
+      talentRoster: rawModules.talentRoster ?? rawModules.talent ?? false,
+      'become-a-youtuber': rawModules['become-a-youtuber'] ?? rawModules.youtuber ?? false,
+      youtuber: rawModules.youtuber ?? rawModules['become-a-youtuber'] ?? false,
+      'home-page': rawModules['home-page'] ?? rawModules.homePage ?? false,
+      homePage: rawModules.homePage ?? rawModules['home-page'] ?? false,
+      'footer-cms': rawModules['footer-cms'] ?? rawModules.footerCms ?? false,
+      footerCms: rawModules.footerCms ?? rawModules['footer-cms'] ?? false,
+      'contact-leads': rawModules['contact-leads'] ?? rawModules.leads ?? false,
+      leads: rawModules.leads ?? rawModules['contact-leads'] ?? false,
+    };
+
     const allPerms = loadPermissions();
     allPerms[userId] = {
       idleTimeoutMinutes: Number(body.idleTimeoutMinutes) || 30,
-      modules: body.modules || {},
+      modules: normalizedModules,
       updatedAt: new Date().toISOString(),
     };
     savePermissions(allPerms);

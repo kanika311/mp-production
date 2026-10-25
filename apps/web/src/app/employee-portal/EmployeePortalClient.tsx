@@ -38,7 +38,11 @@ import {
   X,
   Radio,
   Bell,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Home,
+  LayoutTemplate,
+  UserCheck,
+  Youtube
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SponsoredSidebarCard } from '@/components/ui/sponsored-sidebar-card';
@@ -501,7 +505,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
             <span>Permitted Admin Modules</span>
           </div>
 
-          {permissions?.modules?.talentRoster && (
+          {(permissions?.modules?.talent || permissions?.modules?.talentRoster) && (
             <button
               type="button"
               onClick={() => {
@@ -564,7 +568,112 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
             </button>
           )}
 
-          {permissions?.modules?.leads && (
+          {(permissions?.modules?.['become-a-youtuber'] || permissions?.modules?.youtuber) && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_youtuber');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_youtuber'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Youtube className="w-4 h-4 text-red-500" />
+                <span>Become a YouTuber</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {permissions?.modules?.projects && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_projects');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_projects'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-purple-500" />
+                <span>Projects CMS</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {(permissions?.modules?.['home-page'] || permissions?.modules?.homePage) && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_home_page');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_home_page'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Home className="w-4 h-4 text-indigo-500" />
+                <span>Home Page CMS</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {(permissions?.modules?.['footer-cms'] || permissions?.modules?.footerCms) && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_footer_cms');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_footer_cms'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <LayoutTemplate className="w-4 h-4 text-cyan-500" />
+                <span>Footer CMS</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {permissions?.modules?.sponsored && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_sponsored');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_sponsored'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-pink-500" />
+                <span>Sponsored &amp; Ads</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {(permissions?.modules?.['contact-leads'] || permissions?.modules?.leads) && (
             <button
               type="button"
               onClick={() => {
@@ -578,8 +687,50 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               }`}
             >
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-purple-500" />
+                <MessageSquare className="w-4 h-4 text-emerald-500" />
                 <span>Contact Leads &amp; CRM</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {permissions?.modules?.clients && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_clients');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_clients'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-blue-500" />
+                <span>Clients Directory</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {permissions?.modules?.employees && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_employees');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_employees'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-emerald-500" />
+                <span>Crew &amp; Staff</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-70" />
             </button>
@@ -1189,24 +1340,218 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               </div>
             )}
 
-            {/* ── TAB 9: DELEGATED ADMIN WORKSPACE (MEDIA VAULT) ── */}
-            {activeTab === 'admin_media' && (
+            {/* ── TAB: DELEGATED WORKSPACE (BECOME A YOUTUBER) ── */}
+            {activeTab === 'admin_youtuber' && (
               <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-border/70 pb-3">
                   <div>
                     <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
-                      <Film className="w-4 h-4 text-rose-500" />
-                      <span>Delegated Workspace: Media Vault &amp; 4K/8K Renders</span>
+                      <Youtube className="w-4 h-4 text-red-500" />
+                      <span>Delegated Workspace: Become a YouTuber Studio</span>
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Authorized by Admin to upload raw shoot footage and master export renders.
+                      Authorized by Admin to manage YouTube creator coaching, course applications and studio packages.
                     </p>
                   </div>
+                  <Link
+                    href="/super-admin?tab=become-a-youtuber"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>YouTuber CMS</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
                 </div>
                 <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
-                  <p className="font-bold text-foreground">Media Cloud Storage: 1.4 TB / 5 TB Used</p>
+                  <p className="font-bold text-foreground">YouTuber Creator Applications</p>
                   <p className="text-muted-foreground">
-                    Apple ProRes 4444XQ masters, ARRIRAW passes, and social media exports are archived safely.
+                    Review incoming creator onboarding requests, video monetization packages, and 1-on-1 editing masterclasses.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB: DELEGATED WORKSPACE (PROJECTS & PRODUCTION) ── */}
+            {activeTab === 'admin_projects' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-purple-500" />
+                      <span>Delegated Workspace: Cinematic Portfolio &amp; Projects</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to oversee commercial shoots, brand music videos and project milestones.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=projects"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Projects CMS</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Active Production Pipeline</p>
+                  <p className="text-muted-foreground">
+                    Track production shoots, sound mix exports, and final color grade deliveries across active client projects.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB: DELEGATED WORKSPACE (HOME PAGE CMS) ── */}
+            {activeTab === 'admin_home_page' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <Home className="w-4 h-4 text-indigo-500" />
+                      <span>Delegated Workspace: Home Page Showcase CMS</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to manage homepage banner announcements, hero showreels, and featured content.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=home-page"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Home Page CMS</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Main Website Visuals</p>
+                  <p className="text-muted-foreground">
+                    Update top marquee headlines, featured film showcases, and client credibility stats.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB: DELEGATED WORKSPACE (FOOTER CMS) ── */}
+            {activeTab === 'admin_footer_cms' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <LayoutTemplate className="w-4 h-4 text-cyan-500" />
+                      <span>Delegated Workspace: Footer Details &amp; Social Links CMS</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to maintain studio contact details, office addresses, and social handles.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=footer-cms"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Footer CMS</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Footer Configuration</p>
+                  <p className="text-muted-foreground">
+                    Update studio contact email, Mumbai production hub address, and social channel URLs.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB: DELEGATED WORKSPACE (SPONSORED & ADS) ── */}
+            {activeTab === 'admin_sponsored' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-pink-500" />
+                      <span>Delegated Workspace: Sponsored Ads &amp; Brand Partners</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to manage commercial brand sponsors, affiliate ad banners, and campaign links.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=sponsored"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Sponsored CMS</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Active Brand Partnerships</p>
+                  <p className="text-muted-foreground">
+                    Review and schedule sidebar partner creatives, conversion tracking, and campaign dates.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB: DELEGATED WORKSPACE (CLIENTS) ── */}
+            {activeTab === 'admin_clients' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-blue-500" />
+                      <span>Delegated Workspace: Client Directory &amp; Brands</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to review brand client accounts and corporate contracts.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=clients"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Clients Directory</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Registered Brand Clients</p>
+                  <p className="text-muted-foreground">
+                    Manage active enterprise clients, production billing status, and project assignments.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB: DELEGATED WORKSPACE (EMPLOYEES & CREW) ── */}
+            {activeTab === 'admin_employees' && (
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-emerald-500" />
+                      <span>Delegated Workspace: Employees &amp; Crew Roster</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authorized by Admin to coordinate production crew schedules and shift rosters.
+                    </p>
+                  </div>
+                  <Link
+                    href="/super-admin?tab=employees"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
+                  >
+                    <span>Employees Roster</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
+                  <p className="font-bold text-foreground">Production Operations Team</p>
+                  <p className="text-muted-foreground">
+                    Coordinate editing desks, audio dubbing suites, camera technicians, and field producers.
                   </p>
                 </div>
               </div>

@@ -79,6 +79,28 @@ export async function POST(req: NextRequest) {
       name: fullName,
     });
 
+    // Extract real client IP & device user agent
+    const rawIp =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip')?.trim() ||
+      '127.0.0.1';
+    const userAgent = req.headers.get('user-agent')?.trim() || 'Web Browser';
+
+    // Record real session in PostgreSQL database
+    try {
+      await prisma.session.create({
+        data: {
+          userId: user.id,
+          refreshToken: token,
+          userAgent,
+          ipAddress: rawIp,
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
+        },
+      });
+    } catch (sessErr) {
+      console.warn('Could not record user session:', sessErr);
+    }
+
     const response = NextResponse.json({
       ok: true,
       token,

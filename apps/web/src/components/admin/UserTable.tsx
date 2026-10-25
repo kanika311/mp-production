@@ -80,14 +80,30 @@ const TIMEOUT_OPTIONS = [
 ];
 
 const ADMIN_MODULES = [
-  { key: 'talentRoster', label: 'Talent Roster CMS', desc: 'Manage models, actors, video creators & approvals' },
-  { key: 'services', label: 'Services & Packages', desc: 'Edit production services, pricing tiers & add-ons' },
-  { key: 'blogs', label: 'Blogs & Articles', desc: 'Create, edit & publish production articles and stories' },
-  { key: 'youtuber', label: 'Become a YouTuber', desc: 'Manage YouTuber academy applications and coaching' },
-  { key: 'projects', label: 'Projects & Production', desc: 'Oversee active shoots, editing milestones & deliverables' },
-  { key: 'leads', label: 'Contact Leads & CRM', desc: 'Access inbound customer inquiries and booking requests' },
-  { key: 'expenses', label: 'Finance & Expense Claims', desc: 'Review team expense filings and studio receipts' },
-  { key: 'mediaAssets', label: 'Media Asset Library', desc: 'Upload, tag and manage 4K/8K raw video & photo assets' },
+  // Content & CMS
+  { key: 'blogs', label: 'Blogs & Articles', desc: 'Create, edit & publish production articles and stories', group: 'Content & CMS' },
+  { key: 'talent', label: 'Talent Roster CMS', desc: 'Manage models, actors, video creators & approvals', group: 'Content & CMS', alias: 'talentRoster' },
+  { key: 'services', label: 'Services & Packages', desc: 'Edit production services, pricing tiers & add-ons', group: 'Content & CMS' },
+  { key: 'become-a-youtuber', label: 'Become a YouTuber', desc: 'Manage YouTuber academy applications and coaching', group: 'Content & CMS', alias: 'youtuber' },
+  { key: 'projects', label: 'Projects & Production', desc: 'Oversee active shoots, editing milestones & deliverables', group: 'Content & CMS' },
+
+  // Site Management
+  { key: 'home-page', label: 'Home Page CMS', desc: 'Hero banners, announcements & featured sections', group: 'Site Management', alias: 'homePage' },
+  { key: 'footer-cms', label: 'Footer CMS', desc: 'Footer brand details, contact info, social links & copyright', group: 'Site Management', alias: 'footerCms' },
+  { key: 'sponsored', label: 'Sponsored Partners & Ads', desc: 'Sidebar partner brand ads and commercial sponsorships', group: 'Site Management' },
+
+  // CRM & Leads
+  { key: 'contact-leads', label: 'Contact Leads & CRM', desc: 'Access inbound customer inquiries and booking requests', group: 'CRM & Leads', alias: 'leads' },
+
+  // User Accounts
+  { key: 'clients', label: 'Client Accounts', desc: 'Brand client profiles and enterprise agency accounts', group: 'User Accounts' },
+  { key: 'talents', label: 'Talent Accounts', desc: 'Approved talent logins and onboarding verification', group: 'User Accounts' },
+  { key: 'employees', label: 'Employees & Crew', desc: 'Production crew, editors & project managers', group: 'User Accounts' },
+  { key: 'users', label: 'All Users Directory', desc: 'Master directory of all registered platform user accounts', group: 'User Accounts' },
+
+  // Operations
+  { key: 'mediaAssets', label: 'Media Asset Library (4K/8K)', desc: 'Upload, tag and manage 4K/8K raw video & photo assets', group: 'Operations' },
+  { key: 'expenses', label: 'Finance & Expense Claims', desc: 'Review team expense filings and studio receipts', group: 'Operations' },
 ];
 
 export function UserTable({
@@ -971,43 +987,116 @@ export function UserTable({
 
               {/* ── PERMISSION SETTINGS: DELEGATE ADMIN WORKS (IMAGE 4) ── */}
               <div className="bg-card border border-border rounded-xl p-5 shadow-2xs space-y-4">
-                <div>
-                  <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-[#06b6d4]" />
-                    <span>Admin Module Delegation &amp; Work Permissions</span>
-                  </h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Grant this employee access to operate selected admin workspaces directly from their employee dashboard.
-                  </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-[#06b6d4]" />
+                      <span>Admin Module Delegation &amp; Work Permissions</span>
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Grant this employee access to operate selected admin workspaces directly from their employee dashboard.
+                    </p>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const all: Record<string, boolean> = {};
+                        ADMIN_MODULES.forEach((m) => {
+                          all[m.key] = true;
+                          if (m.alias) all[m.alias] = true;
+                        });
+                        setModulePermissions(all);
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-[#06b6d4]/15 hover:bg-[#06b6d4]/25 text-[#06b6d4] border border-[#06b6d4]/30 transition-all cursor-pointer"
+                    >
+                      Grant All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cmsOnly: Record<string, boolean> = {};
+                        ADMIN_MODULES.forEach((m) => {
+                          const isCms = m.group === 'Content & CMS' || m.group === 'Site Management';
+                          cmsOnly[m.key] = isCms;
+                          if (m.alias) cmsOnly[m.alias] = isCms;
+                        });
+                        setModulePermissions((prev) => ({ ...prev, ...cmsOnly }));
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 border border-amber-500/30 transition-all cursor-pointer"
+                    >
+                      CMS &amp; Site Only
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const none: Record<string, boolean> = {};
+                        ADMIN_MODULES.forEach((m) => {
+                          none[m.key] = false;
+                          if (m.alias) none[m.alias] = false;
+                        });
+                        setModulePermissions(none);
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-muted hover:bg-muted/80 text-muted-foreground border border-border transition-all cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {ADMIN_MODULES.map((m) => {
-                    const isGranted = Boolean(modulePermissions[m.key]);
-                    return (
-                      <div
-                        key={m.key}
-                        onClick={() => setModulePermissions((prev) => ({ ...prev, [m.key]: !isGranted }))}
-                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
-                          isGranted
-                            ? 'bg-[#06b6d4]/10 border-[#06b6d4]/40 ring-1 ring-[#06b6d4]/20'
-                            : 'bg-background border-border hover:bg-muted/40'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isGranted}
-                          onChange={() => {}}
-                          className="mt-1 w-4 h-4 rounded text-[#06b6d4] focus:ring-[#06b6d4] cursor-pointer"
-                        />
-                        <div>
-                          <p className="font-bold text-foreground">{m.label}</p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">{m.desc}</p>
-                        </div>
+                {/* Categorized Grid */}
+                {['Content & CMS', 'Site Management', 'CRM & Leads', 'User Accounts', 'Operations'].map((groupName) => {
+                  const groupModules = ADMIN_MODULES.filter((m) => m.group === groupName);
+                  if (groupModules.length === 0) return null;
+                  return (
+                    <div key={groupName} className="space-y-2 pt-3 border-t border-border/60 first:border-t-0 first:pt-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                          {groupName}
+                        </span>
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                          {groupModules.filter((m) => modulePermissions[m.key] || (m.alias && modulePermissions[m.alias])).length} / {groupModules.length} Enabled
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {groupModules.map((m) => {
+                          const isGranted = Boolean(modulePermissions[m.key] || (m.alias && modulePermissions[m.alias]));
+                          return (
+                            <div
+                              key={m.key}
+                              onClick={() => {
+                                setModulePermissions((prev) => {
+                                  const nextState = !isGranted;
+                                  const updated = { ...prev, [m.key]: nextState };
+                                  if (m.alias) updated[m.alias] = nextState;
+                                  return updated;
+                                });
+                              }}
+                              className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                                isGranted
+                                  ? 'bg-[#06b6d4]/10 border-[#06b6d4]/40 ring-1 ring-[#06b6d4]/20'
+                                  : 'bg-background border-border hover:bg-muted/40'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isGranted}
+                                onChange={() => {}}
+                                className="mt-0.5 w-4 h-4 rounded text-[#06b6d4] focus:ring-[#06b6d4] cursor-pointer"
+                              />
+                              <div>
+                                <p className="font-bold text-foreground text-xs">{m.label}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{m.desc}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1072,6 +1161,16 @@ export function UserTable({
                 <div className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   <span className="text-xs">Fetching live session history from database...</span>
+                </div>
+              ) : sessionLogs.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center">
+                    <History className="w-6 h-6 text-muted-foreground/60" />
+                  </div>
+                  <span className="font-bold text-foreground text-sm">No Recorded Sessions Yet</span>
+                  <span className="text-xs text-muted-foreground max-w-sm text-center">
+                    No active or past sessions found in the database for {sessionUser.firstName}. Genuine device details, IP address, and punch-in timestamps will appear here automatically when this employee logs in.
+                  </span>
                 </div>
               ) : (
                 <div className="border border-border rounded-xl overflow-hidden shadow-2xs">

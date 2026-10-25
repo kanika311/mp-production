@@ -19,17 +19,40 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Info
+  Info,
+  Home,
+  LayoutTemplate,
+  Users,
+  UserCheck,
+  Mail,
+  Clapperboard,
+  Layers,
+  Newspaper,
+  Video
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const TIMEOUT_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 120, 240, 480, 720, 1440];
 
 const MODULE_DEFINITIONS = [
+  // Content & CMS
   {
-    key: 'talentRoster',
+    key: 'blogs',
+    alias: 'blogs',
+    label: 'Blogs & Articles',
+    desc: 'Create, edit, draft and publish production articles and stories.',
+    group: 'Content & CMS',
+    icon: Newspaper,
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/30',
+  },
+  {
+    key: 'talent',
+    alias: 'talentRoster',
     label: 'Talent Roster CMS',
     desc: 'Review applicants, manage talent cards, portfolios, and approval status.',
+    group: 'Content & CMS',
     icon: Sparkles,
     color: 'text-amber-500',
     bg: 'bg-amber-500/10',
@@ -37,66 +60,154 @@ const MODULE_DEFINITIONS = [
   },
   {
     key: 'services',
-    label: 'Services Management',
+    alias: 'services',
+    label: 'Services & Packages',
     desc: 'Update studio service packages, pricing plans, and creative offerings.',
-    icon: Building,
+    group: 'Content & CMS',
+    icon: Layers,
     color: 'text-teal-500',
     bg: 'bg-teal-500/10',
     border: 'border-teal-500/30',
   },
   {
-    key: 'blogs',
-    label: 'Blogs & Editorial',
-    desc: 'Create, edit, draft and publish production articles and announcements.',
-    icon: FileText,
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/30',
-  },
-  {
-    key: 'youtuber',
-    label: 'YouTuber Creator Studio',
+    key: 'become-a-youtuber',
+    alias: 'youtuber',
+    label: 'Become a YouTuber',
     desc: 'Manage channel packages, YouTube collaborations, and creator onboarding.',
-    icon: Youtube,
+    group: 'Content & CMS',
+    icon: Video,
     color: 'text-red-500',
     bg: 'bg-red-500/10',
     border: 'border-red-500/30',
   },
   {
     key: 'projects',
-    label: 'Studio Projects & Tasks',
+    alias: 'projects',
+    label: 'Projects & Production',
     desc: 'Monitor production timelines, assign editing milestones, and review deliverables.',
-    icon: Briefcase,
+    group: 'Content & CMS',
+    icon: Clapperboard,
     color: 'text-purple-500',
     bg: 'bg-purple-500/10',
     border: 'border-purple-500/30',
   },
+
+  // Site Management
   {
-    key: 'leads',
-    label: 'CRM & Sales Inquiries',
+    key: 'home-page',
+    alias: 'homePage',
+    label: 'Home Page CMS',
+    desc: 'Hero banners, announcements, curated showcase reels, and featured sections.',
+    group: 'Site Management',
+    icon: Home,
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-500/10',
+    border: 'border-indigo-500/30',
+  },
+  {
+    key: 'footer-cms',
+    alias: 'footerCms',
+    label: 'Footer CMS',
+    desc: 'Footer brand details, contact info, social handles, links, and copyright.',
+    group: 'Site Management',
+    icon: LayoutTemplate,
+    color: 'text-cyan-500',
+    bg: 'bg-cyan-500/10',
+    border: 'border-cyan-500/30',
+  },
+  {
+    key: 'sponsored',
+    alias: 'sponsored',
+    label: 'Sponsored Partners & Ads',
+    desc: 'Sidebar partner brand ads, commercial sponsorships, and affiliate banners.',
+    group: 'Site Management',
+    icon: Sparkles,
+    color: 'text-pink-500',
+    bg: 'bg-pink-500/10',
+    border: 'border-pink-500/30',
+  },
+
+  // CRM & Leads
+  {
+    key: 'contact-leads',
+    alias: 'leads',
+    label: 'Contact Leads & CRM',
     desc: 'Manage client booking inquiries, inbound lead triage, and client follow-ups.',
-    icon: Target,
+    group: 'CRM & Leads',
+    icon: Mail,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/30',
+  },
+
+  // User Accounts
+  {
+    key: 'clients',
+    alias: 'clients',
+    label: 'Client Accounts',
+    desc: 'Brand client profiles, enterprise accounts, and production contracts.',
+    group: 'User Accounts',
+    icon: Briefcase,
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/30',
+  },
+  {
+    key: 'talents',
+    alias: 'talents',
+    label: 'Talent Accounts',
+    desc: 'Approved talent logins, portfolio access, and onboarding verification.',
+    group: 'User Accounts',
+    icon: Sparkles,
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/30',
+  },
+  {
+    key: 'employees',
+    alias: 'employees',
+    label: 'Employees & Crew',
+    desc: 'Production crew, camera operators, editors & operations project managers.',
+    group: 'User Accounts',
+    icon: UserCheck,
     color: 'text-emerald-500',
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/30',
   },
   {
-    key: 'expenses',
-    label: 'Expense Tracker',
-    desc: 'Log production expenditure, studio equipment rentals, and shoot bills.',
-    icon: Receipt,
-    color: 'text-orange-500',
-    bg: 'bg-orange-500/10',
-    border: 'border-orange-500/30',
+    key: 'users',
+    alias: 'users',
+    label: 'All Users Directory',
+    desc: 'Master directory of all registered platform user accounts & RBAC assignments.',
+    group: 'User Accounts',
+    icon: Users,
+    color: 'text-slate-500',
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/30',
   },
+
+  // Operations
   {
     key: 'mediaAssets',
+    alias: 'mediaAssets',
     label: 'Media Assets Vault (4K/8K)',
     desc: 'Full access to raw footage vault, sound library, and color grading assets.',
+    group: 'Operations',
     icon: Film,
     color: 'text-rose-500',
     bg: 'bg-rose-500/10',
     border: 'border-rose-500/30',
+  },
+  {
+    key: 'expenses',
+    alias: 'expenses',
+    label: 'Finance & Expense Tracker',
+    desc: 'Log production expenditure, studio equipment rentals, and shoot bills.',
+    group: 'Operations',
+    icon: Receipt,
+    color: 'text-orange-500',
+    bg: 'bg-orange-500/10',
+    border: 'border-orange-500/30',
   },
 ];
 
@@ -352,60 +463,134 @@ export function EmployeePermissionsPage({ userId, basePath = '/super-admin' }: E
       </div>
 
       {/* ── Section 2: Delegated Admin Modules ── */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#06b6d4]" />
-            <h3 className="font-bold text-sm text-foreground">Delegated Admin Workspaces</h3>
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-[#06b6d4]" />
+              <h3 className="font-bold text-sm text-foreground">Delegated Admin Workspaces</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Enabled modules will appear inside this staff member's sidebar so they can perform specific administrative work.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Enabled modules will appear inside this staff member's sidebar so they can perform specific administrative work.
-          </p>
+
+          {/* Quick Presets */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                const all: Record<string, boolean> = {};
+                MODULE_DEFINITIONS.forEach((m) => {
+                  all[m.key] = true;
+                  if (m.alias) all[m.alias] = true;
+                });
+                setModulePermissions(all);
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#06b6d4]/15 hover:bg-[#06b6d4]/25 text-[#06b6d4] border border-[#06b6d4]/30 transition-all cursor-pointer"
+            >
+              Grant All
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const cmsOnly: Record<string, boolean> = {};
+                MODULE_DEFINITIONS.forEach((m) => {
+                  const isCms = m.group === 'Content & CMS' || m.group === 'Site Management';
+                  cmsOnly[m.key] = isCms;
+                  if (m.alias) cmsOnly[m.alias] = isCms;
+                });
+                setModulePermissions((prev) => ({ ...prev, ...cmsOnly }));
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 border border-amber-500/30 transition-all cursor-pointer"
+            >
+              CMS &amp; Site Only
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const none: Record<string, boolean> = {};
+                MODULE_DEFINITIONS.forEach((m) => {
+                  none[m.key] = false;
+                  if (m.alias) none[m.alias] = false;
+                });
+                setModulePermissions(none);
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-muted hover:bg-muted/80 text-muted-foreground border border-border transition-all cursor-pointer"
+            >
+              Clear All
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-          {MODULE_DEFINITIONS.map((mod) => {
-            const isEnabled = Boolean(modulePermissions[mod.key]);
-            const Icon = mod.icon;
-            return (
-              <div
-                key={mod.key}
-                onClick={() => setModulePermissions((prev) => ({ ...prev, [mod.key]: !isEnabled }))}
-                className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
-                  isEnabled
-                    ? 'border-[#06b6d4] bg-[#06b6d4]/5 shadow-xs'
-                    : 'border-border bg-muted/20 hover:bg-muted/40 opacity-70'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={`w-9 h-9 rounded-xl ${mod.bg} ${mod.color} border ${mod.border} flex items-center justify-center shrink-0 mt-0.5`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-foreground flex items-center gap-2">
-                      <span>{mod.label}</span>
-                      {isEnabled && (
-                        <span className="px-1.5 py-0.2 rounded-md bg-[#06b6d4]/15 text-[#06b6d4] text-[9px] font-extrabold uppercase">
-                          Enabled
-                        </span>
-                      )}
-                    </h4>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{mod.desc}</p>
-                  </div>
-                </div>
-
-                {/* Toggle switch */}
-                <div className={`w-10 h-6 rounded-full p-1 transition-colors shrink-0 ${
-                  isEnabled ? 'bg-[#06b6d4]' : 'bg-muted-foreground/30'
-                }`}>
-                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                    isEnabled ? 'translate-x-4' : 'translate-x-0'
-                  }`} />
-                </div>
+        {/* Categorized Modules */}
+        {['Content & CMS', 'Site Management', 'CRM & Leads', 'User Accounts', 'Operations'].map((groupName) => {
+          const groupModules = MODULE_DEFINITIONS.filter((m) => m.group === groupName);
+          if (groupModules.length === 0) return null;
+          return (
+            <div key={groupName} className="space-y-3 pt-3 border-t border-border/60 first:border-t-0 first:pt-0">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+                  {groupName}
+                </span>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {groupModules.filter((m) => modulePermissions[m.key] || (m.alias && modulePermissions[m.alias])).length} / {groupModules.length} Enabled
+                </span>
               </div>
-            );
-          })}
-        </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {groupModules.map((mod) => {
+                  const isEnabled = Boolean(modulePermissions[mod.key] || (mod.alias && modulePermissions[mod.alias]));
+                  const Icon = mod.icon;
+                  return (
+                    <div
+                      key={mod.key}
+                      onClick={() => {
+                        setModulePermissions((prev) => {
+                          const nextState = !isEnabled;
+                          const updated = { ...prev, [mod.key]: nextState };
+                          if (mod.alias) updated[mod.alias] = nextState;
+                          return updated;
+                        });
+                      }}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 select-none ${
+                        isEnabled
+                          ? 'border-[#06b6d4] bg-[#06b6d4]/5 shadow-xs'
+                          : 'border-border bg-muted/20 hover:bg-muted/40 opacity-70'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-xl ${mod.bg} ${mod.color} border ${mod.border} flex items-center justify-center shrink-0 mt-0.5`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-foreground flex items-center gap-2">
+                            <span>{mod.label}</span>
+                            {isEnabled && (
+                              <span className="px-1.5 py-0.2 rounded-md bg-[#06b6d4]/15 text-[#06b6d4] text-[9px] font-extrabold uppercase">
+                                Enabled
+                              </span>
+                            )}
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{mod.desc}</p>
+                        </div>
+                      </div>
+
+                      {/* Toggle switch */}
+                      <div className={`w-10 h-6 rounded-full p-1 transition-colors shrink-0 ${
+                        isEnabled ? 'bg-[#06b6d4]' : 'bg-muted-foreground/30'
+                      }`}>
+                        <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                          isEnabled ? 'translate-x-4' : 'translate-x-0'
+                        }`} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ── Footer Actions ── */}
