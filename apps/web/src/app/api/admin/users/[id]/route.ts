@@ -48,7 +48,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const resolved = await params;
   const userId = resolved.id;
   const body = await req.json().catch(() => ({}));
-  const { firstName, lastName, email, role, isActive, password, phone } = body;
+  const { firstName, lastName, email, role, isActive, password, phone, designation, department } = body;
 
   try {
     const updateData: any = {};
@@ -91,6 +91,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         createdAt: true,
       },
     });
+
+    if (designation !== undefined || department !== undefined) {
+      await prisma.employee.upsert({
+        where: { userId },
+        create: {
+          userId,
+          designation: designation ? String(designation).trim() : null,
+          department: department ? String(department).trim() : null,
+        },
+        update: {
+          ...(designation !== undefined && { designation: String(designation).trim() || null }),
+          ...(department !== undefined && { department: String(department).trim() || null }),
+        },
+      });
+    }
 
     return NextResponse.json({ ok: true, data: updatedUser, message: 'User updated successfully' });
   } catch (error: any) {

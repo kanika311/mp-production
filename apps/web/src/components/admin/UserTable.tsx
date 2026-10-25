@@ -648,25 +648,15 @@ export function UserTable({
                             <Bell className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* 2. Edit (Orange Icon Only) */}
-                          <button
-                            type="button"
-                            onClick={() => setEditUser({
-                              id: user.id,
-                              firstName: user.firstName || '',
-                              lastName: user.lastName || '',
-                              email: user.email,
-                              phone: user.phone || '',
-                              role: user.role,
-                              isActive: user.isActive,
-                              password: '',
-                            })}
+                          {/* 2. Edit (Orange Icon Only — Opens Dedicated New Page) */}
+                          <Link
+                            href={`${(typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || currentUserRole === 'ADMIN' ? '/admin' : '/super-admin'}/employees/${user.id}/edit`}
                             className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-[#ea580c] hover:bg-[#c2410c] text-white shadow-2xs transition-all cursor-pointer shrink-0"
-                            title="Edit Employee Credentials"
+                            title="Edit Employee Credentials (Dedicated Page)"
                             aria-label="Edit"
                           >
                             <Pencil className="w-3.5 h-3.5" />
-                          </button>
+                          </Link>
 
                           {/* 3. Task (Purple) */}
                           <button
@@ -693,27 +683,25 @@ export function UserTable({
                             <span>Files</span>
                           </button>
 
-                          {/* 5. Permissions (Cyan/Teal) */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPermissions(user)}
+                          {/* 5. Permissions (Cyan/Teal — Opens Dedicated New Page) */}
+                          <Link
+                            href={`${(typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || currentUserRole === 'ADMIN' ? '/admin' : '/super-admin'}/employees/${user.id}/permissions`}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#06b6d4] hover:bg-[#0891b2] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
-                            title="Configure Sidebar Access & Idle Timeout"
+                            title="Configure Sidebar Access & Idle Timeout (Dedicated Page)"
                           >
                             <ShieldCheck className="w-3 h-3" />
                             <span>Permissions</span>
-                          </button>
+                          </Link>
 
-                          {/* 6. Session (Dark Slate/Navy) */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenSessions(user)}
+                          {/* 6. Session (Dark Slate/Navy — Opens Dedicated New Page) */}
+                          <Link
+                            href={`${(typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || currentUserRole === 'ADMIN' ? '/admin' : '/super-admin'}/employees/${user.id}/sessions`}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
-                            title="View Complete Session History & Device Log"
+                            title="View Complete Session History & Device Log (Dedicated Page)"
                           >
                             <History className="w-3 h-3" />
                             <span>Session</span>
-                          </button>
+                          </Link>
 
                           {/* 7. Delete (Sky/Light Blue Icon Only) */}
                           <button
