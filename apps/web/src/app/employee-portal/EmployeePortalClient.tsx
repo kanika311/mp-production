@@ -612,26 +612,15 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
-      {/* ── Top Command Bar ── */}
-      <div className="w-full border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
-        <div className="w-full px-3 md:px-5 lg:px-6 py-2.5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* ── Mobile Filter Drawer Trigger Icon (Matching User Reference Image 2) ── */}
-            <button
-              type="button"
-              onClick={() => setIsMobileDrawerOpen(true)}
-              className="lg:hidden w-10 h-10 rounded-2xl border-2 border-emerald-500 bg-card hover:bg-emerald-500/10 text-emerald-500 shadow-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer shrink-0"
-              title="Open Staff Menu & Filters"
-              aria-label="Open Sidebar Menu"
-            >
-              <SlidersHorizontal className="w-5 h-5 text-emerald-500 stroke-[2.4]" />
-            </button>
-
+      {/* ── Top Command Bar (Desktop Only) ── */}
+      <div className="hidden lg:block w-full border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
+        <div className="w-full px-4 lg:px-6 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Staff Command Center
             </span>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground font-medium">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
               <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
               <span>/</span>
               <span className="text-foreground font-semibold">Employee Workspace</span>
@@ -640,7 +629,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
 
           <div className="flex items-center gap-3">
             {/* Live Clock & Auto-Logout Countdown */}
-            <div className="hidden md:flex items-center gap-3 text-xs bg-muted/40 px-3 py-1.5 rounded-full border border-border/60">
+            <div className="flex items-center gap-3 text-xs bg-muted/40 px-3 py-1.5 rounded-full border border-border/60">
               <span className="font-mono font-bold text-foreground flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                 {currentTime.toLocaleTimeString()}
@@ -665,6 +654,19 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── Mobile View Top Bar: ONLY Filter Icon, then direct start with content ── */}
+      <div className="lg:hidden w-full px-3 pt-3 pb-1 flex items-center">
+        <button
+          type="button"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="w-11 h-11 rounded-2xl border-2 border-emerald-500 bg-card hover:bg-emerald-500/10 text-emerald-500 shadow-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer shrink-0"
+          title="Open Staff Menu & Filters"
+          aria-label="Open Sidebar Menu"
+        >
+          <SlidersHorizontal className="w-5 h-5 text-emerald-500 stroke-[2.4]" />
+        </button>
       </div>
 
       {/* ── Mobile Floating Filter Button (Bottom-Left Quick Access, Matching Image 2) ── */}

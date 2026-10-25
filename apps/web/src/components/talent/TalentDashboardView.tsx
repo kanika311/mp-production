@@ -329,26 +329,15 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground pt-20 pb-16">
-      {/* ── Sub-header / Breadcrumb Bar (Full Width, No Empty Margins) ── */}
-      <div className="border-b border-border/80 bg-surface/50 backdrop-blur-md sticky top-[60px] z-30 shadow-xs">
-        <div className="w-full px-3 md:px-5 lg:px-6 py-2.5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* ── Mobile Filter Drawer Trigger Icon (Matching User Reference Image 2) ── */}
-            <button
-              type="button"
-              onClick={() => setIsMobileDrawerOpen(true)}
-              className="lg:hidden w-10 h-10 rounded-2xl border-2 border-brand bg-card hover:bg-brand/10 text-brand shadow-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer shrink-0"
-              title="Open Talent Menu & Filters"
-              aria-label="Open Sidebar Menu"
-            >
-              <SlidersHorizontal className="w-5 h-5 text-brand stroke-[2.4]" />
-            </button>
-
+      {/* ── Desktop Sub-header / Breadcrumb Bar (Hidden on Mobile) ── */}
+      <div className="hidden lg:block border-b border-border/80 bg-surface/50 backdrop-blur-md sticky top-[60px] z-30 shadow-xs">
+        <div className="w-full px-4 lg:px-6 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand/10 text-brand border border-brand/20">
               <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
               Talent Command Center
             </span>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground font-medium">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
               <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
               <span>/</span>
               <Link href="/talent" className="hover:text-foreground transition-colors">Talent Directory</Link>
@@ -364,7 +353,7 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-muted text-xs font-bold transition-all text-foreground"
             >
               <ExternalLink className="w-3.5 h-3.5 text-brand" />
-              <span className="hidden sm:inline">View Public Profile</span>
+              <span>View Public Profile</span>
             </Link>
             <Link
               href="/talent-dashboard/edit"
@@ -380,10 +369,23 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
               title="Logout from Account"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Logout</span>
+              <span>Logout</span>
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── Mobile View Top Bar: ONLY Filter Icon, then direct start with content ── */}
+      <div className="lg:hidden w-full px-3 pt-3 pb-1 flex items-center">
+        <button
+          type="button"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="w-11 h-11 rounded-2xl border-2 border-brand bg-card hover:bg-brand/10 text-brand shadow-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer shrink-0"
+          title="Open Talent Menu & Filters"
+          aria-label="Open Sidebar Menu"
+        >
+          <SlidersHorizontal className="w-5 h-5 text-brand stroke-[2.4]" />
+        </button>
       </div>
 
       {/* ── Mobile Floating Filter Button (Bottom-Left Quick Access, Matching Image 2) ── */}
