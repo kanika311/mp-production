@@ -614,24 +614,24 @@ export function UserTable({
                         </button>
                       </td>
 
-                      {/* ACTION BUTTONS (EXACT 7 BUTTONS FROM IMAGE 3) */}
+                      {/* ACTION BUTTONS: Clean single-line layout with icons for Alert, Edit, Delete */}
                       <td className="px-5 py-3.5 text-center">
-                        <div className="inline-flex flex-wrap items-center justify-center gap-1.5">
-                          {/* 1. Alert (Orange/Amber) */}
+                        <div className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                          {/* 1. Alert (Orange/Amber Icon Only) */}
                           <button
                             type="button"
                             onClick={() => {
                               setAlertUser(user);
                               setAlertMessage(`Important notice for ${user.firstName}: Please update your production shoot log.`);
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-[#f59e0b] hover:bg-[#d97706] text-white shadow-2xs transition-all cursor-pointer shrink-0"
                             title="Send Broadcast Alert"
+                            aria-label="Alert"
                           >
-                            <Bell className="w-3 h-3" />
-                            <span>Alert</span>
+                            <Bell className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* 2. Edit (Orange) */}
+                          {/* 2. Edit (Orange Icon Only) */}
                           <button
                             type="button"
                             onClick={() => setEditUser({
@@ -644,11 +644,11 @@ export function UserTable({
                               isActive: user.isActive,
                               password: '',
                             })}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-[#ea580c] hover:bg-[#c2410c] text-white shadow-2xs transition-all cursor-pointer shrink-0"
                             title="Edit Employee Credentials"
+                            aria-label="Edit"
                           >
-                            <Pencil className="w-3 h-3" />
-                            <span>Edit</span>
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
 
                           {/* 3. Task (Purple) */}
@@ -698,7 +698,7 @@ export function UserTable({
                             <span>Session</span>
                           </button>
 
-                          {/* 7. Delete (Sky/Light Blue) */}
+                          {/* 7. Delete (Sky/Light Blue Icon Only) */}
                           <button
                             type="button"
                             onClick={() => setConfirmAction({
@@ -706,11 +706,11 @@ export function UserTable({
                               userId: user.id,
                               userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
                             })}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-[#0284c7] hover:bg-[#0369a1] text-white shadow-2xs transition-all cursor-pointer shrink-0"
                             title="Delete Employee"
+                            aria-label="Delete"
                           >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Delete</span>
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
