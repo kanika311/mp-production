@@ -47,6 +47,7 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
   const [liveProfile, setLiveProfile] = useState<any>(profile);
   const [inboundRequests, setInboundRequests] = useState(profile.hireRequests || []);
   const [castingApplications, setCastingApplications] = useState(profile.castingApplications || []);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -113,12 +114,236 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
     toast.success(type === 'accept' ? 'Booking inquiry accepted!' : 'Booking inquiry declined.');
   };
 
+  const renderSidebarContent = (isDrawer = false) => (
+    <div className="space-y-4">
+      {/* Profile Identity Card */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-brand/20 via-brand-gold/15 to-amber-500/10 pointer-events-none" />
+
+        <div className="relative flex flex-col items-center text-center pt-4">
+          <div className="relative mb-3">
+            <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-brand/40 bg-muted shadow-md flex items-center justify-center">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={stageName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-brand/80 to-brand-glow text-white font-extrabold text-2xl flex items-center justify-center">
+                  {stageName.charAt(0)}
+                </div>
+              )}
+            </div>
+            <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-background border border-border shadow-xs">
+              {isApproved ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
+              ) : (
+                <Clock className="w-4 h-4 text-amber-500 animate-pulse" />
+              )}
+            </span>
+          </div>
+
+          <h3 className="font-serif font-bold text-lg text-foreground tracking-tight">{stageName}</h3>
+          <span className="text-xs uppercase font-extrabold tracking-wider text-brand mt-0.5">{category}</span>
+
+          {/* Status Badges */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+              isApproved 
+                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' 
+                : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isApproved ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+              {isApproved ? 'Approved & Live' : 'Under Review'}
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-surface border border-border text-muted-foreground">
+              {experience}
+            </span>
+          </div>
+
+          {/* Quick Info List */}
+          <div className="w-full mt-4 pt-4 border-t border-border/70 space-y-2 text-xs text-left">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" /> Location</span>
+              <span className="font-semibold text-foreground truncate max-w-[130px]">{location}</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5 text-primary" /> Profile Views</span>
+              <span className="font-semibold text-foreground">{viewsCount}</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-primary" /> Shoots Done</span>
+              <span className="font-semibold text-foreground">{projectsCount}</span>
+            </div>
+          </div>
+
+          {/* Action CTA */}
+          <div className="w-full mt-4 flex gap-2">
+            <Link
+              href="/talent-dashboard/edit"
+              onClick={() => isDrawer && setIsMobileDrawerOpen(false)}
+              className="flex-1 py-2 rounded-xl text-center text-xs font-bold bg-muted hover:bg-muted/80 text-foreground transition-all"
+            >
+              Edit Profile
+            </Link>
+            <Link
+              href={`/talent/${profile.slug || profile.id || ''}`}
+              target="_blank"
+              onClick={() => isDrawer && setIsMobileDrawerOpen(false)}
+              className="py-2 px-3 rounded-xl text-center text-xs font-bold border border-border hover:bg-muted text-foreground transition-all flex items-center justify-center"
+              title="Public Profile"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar Navigation Panel (Like Reference Screenshot) */}
+      <div className="rounded-2xl border border-border bg-card p-3 shadow-xs space-y-1">
+        <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          Talent Panel
+        </div>
+
+        <button
+          onClick={() => {
+            setActiveTab('overview');
+            if (isDrawer) setIsMobileDrawerOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'overview'
+              ? 'bg-brand text-white shadow-xs'
+              : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-4 h-4" />
+            <span>Overview &amp; Activity</span>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('requests');
+            if (isDrawer) setIsMobileDrawerOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'requests'
+              ? 'bg-brand text-white shadow-xs'
+              : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <MessageSquare className="w-4 h-4" />
+            <span>Inbound Direct Requests</span>
+          </div>
+          {inboundRequests.length > 0 && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              activeTab === 'requests' ? 'bg-white text-brand' : 'bg-brand/10 text-brand'
+            }`}>
+              {inboundRequests.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('castings');
+            if (isDrawer) setIsMobileDrawerOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'castings'
+              ? 'bg-brand text-white shadow-xs'
+              : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <Film className="w-4 h-4" />
+            <span>Casting Applications</span>
+          </div>
+          {castingApplications.length > 0 && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              activeTab === 'castings' ? 'bg-white text-brand' : 'bg-muted text-muted-foreground'
+            }`}>
+              {castingApplications.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('media');
+            if (isDrawer) setIsMobileDrawerOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'media'
+              ? 'bg-brand text-white shadow-xs'
+              : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <Camera className="w-4 h-4" />
+            <span>Portfolio &amp; Showreel</span>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+        </button>
+
+        <Link
+          href="/talent"
+          onClick={() => isDrawer && setIsMobileDrawerOpen(false)}
+          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all"
+        >
+          <div className="flex items-center gap-2.5">
+            <Flame className="w-4 h-4 text-amber-500" />
+            <span>Browse Live Casting Board</span>
+          </div>
+          <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+        </Link>
+
+        <Link
+          href="/talent-dashboard/edit"
+          onClick={() => isDrawer && setIsMobileDrawerOpen(false)}
+          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all"
+        >
+          <div className="flex items-center gap-2.5">
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>Profile Settings</span>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+        </Link>
+
+        <div className="pt-1.5 mt-1 border-t border-border/60">
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center gap-2.5">
+              <LogOut className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
+              <span>Logout</span>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 opacity-70 text-rose-500/60" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="w-full min-h-screen bg-background text-foreground pt-20 pb-16">
       {/* ── Sub-header / Breadcrumb Bar (Full Width, No Empty Margins) ── */}
       <div className="border-b border-border/80 bg-surface/50 backdrop-blur-md sticky top-[60px] z-30 shadow-xs">
         <div className="w-full px-3 md:px-5 lg:px-6 py-2.5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* ── Mobile Filter Drawer Trigger Icon (Matching User Reference Image 2) ── */}
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="lg:hidden w-10 h-10 rounded-2xl border-2 border-brand bg-card hover:bg-brand/10 text-brand shadow-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer shrink-0"
+              title="Open Talent Menu & Filters"
+              aria-label="Open Sidebar Menu"
+            >
+              <SlidersHorizontal className="w-5 h-5 text-brand stroke-[2.4]" />
+            </button>
+
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand/10 text-brand border border-brand/20">
               <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
               Talent Command Center
@@ -139,7 +364,7 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-muted text-xs font-bold transition-all text-foreground"
             >
               <ExternalLink className="w-3.5 h-3.5 text-brand" />
-              <span>View Public Profile</span>
+              <span className="hidden sm:inline">View Public Profile</span>
             </Link>
             <Link
               href="/talent-dashboard/edit"
@@ -155,216 +380,87 @@ export function TalentDashboardView({ profile, user, isApproved }: TalentDashboa
               title="Logout from Account"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Logout</span>
+              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* ── Mobile Floating Filter Button (Bottom-Left Quick Access, Matching Image 2) ── */}
+      <div className="fixed bottom-6 left-5 z-40 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="w-12 h-12 rounded-2xl border-2 border-brand bg-card/95 backdrop-blur-md text-brand shadow-xl shadow-brand/25 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer ring-4 ring-brand/15"
+          title="Open Talent Menu & Filters"
+          aria-label="Open Sidebar Menu"
+        >
+          <SlidersHorizontal className="w-6 h-6 stroke-[2.4] text-brand" />
+        </button>
+      </div>
+
+      {/* ── Mobile Slide-over Drawer (Opens on Filter Icon Click) ── */}
+      <AnimatePresence>
+        {isMobileDrawerOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileDrawerOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+
+            {/* Slide Drawer Content */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+              className="fixed inset-y-0 left-0 w-[85%] max-w-[340px] bg-background border-r border-border p-4 shadow-2xl z-50 overflow-y-auto space-y-4"
+            >
+              {/* Drawer Top Bar */}
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl border-2 border-brand bg-brand/10 text-brand flex items-center justify-center">
+                    <SlidersHorizontal className="w-4 h-4 stroke-[2.4]" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif font-bold text-sm text-foreground">Talent Menu</h4>
+                    <p className="text-[10px] text-muted-foreground">Profile &amp; Navigation</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="p-1.5 rounded-xl border border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Close Menu"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Render identical Left Panel content inside Drawer */}
+              {renderSidebarContent(true)}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Main 3-Column Layout: Full Window Width & Sticky Sidebars ── */}
       <div className="w-full px-2 sm:px-3 lg:px-4 mt-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-start">
 
           {/* ══════════════════════════════════════════════════════════════════
-              COLUMN 1 (LEFT SIDEBAR): Sticky Fixed, Scrollable Profile & Tabs
+              COLUMN 1 (LEFT SIDEBAR): Desktop Only (Hidden on Mobile, Opens as Drawer)
               ══════════════════════════════════════════════════════════════════ */}
           <aside 
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
-            className="lg:col-span-3 lg:sticky lg:top-[115px] lg:h-[calc(100vh-130px)] lg:max-h-[calc(100vh-130px)] lg:overflow-y-auto overscroll-contain touch-pan-y pr-1 pb-16 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="hidden lg:block lg:col-span-3 lg:sticky lg:top-[115px] lg:h-[calc(100vh-130px)] lg:max-h-[calc(100vh-130px)] lg:overflow-y-auto overscroll-contain touch-pan-y pr-1 pb-16 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
-            {/* Profile Identity Card */}
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-xs relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-brand/20 via-brand-gold/15 to-amber-500/10 pointer-events-none" />
-
-              <div className="relative flex flex-col items-center text-center pt-4">
-                <div className="relative mb-3">
-                  <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-brand/40 bg-muted shadow-md flex items-center justify-center">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt={stageName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-brand/80 to-brand-glow text-white font-extrabold text-2xl flex items-center justify-center">
-                        {stageName.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-background border border-border shadow-xs">
-                    {isApproved ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
-                    ) : (
-                      <Clock className="w-4 h-4 text-amber-500 animate-pulse" />
-                    )}
-                  </span>
-                </div>
-
-                <h3 className="font-serif font-bold text-lg text-foreground tracking-tight">{stageName}</h3>
-                <span className="text-xs uppercase font-extrabold tracking-wider text-brand mt-0.5">{category}</span>
-
-                {/* Status Badges */}
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                    isApproved 
-                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' 
-                      : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${isApproved ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
-                    {isApproved ? 'Approved & Live' : 'Under Review'}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-surface border border-border text-muted-foreground">
-                    {experience}
-                  </span>
-                </div>
-
-                {/* Quick Info List */}
-                <div className="w-full mt-4 pt-4 border-t border-border/70 space-y-2 text-xs text-left">
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" /> Location</span>
-                    <span className="font-semibold text-foreground truncate max-w-[130px]">{location}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5 text-primary" /> Profile Views</span>
-                    <span className="font-semibold text-foreground">{viewsCount}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-primary" /> Shoots Done</span>
-                    <span className="font-semibold text-foreground">{projectsCount}</span>
-                  </div>
-                </div>
-
-                {/* Action CTA */}
-                <div className="w-full mt-4 flex gap-2">
-                  <Link
-                    href="/talent-dashboard/edit"
-                    className="flex-1 py-2 rounded-xl text-center text-xs font-bold bg-muted hover:bg-muted/80 text-foreground transition-all"
-                  >
-                    Edit Profile
-                  </Link>
-                  <Link
-                    href={`/talent/${profile.slug || profile.id || ''}`}
-                    target="_blank"
-                    className="py-2 px-3 rounded-xl text-center text-xs font-bold border border-border hover:bg-muted text-foreground transition-all flex items-center justify-center"
-                    title="Public Profile"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar Navigation Panel (Like Reference Screenshot) */}
-            <div className="rounded-2xl border border-border bg-card p-3 shadow-xs space-y-1">
-              <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                Talent Panel
-              </div>
-
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'overview'
-                    ? 'bg-brand text-white shadow-xs'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Overview & Activity</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-              </button>
-
-              <button
-                onClick={() => setActiveTab('requests')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'requests'
-                    ? 'bg-brand text-white shadow-xs'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Inbound Direct Requests</span>
-                </div>
-                {inboundRequests.length > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    activeTab === 'requests' ? 'bg-white text-brand' : 'bg-brand/10 text-brand'
-                  }`}>
-                    {inboundRequests.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveTab('castings')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'castings'
-                    ? 'bg-brand text-white shadow-xs'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Film className="w-4 h-4" />
-                  <span>Casting Applications</span>
-                </div>
-                {castingApplications.length > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    activeTab === 'castings' ? 'bg-white text-brand' : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {castingApplications.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveTab('media')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'media'
-                    ? 'bg-brand text-white shadow-xs'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Camera className="w-4 h-4" />
-                  <span>Portfolio & Showreel</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-              </button>
-
-              <Link
-                href="/talent"
-                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Flame className="w-4 h-4 text-amber-500" />
-                  <span>Browse Live Casting Board</span>
-                </div>
-                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-              </Link>
-
-              <Link
-                href="/talent-dashboard/edit"
-                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-foreground/80 hover:bg-muted hover:text-foreground transition-all"
-              >
-                <div className="flex items-center gap-2.5">
-                  <SlidersHorizontal className="w-4 h-4" />
-                  <span>Profile Settings</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-              </Link>
-
-              <div className="pt-1.5 mt-1 border-t border-border/60">
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <LogOut className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
-                    <span>Logout</span>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 opacity-70 text-rose-500/60" />
-                </button>
-              </div>
-            </div>
+            {renderSidebarContent(false)}
           </aside>
 
           {/* ══════════════════════════════════════════════════════════════════

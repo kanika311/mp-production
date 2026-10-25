@@ -37,8 +37,10 @@ import {
   Check,
   X,
   Radio,
-  Bell
+  Bell,
+  SlidersHorizontal
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SponsoredSidebarCard } from '@/components/ui/sponsored-sidebar-card';
 
 interface EmployeePortalClientProps {
@@ -52,6 +54,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
   const [activeTab, setActiveTab] = useState<string>('attendance');
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Leave Form State
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -329,12 +332,301 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
     return `${m}m ${s < 10 ? '0' : ''}${s}s`;
   };
 
+  const renderSidebarContent = (isDrawer = false) => (
+    <div className="space-y-3">
+      {/* Staff Profile Identity Card */}
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-xs relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-blue-500/10 pointer-events-none" />
+
+        <div className="relative flex flex-col items-center text-center pt-2">
+          <div className="relative mb-3">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-emerald-500/40 bg-muted shadow-md flex items-center justify-center">
+              {employee?.user?.avatarUrl ? (
+                <img src={employee.user.avatarUrl} alt={fullName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-extrabold text-2xl flex items-center justify-center">
+                  {fullName.charAt(0)}
+                </div>
+              )}
+            </div>
+            <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-background border border-border shadow-xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
+            </span>
+          </div>
+
+          <h3 className="font-serif font-bold text-base text-foreground tracking-tight">{fullName}</h3>
+          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{designation} • {department}</span>
+          <span className="text-[11px] font-mono text-muted-foreground mt-0.5">{employee?.user?.email || user?.email}</span>
+
+          {/* Status Badges */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              ACTIVE STAFF
+            </span>
+          </div>
+
+          {/* Shift Status & Punch In/Out button */}
+          <div className="w-full mt-3 p-3 rounded-xl bg-muted/40 border border-border/80 text-left space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground font-medium">Shift Status:</span>
+              <span className={`font-bold flex items-center gap-1.5 ${isCheckedIn ? 'text-emerald-500' : 'text-amber-500'}`}>
+                <span className={`w-2 h-2 rounded-full ${isCheckedIn ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                {isCheckedIn ? 'Checked In' : 'Not Clocked In'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground font-medium">Shift Duration:</span>
+              <span className="font-mono font-bold text-emerald-500">{getElapsedTime()}</span>
+            </div>
+            <button
+              type="button"
+              onClick={handlePunchAction}
+              disabled={isSubmitting}
+              className={`w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50 ${
+                isCheckedIn
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+              }`}
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Timer className="w-3.5 h-3.5" />
+              )}
+              <span>{isCheckedIn ? 'Punch Out' : 'Punch In'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar Navigation Panel */}
+      <div className="rounded-2xl border border-border bg-card p-2.5 shadow-xs space-y-1">
+        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          Employee Workspace
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('attendance');
+            if (isDrawer) setIsMobileDrawerOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'attendance'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span>Attendance &amp; Shifts</span>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('leaves');
+            if (isDrawer) setIsMobileDrawerOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'leaves'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            <span>Leave Requests</span>
+          </div>
+          {leaveRequests.length > 0 && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              activeTab === 'leaves' ? 'bg-white text-emerald-600' : 'bg-emerald-500/10 text-emerald-600'
+            }`}>
+              {leaveRequests.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('expenses');
+            if (isDrawer) setIsMobileDrawerOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'expenses'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Receipt className="w-4 h-4" />
+            <span>Expense Claims</span>
+          </div>
+          {expenseClaims.length > 0 && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              activeTab === 'expenses' ? 'bg-white text-emerald-600' : 'bg-emerald-500/10 text-emerald-600'
+            }`}>
+              {expenseClaims.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('projects');
+            if (isDrawer) setIsMobileDrawerOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'projects'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Briefcase className="w-4 h-4" />
+            <span>Studio Projects &amp; Tasks</span>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+        </button>
+
+        {/* ── DELEGATED ADMIN WORKSPACES ── */}
+        <div className="pt-3 pb-1 border-t border-border/70">
+          <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#06b6d4] flex items-center gap-1.5">
+            <Shield className="w-3 h-3" />
+            <span>Permitted Admin Modules</span>
+          </div>
+
+          {permissions?.modules?.talentRoster && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_talent');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_talent'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>Talent Roster CMS</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {permissions?.modules?.blogs && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_blogs');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_blogs'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-blue-500" />
+                <span>Blogs &amp; Editorial</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {permissions?.modules?.services && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_services');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_services'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-teal-500" />
+                <span>Services &amp; Packages</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {permissions?.modules?.leads && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_leads');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_leads'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-purple-500" />
+                <span>Contact Leads &amp; CRM</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+
+          {permissions?.modules?.mediaAssets && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('admin_media');
+                if (isDrawer) setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admin_media'
+                  ? 'bg-[#06b6d4] text-white shadow-xs'
+                  : 'text-foreground/80 hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Film className="w-4 h-4 text-rose-500" />
+                <span>Media Vault (4K/8K)</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-70" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
-      {/* ── Top Command Bar (Identical to Talent Dashboard Header) ── */}
+      {/* ── Top Command Bar ── */}
       <div className="w-full border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
         <div className="w-full px-3 md:px-5 lg:px-6 py-2.5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* ── Mobile Filter Drawer Trigger Icon (Matching User Reference Image 2) ── */}
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="lg:hidden w-10 h-10 rounded-2xl border-2 border-emerald-500 bg-card hover:bg-emerald-500/10 text-emerald-500 shadow-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer shrink-0"
+              title="Open Staff Menu & Filters"
+              aria-label="Open Sidebar Menu"
+            >
+              <SlidersHorizontal className="w-5 h-5 text-emerald-500 stroke-[2.4]" />
+            </button>
+
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Staff Command Center
@@ -375,264 +667,81 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
         </div>
       </div>
 
+      {/* ── Mobile Floating Filter Button (Bottom-Left Quick Access, Matching Image 2) ── */}
+      <div className="fixed bottom-6 left-5 z-40 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="w-12 h-12 rounded-2xl border-2 border-emerald-500 bg-card/95 backdrop-blur-md text-emerald-500 shadow-xl shadow-emerald-500/25 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer ring-4 ring-emerald-500/15"
+          title="Open Staff Menu & Filters"
+          aria-label="Open Sidebar Menu"
+        >
+          <SlidersHorizontal className="w-6 h-6 stroke-[2.4] text-emerald-500" />
+        </button>
+      </div>
+
+      {/* ── Mobile Slide-over Drawer (Opens on Filter Icon Click) ── */}
+      <AnimatePresence>
+        {isMobileDrawerOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileDrawerOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+
+            {/* Slide Drawer Content */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+              className="fixed inset-y-0 left-0 w-[85%] max-w-[340px] bg-background border-r border-border p-4 shadow-2xl z-50 overflow-y-auto space-y-4"
+            >
+              {/* Drawer Top Bar */}
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                    <SlidersHorizontal className="w-4 h-4 stroke-[2.4]" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif font-bold text-sm text-foreground">Staff Menu</h4>
+                    <p className="text-[10px] text-muted-foreground">Workspace &amp; Navigation</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="p-1.5 rounded-xl border border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Close Menu"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Render identical Left Panel content inside Drawer */}
+              {renderSidebarContent(true)}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* ── Main 3-Column Layout: Matching TalentDashboardView Exactly ── */}
       <div className="w-full px-2 sm:px-3 lg:px-4 mt-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-start">
 
           {/* ══════════════════════════════════════════════════════════════════
-              COLUMN 1 (LEFT SIDEBAR): Sticky Fixed, Scrollable Profile & Tabs
+              COLUMN 1 (LEFT SIDEBAR): Desktop Only (Hidden on Mobile, Opens as Drawer)
               ══════════════════════════════════════════════════════════════════ */}
           <aside 
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
-            className="lg:col-span-3 lg:sticky lg:top-[65px] lg:h-[calc(100vh-80px)] lg:max-h-[calc(100vh-80px)] lg:overflow-y-auto overscroll-contain touch-pan-y pr-1 pb-16 space-y-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="hidden lg:block lg:col-span-3 lg:sticky lg:top-[65px] lg:h-[calc(100vh-80px)] lg:max-h-[calc(100vh-80px)] lg:overflow-y-auto overscroll-contain touch-pan-y pr-1 pb-16 space-y-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
-            {/* Staff Profile Identity Card */}
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-xs relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-blue-500/10 pointer-events-none" />
-
-              <div className="relative flex flex-col items-center text-center pt-2">
-                <div className="relative mb-3">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-emerald-500/40 bg-muted shadow-md flex items-center justify-center">
-                    {employee?.user?.avatarUrl ? (
-                      <img src={employee.user.avatarUrl} alt={fullName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-extrabold text-2xl flex items-center justify-center">
-                        {fullName.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-background border border-border shadow-xs">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
-                  </span>
-                </div>
-
-                <h3 className="font-serif font-bold text-base text-foreground tracking-tight">{fullName}</h3>
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{designation} • {department}</span>
-                <span className="text-[11px] font-mono text-muted-foreground mt-0.5">{employee?.user?.email || user?.email}</span>
-
-                {/* Status Badges */}
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    ACTIVE STAFF
-                  </span>
-                </div>
-
-                {/* Shift Status & Punch In/Out button */}
-                <div className="w-full mt-3 p-3 rounded-xl bg-muted/40 border border-border/80 text-left space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground font-medium">Shift Status:</span>
-                    <span className={`font-bold flex items-center gap-1.5 ${isCheckedIn ? 'text-emerald-500' : 'text-amber-500'}`}>
-                      <span className={`w-2 h-2 rounded-full ${isCheckedIn ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                      {isCheckedIn ? 'Checked In' : 'Not Clocked In'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground font-medium">Shift Duration:</span>
-                    <span className="font-mono font-bold text-emerald-500">{getElapsedTime()}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handlePunchAction}
-                    disabled={isSubmitting}
-                    className={`w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50 ${
-                      isCheckedIn
-                        ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Timer className="w-3.5 h-3.5" />
-                    )}
-                    <span>{isCheckedIn ? 'Punch Out' : 'Punch In'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar Navigation Panel */}
-            <div className="rounded-2xl border border-border bg-card p-2.5 shadow-xs space-y-1">
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Employee Workspace
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('attendance')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'attendance'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>Attendance &amp; Shifts</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('leaves')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'leaves'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <span>Leave Requests</span>
-                </div>
-                {leaveRequests.length > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    activeTab === 'leaves' ? 'bg-white text-emerald-600' : 'bg-emerald-500/10 text-emerald-600'
-                  }`}>
-                    {leaveRequests.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('expenses')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'expenses'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Receipt className="w-4 h-4" />
-                  <span>Expense Claims</span>
-                </div>
-                {expenseClaims.length > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    activeTab === 'expenses' ? 'bg-white text-emerald-600' : 'bg-emerald-500/10 text-emerald-600'
-                  }`}>
-                    {expenseClaims.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('projects')}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'projects'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-4 h-4" />
-                  <span>Studio Projects &amp; Tasks</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-              </button>
-
-              {/* ── DELEGATED ADMIN WORKSPACES (CONFIGURED BY ADMIN!) ── */}
-              <div className="pt-3 pb-1 border-t border-border/70">
-                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#06b6d4] flex items-center gap-1.5">
-                  <Shield className="w-3 h-3" />
-                  <span>Permitted Admin Modules</span>
-                </div>
-
-                {permissions?.modules?.talentRoster && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('admin_talent')}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      activeTab === 'admin_talent'
-                        ? 'bg-[#06b6d4] text-white shadow-xs'
-                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span>Talent Roster CMS</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-                  </button>
-                )}
-
-                {permissions?.modules?.blogs && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('admin_blogs')}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      activeTab === 'admin_blogs'
-                        ? 'bg-[#06b6d4] text-white shadow-xs'
-                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-500" />
-                      <span>Blogs &amp; Editorial</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-                  </button>
-                )}
-
-                {permissions?.modules?.services && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('admin_services')}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      activeTab === 'admin_services'
-                        ? 'bg-[#06b6d4] text-white shadow-xs'
-                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-teal-500" />
-                      <span>Services &amp; Packages</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-                  </button>
-                )}
-
-                {permissions?.modules?.leads && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('admin_leads')}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      activeTab === 'admin_leads'
-                        ? 'bg-[#06b6d4] text-white shadow-xs'
-                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-purple-500" />
-                      <span>Contact Leads &amp; CRM</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-                  </button>
-                )}
-
-                {permissions?.modules?.mediaAssets && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('admin_media')}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      activeTab === 'admin_media'
-                        ? 'bg-[#06b6d4] text-white shadow-xs'
-                        : 'text-foreground/80 hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Film className="w-4 h-4 text-rose-500" />
-                      <span>Media Vault (4K/8K)</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 opacity-70" />
-                  </button>
-                )}
-              </div>
-            </div>
+            {renderSidebarContent(false)}
           </aside>
 
           {/* ══════════════════════════════════════════════════════════════════
