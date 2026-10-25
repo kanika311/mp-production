@@ -340,32 +340,32 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
     <div className="space-y-3">
       {/* Staff Profile Identity Card */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-blue-500/10 pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-brand/20 via-brand-gold/15 to-amber-500/10 pointer-events-none" />
 
         <div className="relative flex flex-col items-center text-center pt-2">
           <div className="relative mb-3">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-emerald-500/40 bg-muted shadow-md flex items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-brand/40 bg-muted shadow-md flex items-center justify-center">
               {employee?.user?.avatarUrl ? (
                 <img src={employee.user.avatarUrl} alt={fullName} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-extrabold text-2xl flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-brand to-rose-700 text-white font-extrabold text-2xl flex items-center justify-center">
                   {fullName.charAt(0)}
                 </div>
               )}
             </div>
             <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-background border border-border shadow-xs">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
+              <CheckCircle2 className="w-4 h-4 text-brand fill-brand/20" />
             </span>
           </div>
 
           <h3 className="font-serif font-bold text-base text-foreground tracking-tight">{fullName}</h3>
-          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{designation} • {department}</span>
+          <span className="text-xs font-bold text-brand dark:text-brand mt-0.5">{designation} • {department}</span>
           <span className="text-[11px] font-mono text-muted-foreground mt-0.5">{employee?.user?.email || user?.email}</span>
 
           {/* Status Badges */}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-brand/10 text-brand border border-brand/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
               ACTIVE STAFF
             </span>
           </div>
@@ -374,14 +374,14 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           <div className="w-full mt-3 p-3 rounded-xl bg-muted/40 border border-border/80 text-left space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground font-medium">Shift Status:</span>
-              <span className={`font-bold flex items-center gap-1.5 ${isCheckedIn ? 'text-emerald-500' : 'text-amber-500'}`}>
-                <span className={`w-2 h-2 rounded-full ${isCheckedIn ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span className={`font-bold flex items-center gap-1.5 ${isCheckedIn ? 'text-brand' : 'text-amber-500'}`}>
+                <span className={`w-2 h-2 rounded-full ${isCheckedIn ? 'bg-brand animate-pulse' : 'bg-amber-500'}`} />
                 {isCheckedIn ? 'Checked In' : 'Not Clocked In'}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground font-medium">Shift Duration:</span>
-              <span className="font-mono font-bold text-emerald-500">{getElapsedTime()}</span>
+              <span className="font-mono font-bold text-brand">{getElapsedTime()}</span>
             </div>
             <button
               type="button"
@@ -389,8 +389,8 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               disabled={isSubmitting}
               className={`w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50 ${
                 isCheckedIn
-                  ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                  ? 'bg-slate-800 hover:bg-slate-700 text-white shadow-slate-800/20'
+                  : 'bg-brand hover:bg-brand/90 text-white shadow-brand/20'
               }`}
             >
               {isSubmitting ? (
@@ -418,7 +418,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           }}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'attendance'
-              ? 'bg-emerald-600 text-white shadow-xs'
+              ? 'bg-brand text-white shadow-sm'
               : 'text-foreground/80 hover:bg-muted hover:text-foreground'
           }`}
         >
@@ -437,7 +437,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           }}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'leaves'
-              ? 'bg-emerald-600 text-white shadow-xs'
+              ? 'bg-brand text-white shadow-sm'
               : 'text-foreground/80 hover:bg-muted hover:text-foreground'
           }`}
         >
@@ -447,7 +447,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           </div>
           {leaveRequests.length > 0 && (
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              activeTab === 'leaves' ? 'bg-white text-emerald-600' : 'bg-emerald-500/10 text-emerald-600'
+              activeTab === 'leaves' ? 'bg-white text-brand' : 'bg-brand/10 text-brand'
             }`}>
               {leaveRequests.length}
             </span>
@@ -462,7 +462,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           }}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'expenses'
-              ? 'bg-emerald-600 text-white shadow-xs'
+              ? 'bg-brand text-white shadow-sm'
               : 'text-foreground/80 hover:bg-muted hover:text-foreground'
           }`}
         >
@@ -472,7 +472,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           </div>
           {expenseClaims.length > 0 && (
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              activeTab === 'expenses' ? 'bg-white text-emerald-600' : 'bg-emerald-500/10 text-emerald-600'
+              activeTab === 'expenses' ? 'bg-white text-brand' : 'bg-brand/10 text-brand'
             }`}>
               {expenseClaims.length}
             </span>
@@ -487,7 +487,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           }}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'projects'
-              ? 'bg-emerald-600 text-white shadow-xs'
+              ? 'bg-brand text-white shadow-sm'
               : 'text-foreground/80 hover:bg-muted hover:text-foreground'
           }`}
         >
@@ -561,7 +561,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               }`}
             >
               <div className="flex items-center gap-2">
-                <Building className="w-4 h-4 text-teal-500" />
+                <Building className="w-4 h-4 text-amber-500" />
                 <span>Services &amp; Packages</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-70" />
@@ -687,7 +687,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               }`}
             >
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-emerald-500" />
+                <MessageSquare className="w-4 h-4 text-purple-500" />
                 <span>Contact Leads &amp; CRM</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-70" />
@@ -729,7 +729,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               }`}
             >
               <div className="flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-emerald-500" />
+                <UserCheck className="w-4 h-4 text-brand" />
                 <span>Crew &amp; Staff</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-70" />
@@ -762,13 +762,13 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
+    <div className="w-full min-h-screen bg-background text-foreground pt-20 sm:pt-24 pb-20">
       {/* ── Top Command Bar (Desktop Only) ── */}
-      <div className="hidden lg:block w-full border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40">
+      <div className="hidden lg:block w-full border-b border-border bg-card/85 backdrop-blur-md sticky top-[64px] z-30 shadow-2xs">
         <div className="w-full px-4 lg:px-6 py-2.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand/10 text-brand border border-brand/30">
+              <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
               Staff Command Center
             </span>
             <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
@@ -812,11 +812,11 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
         <button
           type="button"
           onClick={() => setIsMobileDrawerOpen(true)}
-          className="w-11 h-11 rounded-2xl border-2 border-emerald-500 bg-card hover:bg-emerald-500/10 text-emerald-500 shadow-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer shrink-0"
+          className="w-11 h-11 rounded-2xl border-2 border-brand bg-card hover:bg-brand/10 text-brand shadow-xs transition-all active:scale-95 flex items-center justify-center cursor-pointer shrink-0"
           title="Open Staff Menu & Filters"
           aria-label="Open Sidebar Menu"
         >
-          <SlidersHorizontal className="w-5 h-5 text-emerald-500 stroke-[2.4]" />
+          <SlidersHorizontal className="w-5 h-5 text-brand stroke-[2.4]" />
         </button>
       </div>
 
@@ -825,11 +825,11 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
         <button
           type="button"
           onClick={() => setIsMobileDrawerOpen(true)}
-          className="w-12 h-12 rounded-2xl border-2 border-emerald-500 bg-card/95 backdrop-blur-md text-emerald-500 shadow-xl shadow-emerald-500/25 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer ring-4 ring-emerald-500/15"
+          className="w-12 h-12 rounded-2xl border-2 border-brand bg-card/95 backdrop-blur-md text-brand shadow-xl shadow-brand/20 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer ring-4 ring-brand/15"
           title="Open Staff Menu & Filters"
           aria-label="Open Sidebar Menu"
         >
-          <SlidersHorizontal className="w-6 h-6 stroke-[2.4] text-emerald-500" />
+          <SlidersHorizontal className="w-6 h-6 stroke-[2.4] text-brand" />
         </button>
       </div>
 
@@ -865,7 +865,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               {/* Drawer Top Bar (Fixed Header) */}
               <div className="flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-md shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl border-2 border-brand bg-brand/10 text-brand flex items-center justify-center">
                     <SlidersHorizontal className="w-4 h-4 stroke-[2.4]" />
                   </div>
                   <div>
@@ -904,7 +904,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
       </AnimatePresence>
 
       {/* ── Main 3-Column Layout: Matching TalentDashboardView Exactly ── */}
-      <div className="w-full px-2 sm:px-3 lg:px-4 mt-3">
+      <div className="w-full px-3 sm:px-4 lg:px-6 mt-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-start">
 
           {/* ══════════════════════════════════════════════════════════════════
@@ -913,7 +913,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           <aside 
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
-            className="hidden lg:block lg:col-span-3 lg:sticky lg:top-[65px] lg:h-[calc(100vh-80px)] lg:max-h-[calc(100vh-80px)] lg:overflow-y-auto overscroll-contain touch-pan-y pr-1 pb-16 space-y-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="hidden lg:block lg:col-span-3 lg:sticky lg:top-[125px] lg:h-[calc(100vh-140px)] lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto overscroll-contain touch-pan-y pr-1 pb-16 space-y-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
             {renderSidebarContent(false)}
           </aside>
@@ -927,7 +927,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               <div className="bg-card border border-border rounded-xl p-3 shadow-2xs">
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span className="text-[10px] font-bold uppercase tracking-wider">Attendance</span>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-brand" />
                 </div>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="text-xl font-serif font-extrabold text-foreground">{attendances.length}</span>
@@ -938,10 +938,10 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               <div className="bg-card border border-border rounded-xl p-3 shadow-2xs">
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span className="text-[10px] font-bold uppercase tracking-wider">Leaves</span>
-                  <Calendar className="w-3.5 h-3.5 text-teal-500" />
+                  <Calendar className="w-3.5 h-3.5 text-amber-500" />
                 </div>
                 <div className="mt-1 flex items-baseline gap-1">
-                  <span className="text-xl font-serif font-extrabold text-teal-500">18</span>
+                  <span className="text-xl font-serif font-extrabold text-foreground">18</span>
                   <span className="text-[10px] text-muted-foreground">avail</span>
                 </div>
               </div>
@@ -977,7 +977,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                     <h3 className="font-serif font-bold text-base text-foreground">Production Attendance &amp; Shift Register</h3>
                     <p className="text-xs text-muted-foreground">Realtime GPS punch check-ins synced with studio operations</p>
                   </div>
-                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-bold">
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-brand/10 text-brand border border-brand/20 font-bold">
                     GPS Active
                   </span>
                 </div>
@@ -1015,14 +1015,14 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                               <td className="px-4 py-3 font-mono text-foreground/90">
                                 {outDate ? outDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                               </td>
-                              <td className="px-4 py-3 font-mono font-bold text-emerald-500">
+                              <td className="px-4 py-3 font-mono font-bold text-brand">
                                 {att.durationMin ? `${Math.floor(att.durationMin / 60)}h ${att.durationMin % 60}m` : (outDate ? 'Completed' : 'Ongoing')}
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                   outDate
                                     ? 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
-                                    : 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
+                                    : 'bg-brand/10 text-brand border border-brand/30'
                                 }`}>
                                   {outDate ? 'Completed' : 'Checked In'}
                                 </span>
@@ -1048,7 +1048,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                   <button
                     type="button"
                     onClick={() => setShowLeaveModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand hover:bg-brand/90 text-white font-bold text-xs shadow-xs cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Request Leave</span>
@@ -1075,7 +1075,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                           <p className="text-[11px] text-muted-foreground mt-0.5">{lr.reason}</p>
                         </div>
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                          lr.status === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' :
+                          lr.status === 'APPROVED' ? 'bg-brand/10 text-brand border border-brand/20' :
                           lr.status === 'REJECTED' ? 'bg-rose-500/15 text-rose-600 border border-rose-500/30' :
                           'bg-amber-500/15 text-amber-600 border border-amber-500/30'
                         }`}>
@@ -1099,7 +1099,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                   <button
                     type="button"
                     onClick={() => setShowExpenseModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand hover:bg-brand/90 text-white font-bold text-xs shadow-xs cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Submit Claim</span>
@@ -1124,7 +1124,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                           <p className="text-[11px] text-muted-foreground mt-0.5">{claim.description}</p>
                         </div>
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                          claim.status === 'APPROVED' || claim.status === 'PAID' ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' :
+                          claim.status === 'APPROVED' || claim.status === 'PAID' ? 'bg-brand/10 text-brand border border-brand/20' :
                           claim.status === 'REJECTED' ? 'bg-rose-500/15 text-rose-600 border border-rose-500/30' :
                           'bg-amber-500/15 text-amber-600 border border-amber-500/30'
                         }`}>
@@ -1165,7 +1165,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
 
                   <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-teal-500/15 text-teal-600 border border-teal-500/30">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-brand/10 text-brand border border-brand/20">
                         Post-Production
                       </span>
                       <span className="text-[11px] text-muted-foreground">Deadline: Friday</span>
@@ -1209,7 +1209,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                 <div className="p-4 rounded-xl border border-dashed border-border bg-muted/10 space-y-3 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground">Quick Talent Search &amp; Review</span>
-                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full">Permission Granted</span>
+                    <span className="text-[10px] text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">Permission Granted</span>
                   </div>
                   <input
                     type="text"
@@ -1256,7 +1256,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                 <div className="p-4 rounded-xl border border-dashed border-border bg-muted/10 space-y-3 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground">Recent Blog Articles</span>
-                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full">Editor Access</span>
+                    <span className="text-[10px] text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">Editor Access</span>
                   </div>
                   <div className="space-y-2">
                     <div className="p-3 bg-card border border-border rounded-xl flex items-center justify-between">
@@ -1284,7 +1284,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                 <div className="flex items-center justify-between border-b border-border/70 pb-3">
                   <div>
                     <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
-                      <Building className="w-4 h-4 text-teal-500" />
+                      <Building className="w-4 h-4 text-amber-500" />
                       <span>Delegated Workspace: Production Services &amp; Packages</span>
                     </h3>
                     <p className="text-xs text-muted-foreground">
@@ -1532,7 +1532,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                 <div className="flex items-center justify-between border-b border-border/70 pb-3">
                   <div>
                     <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
-                      <UserCheck className="w-4 h-4 text-emerald-500" />
+                      <UserCheck className="w-4 h-4 text-brand" />
                       <span>Delegated Workspace: Employees &amp; Crew Roster</span>
                     </h3>
                     <p className="text-xs text-muted-foreground">
@@ -1564,7 +1564,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
           <aside 
             data-lenis-prevent
             onWheel={(e) => e.stopPropagation()}
-            className="w-full lg:col-span-3 lg:sticky lg:top-[65px] self-start space-y-3 pb-16"
+            className="w-full lg:col-span-3 lg:sticky lg:top-[125px] self-start space-y-3 pb-16"
           >
             {/* Auto-Logout Idle Timeout Card */}
             <div className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
@@ -1583,14 +1583,14 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-muted-foreground">Auto-Logout Timer</span>
-                  <span className={`font-mono font-bold ${idleSecondsRemaining < 120 ? 'text-rose-500 font-extrabold' : 'text-emerald-500'}`}>
+                  <span className={`font-mono font-bold ${idleSecondsRemaining < 120 ? 'text-rose-500 font-extrabold' : 'text-brand'}`}>
                     {formatIdleTime(idleSecondsRemaining)}
                   </span>
                 </div>
                 <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                   <div 
                     className={`h-full transition-all duration-1000 ${
-                      idleSecondsRemaining < 120 ? 'bg-rose-500' : 'bg-emerald-500'
+                      idleSecondsRemaining < 120 ? 'bg-rose-500' : 'bg-brand'
                     }`}
                     style={{
                       width: `${Math.min(100, Math.max(0, (idleSecondsRemaining / totalIdleSecondsRef.current) * 100))}%`
@@ -1707,7 +1707,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                  className="px-5 py-2 rounded-xl bg-brand hover:bg-brand/90 text-white font-bold"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Application'}
                 </button>
@@ -1780,7 +1780,7 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                  className="px-5 py-2 rounded-xl bg-brand hover:bg-brand/90 text-white font-bold"
                 >
                   {isSubmitting ? 'Filing...' : 'Submit Claim'}
                 </button>
