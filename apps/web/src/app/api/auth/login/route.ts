@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
     response.cookies.set('token', token, cookieOptions);
     response.cookies.set('mdms_auth_token', token, cookieOptions);
     response.cookies.set('next-auth.session-token', token, cookieOptions);
+    response.cookies.set('mdms_auth_role', user.role, cookieOptions);
 
     return response;
   } catch (err: any) {

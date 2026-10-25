@@ -223,6 +223,21 @@ export function UserTable({
     return () => clearTimeout(handler);
   }, [search]);
 
+  const getAuthHeaders = () => {
+    const headers: Record<string, string> = {};
+    if (typeof window !== 'undefined') {
+      const token =
+        localStorage.getItem('token') ||
+        localStorage.getItem('mdms_auth_token') ||
+        sessionStorage.getItem('token') ||
+        sessionStorage.getItem('mdms_auth_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token.trim().replace(/^"|"$/g, '')}`;
+      }
+    }
+    return headers;
+  };
+
   // Fetch users
   const fetchUsers = async () => {
     setLoading(true);
@@ -234,7 +249,9 @@ export function UserTable({
         ...(roleFilter && { role: roleFilter }),
       });
 
-      const res = await fetch(`/api/admin/users?${queryParams.toString()}`);
+      const res = await fetch(`/api/admin/users?${queryParams.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) {
         throw new Error('Failed to fetch users');
       }
