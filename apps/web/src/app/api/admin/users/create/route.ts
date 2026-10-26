@@ -34,9 +34,87 @@ export async function POST(req: Request) {
   try {
     const existing = await prisma.user.findFirst({
       where: { email: { equals: email.trim(), mode: 'insensitive' } },
+      include: { employee: true, talentProfile: true, client: true },
     });
+
     if (existing) {
-      return NextResponse.json({ ok: false, error: 'User with this email already exists' }, { status: 409 });
+      // User with this email already exists (e.g. as TALENT or CLIENT).
+      // Per system requirement: users are role-based; employee, talent, client can share the same email.
+      // When provisioning from Employee section, assign the provisioned role and link profile.
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Check if phone collides with another user
+      let phoneToUpdate = existing.phone;
+      if (phone && String(phone).trim()) {
+        const cleanPhone = String(phone).trim();
+        const phoneTaken = await prisma.user.findFirst({
+          where: {
+            phone: cleanPhone,
+            id: { not: existing.id },
+          },
+        });
+        if (!phoneTaken) {
+          phoneToUpdate = cleanPhone;
+        }
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          role: role as any,
+          passwordHash,
+          isActive: true,
+          phone: phoneToUpdate,
+          ...(firstName ? { firstName } : {}),
+          ...(lastName ? { lastName } : {}),
+        },
+      });
+
+      // Upsert profile for the provisioned role
+      if (role === 'EMPLOYEE' || role === 'EDITOR' || role === 'PROJECT_MANAGER') {
+        try {
+          await prisma.employee.upsert({
+            where: { userId: existing.id },
+            update: {
+              designation: role === 'EDITOR' ? 'Video Editor' : role === 'PROJECT_MANAGER' ? 'Project Manager' : 'Production Crew',
+              department: 'Production',
+            },
+            create: {
+              userId: existing.id,
+              designation: role === 'EDITOR' ? 'Video Editor' : role === 'PROJECT_MANAGER' ? 'Project Manager' : 'Production Crew',
+              department: 'Production',
+            },
+          });
+        } catch (empErr) {
+          console.warn('Could not auto-create/update employee profile:', empErr);
+        }
+      } else if (role === 'CLIENT') {
+        try {
+          await prisma.client.upsert({
+            where: { userId: existing.id },
+            update: {},
+            create: { userId: existing.id },
+          });
+        } catch (clientErr) {
+          console.warn('Could not upsert client profile:', clientErr);
+        }
+      }
+
+      return NextResponse.json({
+        ok: true,
+        data: updatedUser,
+        message: `Existing user account linked and updated with role ${role}.`,
+      });
+    }
+
+    // Check phone uniqueness for new user
+    let phoneToSet: string | null = null;
+    if (phone && String(phone).trim()) {
+      const cleanPhone = String(phone).trim();
+      const phoneTaken = await prisma.user.findFirst({ where: { phone: cleanPhone } });
+      if (!phoneTaken) {
+        phoneToSet = cleanPhone;
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -46,7 +124,7 @@ export async function POST(req: Request) {
         passwordHash,
         firstName,
         lastName,
-        phone: phone ? String(phone).trim() : null,
+        phone: phoneToSet,
         role: role as any,
         isActive: true,
       },

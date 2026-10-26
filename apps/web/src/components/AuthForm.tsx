@@ -101,7 +101,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         let loginRes = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email, password, loginType: 'public' }),
         });
 
         // Fallback to NestJS API (/api/v1/auth/login) if reverse proxy routes /api to NestJS (giving 404)
@@ -109,7 +109,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           loginRes = await fetch('/api/v1/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, loginType: 'public' }),
           });
         }
 
