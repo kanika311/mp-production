@@ -67,3 +67,6 @@ apps/web/public/videos/*.mp4
 # Excel exports
 exports_excel/
 *.xlsx
+
+env.local
+.env*.local

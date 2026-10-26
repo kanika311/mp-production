@@ -1,0 +1,54 @@
+{
+  "cmrl1lz3k000j6tvswhj1k8li": {
+    "idleTimeoutMinutes": 30,
+    "modules": {
+      "talentRoster": true,
+      "services": true,
+      "blogs": true,
+      "youtuber": true,
+      "projects": true,
+      "leads": true,
+      "expenses": false,
+      "mediaAssets": true,
+      "talent": true,
+      "become-a-youtuber": true,
+      "home-page": true,
+      "homePage": true,
+      "footer-cms": true,
+      "footerCms": true,
+      "sponsored": true,
+      "contact-leads": true,
+      "clients": true,
+      "talents": true,
+      "employees": false,
+      "users": false
+    },
+    "updatedAt": "2026-10-26T13:27:37.290Z"
+  },
+  "3aee2b2b-a5fd-4795-915f-fe8967d55538": {
+    "idleTimeoutMinutes": 30,
+    "modules": {
+      "talentRoster": true,
+      "services": false,
+      "blogs": true,
+      "youtuber": false,
+      "projects": true,
+      "leads": true,
+      "expenses": true,
+      "mediaAssets": true,
+      "talent": true,
+      "become-a-youtuber": false,
+      "home-page": true,
+      "homePage": true,
+      "footer-cms": true,
+      "footerCms": true,
+      "sponsored": true,
+      "contact-leads": true,
+      "clients": true,
+      "talents": true,
+      "employees": false,
+      "users": true
+    },
+    "updatedAt": "2026-10-26T14:40:23.979Z"
+  }
+}

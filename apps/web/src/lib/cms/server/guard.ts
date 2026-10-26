@@ -16,7 +16,7 @@ export async function requireAdmin(): Promise<{ role: string; userId?: string } 
       const token = authHeader.substring(7).trim();
       const payload = await verifySessionToken(token);
       const role = (payload?.role as string)?.toUpperCase();
-      if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+      if (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'EMPLOYEE') {
         return { role, userId: (payload?.sub || payload?.id) as string };
       }
     }
@@ -28,7 +28,7 @@ export async function requireAdmin(): Promise<{ role: string; userId?: string } 
 
     // Direct role cookie if present
     const cookieRole = cookieStore.get('mdms_auth_role')?.value?.toUpperCase();
-    if (cookieRole === 'SUPER_ADMIN' || cookieRole === 'ADMIN') {
+    if (cookieRole === 'SUPER_ADMIN' || cookieRole === 'ADMIN' || cookieRole === 'EMPLOYEE') {
       return { role: cookieRole };
     }
 
@@ -42,7 +42,7 @@ export async function requireAdmin(): Promise<{ role: string; userId?: string } 
       const cleanToken = decodeURIComponent(tokenCookie).trim().replace(/^"|"$/g, '');
       const payload = await verifySessionToken(cleanToken);
       const role = (payload?.role as string)?.toUpperCase();
-      if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+      if (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'EMPLOYEE') {
         return { role, userId: (payload?.sub || payload?.id) as string };
       }
     }
@@ -53,8 +53,8 @@ export async function requireAdmin(): Promise<{ role: string; userId?: string } 
     const session = await auth();
     const role = session?.user?.role;
     const upperRole = role?.toUpperCase();
-    if (upperRole === 'SUPER_ADMIN' || upperRole === 'ADMIN') {
-      return { role: upperRole, userId: (session.user as any)?.id };
+    if (upperRole === 'SUPER_ADMIN' || upperRole === 'ADMIN' || upperRole === 'EMPLOYEE') {
+      return { role: upperRole, userId: (session?.user as any)?.id };
     }
   } catch {}
 

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { DelegatedSponsoredManager } from '@/components/employee/DelegatedSponsoredManager';
+import { DelegatedFooterManager } from '@/components/employee/DelegatedFooterManager';
 import { toast } from 'sonner';
 import { 
   Users, 
@@ -1435,64 +1437,12 @@ export default function EmployeePortalClient({ initialEmployee, user }: Employee
 
             {/* ── TAB: DELEGATED WORKSPACE (FOOTER CMS) ── */}
             {activeTab === 'admin_footer_cms' && (
-              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-border/70 pb-3">
-                  <div>
-                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
-                      <LayoutTemplate className="w-4 h-4 text-cyan-500" />
-                      <span>Delegated Workspace: Footer Details &amp; Social Links CMS</span>
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Authorized by Admin to maintain studio contact details, office addresses, and social handles.
-                    </p>
-                  </div>
-                  <Link
-                    href="/super-admin?tab=footer-cms"
-                    target="_blank"
-                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
-                  >
-                    <span>Footer CMS</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
-                </div>
-                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
-                  <p className="font-bold text-foreground">Footer Configuration</p>
-                  <p className="text-muted-foreground">
-                    Update studio contact email, Mumbai production hub address, and social channel URLs.
-                  </p>
-                </div>
-              </div>
+              <DelegatedFooterManager />
             )}
 
             {/* ── TAB: DELEGATED WORKSPACE (SPONSORED & ADS) ── */}
             {activeTab === 'admin_sponsored' && (
-              <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-border/70 pb-3">
-                  <div>
-                    <h3 className="font-serif font-bold text-base text-foreground flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-pink-500" />
-                      <span>Delegated Workspace: Sponsored Ads &amp; Brand Partners</span>
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Authorized by Admin to manage commercial brand sponsors, affiliate ad banners, and campaign links.
-                    </p>
-                  </div>
-                  <Link
-                    href="/super-admin?tab=sponsored"
-                    target="_blank"
-                    className="inline-flex items-center gap-1 text-xs text-brand font-bold hover:underline"
-                  >
-                    <span>Sponsored CMS</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
-                </div>
-                <div className="p-4 bg-muted/10 border border-border rounded-xl text-xs space-y-2">
-                  <p className="font-bold text-foreground">Active Brand Partnerships</p>
-                  <p className="text-muted-foreground">
-                    Review and schedule sidebar partner creatives, conversion tracking, and campaign dates.
-                  </p>
-                </div>
-              </div>
+              <DelegatedSponsoredManager />
             )}
 
             {/* ── TAB: DELEGATED WORKSPACE (CLIENTS) ── */}
