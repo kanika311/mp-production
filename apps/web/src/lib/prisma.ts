@@ -12,13 +12,16 @@ const globalForPrisma = globalThis as unknown as {
 function getSafeDatabaseUrl(): string {
   let url =
     process.env.DATABASE_URL ||
-    'postgresql://postgres.zmpeiobdilrgtuzggzuj:mYSzT49KZbp8g0ZY@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1';
+    'postgresql://postgres.zmpeiobdilrgtuzggzuj:mYSzT49KZbp8g0ZY@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=10&pool_timeout=20';
 
   if (url.includes('pooler.supabase.com:5432')) {
     url = url.replace(':5432', ':6543');
   }
+  if (url.includes('connection_limit=1') && !url.includes('connection_limit=10') && !url.includes('connection_limit=15')) {
+    url = url.replace('connection_limit=1', 'connection_limit=10&pool_timeout=20');
+  }
   if (url.includes('pooler.supabase.com:6543') && !url.includes('pgbouncer=true')) {
-    url += (url.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1';
+    url += (url.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=10&pool_timeout=20';
   }
   return url;
 }

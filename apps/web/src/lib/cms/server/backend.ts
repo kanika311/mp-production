@@ -28,40 +28,57 @@ interface TokenCache {
 
 let cache: TokenCache | null = null;
 let inflight: Promise<string> | null = null;
+let failedLoginCooldownUntil = 0;
 
 async function login(): Promise<string> {
+  if (Date.now() < failedLoginCooldownUntil) {
+    throw new Error('CMS service backend currently in cooldown');
+  }
+
   const email = process.env.CMS_SERVICE_EMAIL || 'superadmin@mpproduction.com';
   const password = process.env.CMS_SERVICE_PASSWORD || 'MpDx5Vs8kW13bk!7';
 
   if (!email || !password) {
     throw new Error("CMS_SERVICE_EMAIL and CMS_SERVICE_PASSWORD environment variables must be defined");
   }
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-    cache: 'no-store',
-  });
 
-  if (!res.ok) {
-    throw new Error(`CMS service login failed (${res.status})`);
-  }
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-  const json = await res.json().catch(() => null);
-  // API responses are wrapped by the ResponseInterceptor: { success, data }
-  const payload = json?.data ?? json;
-  const token: string | undefined = payload?.accessToken;
-  const expiresIn: number = Number(payload?.expiresIn) || 900; // seconds
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+      cache: 'no-store',
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
 
-  if (!token) {
-    if (payload?.mfaRequired) {
-      throw new Error('CMS service account requires MFA; configure a non-MFA service user.');
+    if (!res.ok) {
+      failedLoginCooldownUntil = Date.now() + 60_000;
+      throw new Error(`CMS service login failed (${res.status})`);
     }
-    throw new Error('CMS service login did not return an access token');
-  }
 
-  cache = { token, expiresAt: Date.now() + (expiresIn - 30) * 1000 };
-  return token;
+    const json = await res.json().catch(() => null);
+    // API responses are wrapped by the ResponseInterceptor: { success, data }
+    const payload = json?.data ?? json;
+    const token: string | undefined = payload?.accessToken;
+    const expiresIn: number = Number(payload?.expiresIn) || 900; // seconds
+
+    if (!token) {
+      failedLoginCooldownUntil = Date.now() + 60_000;
+      if (payload?.mfaRequired) {
+        throw new Error('CMS service account requires MFA; configure a non-MFA service user.');
+      }
+      throw new Error('CMS service login did not return an access token');
+    }
+
+    cache = { token, expiresAt: Date.now() + (expiresIn - 30) * 1000 };
+    return token;
+  } catch (err: any) {
+    failedLoginCooldownUntil = Date.now() + 60_000;
+    throw err;
+  }
 }
 
 async function getToken(force = false): Promise<string> {
@@ -90,6 +107,15 @@ export async function backendFetch<T = unknown>(
   path: string,
   init: RequestInit = {},
 ): Promise<BackendResult<T>> {
+  if (Date.now() < failedLoginCooldownUntil) {
+    return {
+      ok: false,
+      status: 503,
+      data: null,
+      error: 'CMS service backend temporarily unavailable (fallback active)',
+    };
+  }
+
   const isFormData = init.body instanceof FormData;
   const doFetch = async (token: string) => {
     const headers: Record<string, string> = {
@@ -132,8 +158,11 @@ export async function backendFetch<T = unknown>(
     }
 
     return { ok: true, status: res.status, data };
-  } catch (err) {
-    console.warn('Backend fetch warning:', err);
+  } catch (err: any) {
+    // Only warn on first failure, don't spam
+    if (!err?.message?.includes('cooldown')) {
+      console.warn('Backend fetch fallback to local database:', err?.message || err);
+    }
     return {
       ok: false,
       status: 503,
