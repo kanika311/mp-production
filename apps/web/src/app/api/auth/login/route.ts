@@ -71,7 +71,23 @@ export async function POST(req: NextRequest) {
 
     let effectiveRole = user.role;
 
-    if (loginType === 'employee') {
+    if (loginType === 'super_admin') {
+      if (user.role !== 'SUPER_ADMIN') {
+        return NextResponse.json(
+          { ok: false, error: 'Access Denied. Only Super Administrator can authenticate through this gateway.' },
+          { status: 403 },
+        );
+      }
+      effectiveRole = 'SUPER_ADMIN' as any;
+    } else if (loginType === 'admin') {
+      if (!['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+        return NextResponse.json(
+          { ok: false, error: 'Access Denied. Only Administrators can authenticate through this gateway.' },
+          { status: 403 },
+        );
+      }
+      effectiveRole = user.role;
+    } else if (loginType === 'employee') {
       // Attempting to log into the Employee & Staff Portal (/employee)
       if (!isEmployeeEligible) {
         return NextResponse.json(
@@ -86,15 +102,18 @@ export async function POST(req: NextRequest) {
         effectiveRole = 'EMPLOYEE' as any;
       }
     } else {
-      // Normal login portal (/login)
-      if (isTalentUser) {
+      // Normal login portal (/login) or generic login
+      // CRITICAL: SUPER_ADMIN and ADMIN always retain their administrative privileges
+      if (user.role === 'SUPER_ADMIN') {
+        effectiveRole = 'SUPER_ADMIN' as any;
+      } else if (user.role === 'ADMIN') {
+        effectiveRole = 'ADMIN' as any;
+      } else if (isTalentUser) {
         // Log in to Talent dashboard
         effectiveRole = 'TALENT' as any;
       } else if (isClientUser) {
         // Log in to Client portal
         effectiveRole = 'CLIENT' as any;
-      } else if (['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-        effectiveRole = user.role;
       } else if (isEmployeeEligible) {
         // User is ONLY an employee with no talent or client profile
         return NextResponse.json(
