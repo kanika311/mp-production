@@ -22,7 +22,9 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@mdms/types', '@mdms/design-tokens'],
   images: {
     formats: ['image/avif', 'image/webp'],
-    unoptimized: true,
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: 'https',
@@ -33,6 +35,40 @@ const nextConfig: NextConfig = {
         hostname: '**',
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+        ],
+      },
+      {
+        source: '/images/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+    ];
   },
   async redirects() {
     return [

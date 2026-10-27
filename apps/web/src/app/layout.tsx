@@ -23,17 +23,47 @@ const cormorant = Cormorant_Garamond({
   display: 'swap',
 });
 
+import Script from 'next/script';
+
 export const metadata: Metadata = {
-  title: 'MP Productions | Cinematic Media & Digital Management',
+  metadataBase: new URL('https://shivaste.com'),
+  title: {
+    default: 'MP Production | Cinematic Film & Brand Production Mumbai',
+    template: '%s | MP Production',
+  },
   description:
-    'Enterprise-grade Media & Digital Management System combining a premium cinematic public website, talent marketplace, client portal, and editor workspace.',
+    'Mumbai-based cinematic production house for brand films, TVCs, product launch videos, fashion lookbooks and talent casting. Get a free quote.',
+  alternates: {
+    canonical: '/',
+    languages: {
+      'en': 'https://shivaste.com',
+      'en-IN': 'https://shivaste.com',
+      'x-default': 'https://shivaste.com',
+    },
+  },
   openGraph: {
-    title: 'MP Productions',
-    description: 'Enterprise Media & Digital Management System',
-    url: 'https://mpproductions.com',
-    siteName: 'MP Productions',
-    locale: 'en_US',
+    title: 'MP Production | Cinematic Film & Brand Production Mumbai',
+    description:
+      'Mumbai-based cinematic production house for brand films, TVCs, product launch videos, fashion lookbooks and talent casting. Get a free quote.',
+    url: 'https://shivaste.com',
+    siteName: 'MP Production',
+    locale: 'en_IN',
     type: 'website',
+    images: [
+      {
+        url: '/assets/cinematic-16-9.webp',
+        width: 1200,
+        height: 630,
+        alt: 'MP Production - Cinematic Film and Brand Production House Mumbai',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MP Production | Cinematic Film & Brand Production Mumbai',
+    description:
+      'Mumbai-based cinematic production house for brand films, TVCs, product launch videos, fashion lookbooks and talent casting. Get a free quote.',
+    images: ['/assets/cinematic-16-9.webp'],
   },
 };
 
@@ -55,6 +85,28 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${plusJakarta.variable} ${outfit.variable} ${cormorant.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased selection:bg-[#eb3d26] selection:text-white" suppressHydrationWarning>
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script
+              strategy="afterInteractive"
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+            />
+            <Script
+              id="google-analytics"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
+                    page_path: window.location.pathname,
+                  });
+                `,
+              }}
+            />
+          </>
+        )}
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <AuthProvider>
             <LenisProvider>

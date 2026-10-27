@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface RevealProps {
   children: React.ReactNode;
@@ -10,32 +10,63 @@ interface RevealProps {
   className?: string;
 }
 
-export function Reveal({ children, direction = 'up', delay = 0, duration = 0.8, className = '' }: RevealProps) {
-  let x = 0;
-  let y = 0;
+export function Reveal({
+  children,
+  direction = 'up',
+  delay = 0,
+  duration = 0.8,
+  className = '',
+}: RevealProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
-  switch (direction) {
-    case 'up': y = 50; break;
-    case 'down': y = -50; break;
-    case 'left': x = 50; break;
-    case 'right': x = -50; break;
-    case 'none': break;
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setHasAnimated(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  let translateClass = '';
+  if (!hasAnimated) {
+    switch (direction) {
+      case 'up':
+        translateClass = 'sm:translate-y-4';
+        break;
+      case 'down':
+        translateClass = 'sm:-translate-y-4';
+        break;
+      case 'left':
+        translateClass = 'sm:translate-x-4';
+        break;
+      case 'right':
+        translateClass = 'sm:-translate-x-4';
+        break;
+      default:
+        break;
+    }
   }
 
   return (
-    <motion.div
-      className={`transform-gpu ${className}`}
-      initial={{ opacity: 0, x, y }}
-      whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: true, margin: "-5%" }}
-      transition={{ 
-        duration,
-        delay,
-        ease: [0.21, 0.47, 0.32, 0.98]
+    <div
+      ref={ref}
+      className={`transition-all ease-out transform-gpu ${className} ${
+        hasAnimated ? 'opacity-100 translate-x-0 translate-y-0' : `opacity-100 ${translateClass}`
+      }`}
+      style={{
+        transitionDelay: `${delay}s`,
+        transitionDuration: `${duration}s`,
       }}
     >
       {children}
-    </motion.div>
+    </div>
   );
-
 }

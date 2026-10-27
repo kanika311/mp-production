@@ -2,9 +2,8 @@ import { MetadataRoute } from 'next';
 import { serverFetchAPI } from '@/lib/server-api-client';
 export const dynamic = 'force-dynamic';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://mpproduction.com';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://shivaste.com';
   
-
   const sitemapData: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -13,16 +12,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/portfolio`,
+      url: `${baseUrl}/projects`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/services`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/team`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/talent`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/faq`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
     },
   ];
 
@@ -32,7 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (data && Array.isArray(data)) {
       data.forEach((item: any) => {
         sitemapData.push({
-          url: `${baseUrl}/portfolio/${item.slug}`,
+          url: `${baseUrl}/projects/${item.slug}`,
           lastModified: new Date(item.updatedAt || item.createdAt),
           changeFrequency: 'monthly',
           priority: 0.8,
@@ -41,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     } else if (data && data.data && Array.isArray(data.data)) {
        data.data.forEach((item: any) => {
         sitemapData.push({
-          url: `${baseUrl}/portfolio/${item.slug}`,
+          url: `${baseUrl}/projects/${item.slug}`,
           lastModified: new Date(item.updatedAt || item.createdAt),
           changeFrequency: 'monthly',
           priority: 0.8,

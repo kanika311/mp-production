@@ -257,10 +257,11 @@ export function HoverFooter() {
 
   // Social media icons
   const socialLinks = [
-    { icon: <Facebook size={15} />, label: "Facebook", href: footerConfig?.socialLinks?.facebook || "https://facebook.com" },
-    { icon: <Instagram size={15} />, label: "Instagram", href: footerConfig?.socialLinks?.instagram || "https://instagram.com" },
-    { icon: <Twitter size={15} />, label: "Twitter", href: footerConfig?.socialLinks?.twitter || "https://twitter.com" },
-    { icon: <Globe size={15} />, label: "Globe", href: footerConfig?.socialLinks?.youtube || "https://youtube.com" },
+    { icon: <Instagram size={15} />, label: "Instagram", href: footerConfig?.socialLinks?.instagram || "https://instagram.com/mpproduction" },
+    { icon: <Globe size={15} />, label: "YouTube", href: footerConfig?.socialLinks?.youtube || "https://youtube.com/channel/UCm5WLm1415H0447EZMXCbQw" },
+    { icon: <Facebook size={15} />, label: "Facebook", href: footerConfig?.socialLinks?.facebook || "https://facebook.com/mpproduction" },
+    { icon: <Twitter size={15} />, label: "X (Twitter)", href: footerConfig?.socialLinks?.twitter || "https://x.com/mpproduction" },
+    { icon: <Globe size={15} />, label: "LinkedIn", href: footerConfig?.socialLinks?.linkedin || "https://linkedin.com/company/mpproduction" },
   ];
 
   return (
@@ -273,7 +274,9 @@ export function HoverFooter() {
               <img
                 src="/logo.webp"
                 className="h-9 md:h-10 w-auto object-contain origin-left transition-all duration-300 drop-shadow-[0_0_12px_rgba(235,61,38,0.2)]"
-                alt={footerConfig?.companyName || "MP Production Logo"}
+                alt="MP Production - Cinematic Production House"
+                width={180}
+                height={40}
               />
             </a>
 
@@ -283,7 +286,7 @@ export function HoverFooter() {
               </p>
             )}
             <p className="text-sm leading-relaxed text-foreground/90 dark:text-muted-foreground font-medium max-w-sm">
-              {footerConfig?.brandDescription || "MP Production is an exclusive luxury creative production house for global brands and artists. Building timeless cinema, photography, and campaigns frame by frame."}
+              {footerConfig?.brandDescription || "MP Production is Mumbai's premier cinematic creative production house for global brands, commercials, TVCs, lookbooks, and talent casting."}
             </p>
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand/10 border border-brand/25 text-xs font-mono tracking-wider text-brand uppercase font-bold w-fit">
@@ -311,9 +314,9 @@ export function HoverFooter() {
           {/* Footer link sections */}
           {footerLinks.map((section: any, idx: number) => (
             <div key={section.title || idx} className="space-y-3">
-              <h4 className="font-mono text-xs font-black uppercase tracking-[0.2em] text-brand flex items-center gap-1.5">
+              <p className="font-mono text-xs font-black uppercase tracking-[0.2em] text-brand flex items-center gap-1.5">
                 <span className="text-[10px]">●</span> {section.title}
-              </h4>
+              </p>
               <ul className="space-y-2">
                 {section.links?.map((link: any) => (
                   <li key={link.label} className="relative w-fit">
@@ -332,20 +335,29 @@ export function HoverFooter() {
             </div>
           ))}
 
-          {/* Direct Contact Details - next to Support */}
+          {/* Direct Contact Details */}
           <div className="space-y-3">
-            <h4 className="font-mono text-xs font-black uppercase tracking-[0.2em] text-brand flex items-center gap-1.5">
+            <p className="font-mono text-xs font-black uppercase tracking-[0.2em] text-brand flex items-center gap-1.5">
               <span className="text-[10px]">●</span> Contact
-            </h4>
+            </p>
             <div className="space-y-2.5 pt-0.5">
               <a
-                href={contactInfo[0].href}
+                href="mailto:hello@mpproduction.com"
+                onClick={(e) => {
+                  // Obfuscated email assembly to protect from harvesters
+                  const user = 'hello';
+                  const domain = 'mpproduction.com';
+                  window.location.href = `mailto:${user}@${domain}`;
+                }}
                 className="flex items-center gap-2.5 text-sm text-foreground/85 dark:text-muted-foreground hover:text-brand transition-colors group"
+                title="Send inquiry email"
               >
                 <div className="w-7 h-7 rounded-md bg-surface border border-slate-300 dark:border-border text-brand flex items-center justify-center shrink-0 group-hover:border-brand/50 transition-colors">
                   <Mail size={14} />
                 </div>
-                <span className="font-mono text-xs sm:text-sm font-semibold break-all">{contactInfo[0].text}</span>
+                <span className="font-mono text-xs sm:text-sm font-semibold break-all">
+                  hello<span className="text-muted-foreground">[at]</span>mpproduction<span className="text-muted-foreground">[dot]</span>com
+                </span>
               </a>
 
               <a
@@ -371,7 +383,7 @@ export function HoverFooter() {
         {/* Footer bottom bar */}
         <div className="pt-4 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono font-medium text-foreground/80 dark:text-muted-foreground">
           <p className="text-center sm:text-left tracking-wide font-semibold">
-            {footerConfig?.copyright || footerConfig?.copyrightText || 'Powered By JCRM Technologies'}
+            &copy; {new Date().getFullYear()} MP Production. All rights reserved. {footerConfig?.copyright ? `· ${footerConfig.copyright}` : '· Powered By JCRM Technologies'}
           </p>
 
           <div className="flex items-center gap-6 text-xs font-bold tracking-wider uppercase">
