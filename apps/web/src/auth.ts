@@ -13,14 +13,18 @@ export const auth = async () => {
     if (!token) return null;
 
     const payload = await verifySessionToken(token);
-    if (!payload || !payload.sub) return null;
+    const resolvedId = payload?.sub || (payload as any)?.id || (payload as any)?.userId || (payload as any)?.user_id;
+    if (!payload || !resolvedId) return null;
+
+    const rawRole = payload.role || (payload as any)?.user_metadata?.role || (payload as any)?.app_metadata?.role || 'TALENT';
+    const resolvedRole = rawRole.toString().toUpperCase().replace(/-/g, '_');
 
     return {
       user: {
-        id: payload.sub,
+        id: resolvedId,
         email: payload.email,
-        name: payload.name,
-        role: payload.role?.toString().toUpperCase(),
+        name: payload.name || (payload as any)?.user_metadata?.full_name,
+        role: resolvedRole,
       },
       accessToken: token,
     };

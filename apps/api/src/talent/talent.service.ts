@@ -187,9 +187,9 @@ export class TalentService {
   }
 
   private async ensureUserExists(userId: string, data?: any) {
-    const rawName = data?.fullName || data?.stageName || '';
-    const [firstName = 'Talent', ...rest] = rawName ? rawName.trim().split(' ') : ['Talent'];
-    const lastName = rest.join(' ') || (userId ? userId.slice(0, 6) : 'User');
+    const rawName = data?.fullName || (data?.firstName ? `${data.firstName} ${data?.lastName || ''}`.trim() : '') || data?.stageName || '';
+    const [firstName = (data?.firstName || 'Talent'), ...rest] = rawName ? rawName.trim().split(/\s+/) : ['Talent'];
+    const lastName = data?.lastName || rest.join(' ') || (data?.stageName && data.stageName.toLowerCase() !== firstName.toLowerCase() ? data.stageName : '');
     const email = data?.email || `${userId?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'talent'}@mdms.com`;
 
     await this.prisma.user.upsert({

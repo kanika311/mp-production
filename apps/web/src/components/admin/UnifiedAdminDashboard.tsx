@@ -1694,15 +1694,11 @@ export function UnifiedAdminDashboard() {
                 <span className="text-xs font-black uppercase tracking-wider text-slate-800 select-none">
                   {group}
                 </span>
-                <span className="text-[11px] font-bold text-slate-500">
-                  {tabs.length}
-                </span>
               </div>
               <div className="space-y-0.5">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
-                  const count = getTabCount(tab.id);
                   return (
                     <button
                       key={tab.id}
@@ -1736,18 +1732,6 @@ export function UnifiedAdminDashboard() {
                         />
                         <span className="truncate">{tab.label}</span>
                       </div>
-                      {tab.id !== 'dashboard' && (
-                        <span
-                          className={cn(
-                            "px-2 py-0.5 rounded-full text-xs font-mono font-bold shrink-0",
-                            isActive
-                              ? "bg-white/25 text-white"
-                              : "bg-slate-200 text-slate-800 group-hover:bg-red-100 group-hover:text-red-800"
-                          )}
-                        >
-                          {count}
-                        </span>
-                      )}
                     </button>
                   );
                 })}
@@ -1760,7 +1744,6 @@ export function UnifiedAdminDashboard() {
             {filteredTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
-              const count = getTabCount(tab.id);
               return (
                 <button
                   key={tab.id}
@@ -1794,18 +1777,6 @@ export function UnifiedAdminDashboard() {
                     />
                     <span className="truncate">{tab.label}</span>
                   </div>
-                  {tab.id !== 'dashboard' && (
-                    <span
-                      className={cn(
-                        "px-2 py-0.5 rounded-full text-xs font-mono font-bold shrink-0",
-                        isActive
-                          ? "bg-white/25 text-white"
-                          : "bg-slate-200 text-slate-800 group-hover:bg-red-100 group-hover:text-red-800"
-                      )}
-                    >
-                      {count}
-                    </span>
-                  )}
                 </button>
               );
             })}

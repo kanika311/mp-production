@@ -65,6 +65,13 @@ export function Navbar() {
   const [userAvatar, setUserAvatar] = useState<string>('');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
+  // Hide admin privileges entirely from the public-facing website navbar
+  const isPublicUser = Boolean(
+    authUser &&
+    authUser.role !== 'ADMIN' &&
+    authUser.role !== 'SUPER_ADMIN'
+  );
+
   const getDashboardUrl = (role?: string) => {
     const r = (role || '').toUpperCase();
     if (r === 'TALENT') return '/talent-dashboard';
@@ -305,7 +312,7 @@ export function Navbar() {
               <span>Become a YouTuber</span>
             </Link>
 
-            {authUser ? (
+            {isPublicUser ? (
               <div className="relative flex items-center">
                 {/* Single Click -> Directly open dashboard */}
                 <Link
@@ -595,7 +602,7 @@ export function Navbar() {
 
               {/* Drawer Bottom Actions & User Profile */}
               <div className="p-5 border-t border-border bg-card/60 backdrop-blur-md space-y-3 shrink-0">
-                {authUser ? (
+                {isPublicUser ? (
                   <div className="space-y-2">
                     <div className="p-2.5 rounded-xl bg-surface border border-border flex items-center justify-between">
                       <Link

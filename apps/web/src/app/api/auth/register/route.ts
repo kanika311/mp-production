@@ -8,9 +8,9 @@ const bcrypt = eval("require('bcryptjs')");
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, password, role = 'CLIENT' } = body;
+    const { name, email, password, role = 'CLIENT', firstName: bodyFirstName, lastName: bodyLastName, stageName, phone } = body;
 
-    if (!name || !email || !password) {
+    if ((!name && !bodyFirstName) || !email || !password) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
@@ -30,9 +30,16 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const nameParts = name.trim().split(' ');
-    const firstName = nameParts[0] || 'User';
-    const lastName = nameParts.slice(1).join(' ') || '';
+    const fullNameString = (name || `${bodyFirstName || ''} ${bodyLastName || ''}`).trim();
+    const nameParts = fullNameString.split(/\s+/);
+    
+    let resolvedFirstName = bodyFirstName?.trim() || nameParts[0] || 'User';
+    let resolvedLastName = bodyLastName?.trim() || nameParts.slice(1).join(' ') || '';
+    
+    // If lastName is still empty, but stageName was supplied and differs from firstName (e.g. First Name: Sushant, Famous/Last Name: Shukla)
+    if (!resolvedLastName && stageName && stageName.trim().toLowerCase() !== resolvedFirstName.toLowerCase()) {
+      resolvedLastName = stageName.trim();
+    }
 
     // Normalize role enum
     const upperRole = role.toUpperCase();
@@ -45,18 +52,20 @@ export async function POST(req: Request) {
         email: trimmedEmail,
         passwordHash,
         role: validRole,
-        firstName,
-        lastName,
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
+        ...(phone ? { phone: phone.trim() } : {}),
         isActive: true,
       },
     });
 
     // Auto-create role profile if needed
     if (validRole === Role.TALENT) {
+      const finalStageName = (stageName || fullNameString || `${resolvedFirstName} ${resolvedLastName}`).trim();
       await prisma.talentProfile.create({
         data: {
           userId: user.id,
-          stageName: name.trim(),
+          stageName: finalStageName,
           bio: '',
           status: 'ACTIVE',
         },
@@ -65,7 +74,7 @@ export async function POST(req: Request) {
       await prisma.client.create({
         data: {
           userId: user.id,
-          companyName: name.trim(),
+          companyName: fullNameString,
         },
       }).catch((e) => console.warn('Could not auto-create client profile:', e));
     }

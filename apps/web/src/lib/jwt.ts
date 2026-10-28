@@ -46,13 +46,18 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
     }
   }
 
-  // Fallback: If signed by external backend service, decode payload if unexpired
+  // Fallback: If signed by external backend service or Supabase Auth, decode payload if unexpired
   try {
-    const unverified = decodeJwt(cleanToken) as SessionPayload;
-    if (unverified && unverified.role) {
+    const unverified = decodeJwt(cleanToken) as any;
+    if (unverified && (unverified.role || unverified.sub || unverified.id || unverified.email)) {
       const exp = unverified.exp;
       if (!exp || exp * 1000 > Date.now()) {
-        return unverified;
+        const rawRole = unverified.role || unverified.user_metadata?.role || unverified.app_metadata?.role || 'TALENT';
+        return {
+          ...unverified,
+          sub: unverified.sub || unverified.id || unverified.userId || unverified.user_id,
+          role: rawRole,
+        } as SessionPayload;
       }
     }
   } catch {

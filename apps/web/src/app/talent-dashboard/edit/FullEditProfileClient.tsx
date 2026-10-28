@@ -358,7 +358,8 @@ export default function FullEditProfileClient({
 
       const payload = {
         ...data,
-        userId: initialData?.userId || initialData?.id,
+        userId: initialData?.userId || initialData?.id || initialData?.user?.id,
+        email: initialData?.user?.email || (data as any)?.email,
         avatarUrl: finalProfilePhotoUrl,
         profilePhotoPreview: finalProfilePhotoUrl,
         coverBannerUrl: finalCoverBannerUrl,
@@ -371,10 +372,22 @@ export default function FullEditProfileClient({
         status: isApproved ? 'ACTIVE' : (mode === 'save' ? 'ACTIVE' : (mode === 'approval' ? 'PENDING_REVIEW' : (initialData?.status || 'ACTIVE'))),
       };
 
+      const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (typeof window !== 'undefined') {
+        const token =
+          localStorage.getItem('token') ||
+          localStorage.getItem('mdms_auth_token') ||
+          sessionStorage.getItem('token') ||
+          sessionStorage.getItem('mdms_auth_token');
+        if (token) {
+          authHeaders['Authorization'] = `Bearer ${token.trim().replace(/^"|"$/g, '')}`;
+        }
+      }
+
       // 5. Submit to Database API endpoint /api/talent/submit
       const res = await fetch('/api/talent/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(payload),
       });
 

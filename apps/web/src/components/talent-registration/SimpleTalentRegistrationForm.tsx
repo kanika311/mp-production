@@ -371,10 +371,21 @@ export function SimpleTalentRegistrationForm() {
 
     setIsSubmitting(true);
     try {
+      // Clear any previous user's stale session from browser storage so new talent has clean auth
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('mdms_auth_token');
+        localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('mdms_auth_token');
+      }
+
       const nameParts = formData.fullName.trim().split(/\s+/);
       const firstName = nameParts[0] || 'Talent';
-      const lastName = nameParts.slice(1).join(' ') || (formData.famousName.trim() || '');
-      const stageName = formData.famousName.trim() || formData.fullName.trim();
+      const famousNameClean = formData.famousName.trim();
+      const lastName = nameParts.slice(1).join(' ') || (famousNameClean && famousNameClean.toLowerCase() !== firstName.toLowerCase() ? famousNameClean : '');
+      const stageName = famousNameClean || formData.fullName.trim();
+      const fullComputedName = `${firstName} ${lastName}`.trim() || formData.fullName.trim();
 
       let registered = false;
       let createdUserId: string | null = null;
@@ -385,9 +396,11 @@ export function SimpleTalentRegistrationForm() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: formData.fullName.trim(),
-            stageName: stageName,
-            email: formData.email,
+            name: fullComputedName,
+            firstName,
+            lastName,
+            stageName,
+            email: formData.email.trim(),
             password: formData.password,
             role: 'talent',
             phone: `${formData.dialCode} ${formData.mobile}`.trim(),
@@ -461,8 +474,10 @@ export function SimpleTalentRegistrationForm() {
       const applicantPayload = {
         userId: createdUserId,
         stageName: stageName,
-        fullName: formData.fullName.trim(),
-        email: formData.email,
+        fullName: fullComputedName,
+        firstName,
+        lastName,
+        email: formData.email.trim(),
         phone: `${formData.dialCode} ${formData.mobile}`.trim(),
         country: formData.country,
         state: formData.state,

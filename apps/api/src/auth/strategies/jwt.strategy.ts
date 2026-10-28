@@ -120,8 +120,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       const role = validRoles.includes(rawRole) ? rawRole : 'CLIENT';
 
       const fullName = payload.user_metadata?.full_name ?? '';
-      const [firstName = 'User', ...rest] = fullName.split(' ');
-      const lastName = rest.join(' ') || userId.slice(0, 6);
+      const [firstName = 'User', ...rest] = fullName.trim().split(/\s+/);
+      const lastName = rest.join(' ') || '';
 
       // Upsert: create if not exists, update role if it changed
       try {

@@ -35,7 +35,9 @@ import {
   ShieldCheck,
   Send,
   UploadCloud,
-  FileText
+  FileText,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -813,20 +815,17 @@ export function UserTable({
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => setEditUser({
-                              id: user.id,
-                              firstName: user.firstName,
-                              lastName: user.lastName,
-                              email: user.email,
-                              role: user.role,
-                              isActive: user.isActive,
-                            })}
-                            className="p-1.5 rounded-lg border border-border/80 hover:bg-muted text-foreground transition-colors"
-                            title="Edit"
+                          <Link
+                            href={`${
+                              (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) || currentUserRole === 'ADMIN'
+                                ? '/admin'
+                                : '/super-admin'
+                            }/${user.role === 'TALENT' ? 'talents' : user.role === 'EMPLOYEE' ? 'employees' : 'users'}/${user.id}/edit`}
+                            className="p-1.5 rounded-lg border border-orange-500/30 text-orange-600 hover:bg-orange-500/10 transition-colors inline-flex items-center justify-center cursor-pointer"
+                            title={user.role === 'TALENT' ? 'Edit Full Talent Profile (Resume, PPT, Photos, Videos, Bio)' : 'Edit User Profile (Dedicated Page)'}
                           >
                             <Pencil className="w-4 h-4" />
-                          </button>
+                          </Link>
                           <button
                             onClick={() => setConfirmAction({
                               type: 'delete',
@@ -848,6 +847,39 @@ export function UserTable({
           </div>
         </div>
       )}
+
+      {/* ── PAGINATION CONTROLS ── */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 text-xs text-muted-foreground border-t border-border mt-3">
+        <div>
+          Showing <span className="font-bold text-foreground">{users.length > 0 ? (page - 1) * limit + 1 : 0}</span> to{' '}
+          <span className="font-bold text-foreground">{Math.min(page * limit, total)}</span> of{' '}
+          <span className="font-bold text-foreground">{total}</span> users
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            disabled={page <= 1 || loading}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-surface text-foreground font-semibold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 transition-colors"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" /> Prev
+          </button>
+
+          <span className="px-3 py-1 font-mono font-bold text-foreground bg-muted/30 rounded-md border border-border/70">
+            Page {page} of {totalPages || 1}
+          </span>
+
+          <button
+            type="button"
+            disabled={page >= totalPages || loading}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-surface text-foreground font-semibold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 transition-colors"
+          >
+            Next <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
 
       {/* ── MODAL 1: PERMISSIONS & TIMEOUT MODAL (IMAGE 4) ── */}
       {permissionsUser && (

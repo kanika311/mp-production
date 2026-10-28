@@ -73,6 +73,16 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/super_admin',
+        destination: '/super-admin',
+        permanent: false,
+      },
+      {
+        source: '/super_admin/:path*',
+        destination: '/super-admin/:path*',
+        permanent: false,
+      },
+      {
         source: '/portfolio',
         destination: '/projects',
         permanent: true,

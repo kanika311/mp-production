@@ -18,23 +18,7 @@ export async function GET(req: Request) {
   if (search) queryParams.set('search', search);
   if (role) queryParams.set('role', role);
 
-  const result = await backendFetch(`/admin/users?${queryParams.toString()}`);
-  if (result.ok && result.data) {
-    const rawData: any = result.data;
-    const usersList = Array.isArray(rawData?.data) ? rawData.data : Array.isArray(rawData) ? rawData : [];
-    const total = rawData?.total ?? usersList.length;
-    const totalPages = rawData?.totalPages ?? 1;
-
-    return NextResponse.json({
-      ok: true,
-      data: usersList,
-      total,
-      page: Number(page),
-      totalPages,
-    });
-  }
-
-  // Resilient Direct Database Fallback
+  // Primary: Direct authoritative PostgreSQL Database query via Prisma (super fast & resilient)
   try {
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10)));
@@ -94,7 +78,25 @@ export async function GET(req: Request) {
       totalPages: Math.ceil(total / limitNum) || 1,
     });
   } catch (dbErr: any) {
-    console.error('Database fallback error fetching users:', dbErr);
-    return NextResponse.json({ ok: false, error: result.error || dbErr.message }, { status: result.status || 500 });
+    console.warn('Direct database query warning, falling back to backendFetch:', dbErr.message);
   }
+
+  // Fallback to remote backendFetch if local database is unreachable
+  const result = await backendFetch(`/admin/users?${queryParams.toString()}`);
+  if (result.ok && result.data) {
+    const rawData: any = result.data;
+    const usersList = Array.isArray(rawData?.data) ? rawData.data : Array.isArray(rawData) ? rawData : [];
+    const total = rawData?.total ?? usersList.length;
+    const totalPages = rawData?.totalPages ?? 1;
+
+    return NextResponse.json({
+      ok: true,
+      data: usersList,
+      total,
+      page: Number(page),
+      totalPages,
+    });
+  }
+
+  return NextResponse.json({ ok: false, error: result.error || 'Failed to fetch users' }, { status: result.status || 500 });
 }
