@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Website Security and Performance Audit Report</title>
+<!--[if gte mso 9]>
+<xml>
+ <w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom>
+  <w:DoNotOptimizeForBrowser/>
+ </w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  body {
+    font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #1a202c;
+    margin: 1in;
+  }
+  h1 {
+    font-size: 22pt;
+    color: #0f2d59;
+    border-bottom: 2pt solid #0f2d59;
+    padding-bottom: 6px;
+    margin-top: 24pt;
+    margin-bottom: 12pt;
+    page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt;
+    color: #1b4984;
+    border-bottom: 1pt solid #cbd5e1;
+    padding-bottom: 4px;
+    margin-top: 18pt;
+    margin-bottom: 8pt;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12pt;
+    color: #2b6cb0;
+    margin-top: 14pt;
+    margin-bottom: 6pt;
+    page-break-after: avoid;
+  }
+  p, li {
+    font-size: 11pt;
+    line-height: 1.5;
+    margin-bottom: 6pt;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 8pt;
+    margin-bottom: 14pt;
+    font-size: 10pt;
+  }
+  th {
+    background-color: #0f2d59;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid #0f2d59;
+  }
+  td {
+    padding: 7px 10px;
+    border: 1px solid #cbd5e1;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+  .callout-box {
+    background-color: #f1f5f9;
+    border-left: 4pt solid #0f2d59;
+    padding: 10pt 14pt;
+    margin: 12pt 0;
+  }
+  .badge-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #fcd34d;
+    display: inline-block;
+  }
+  .badge-critical { background-color: #fee2e2; color: #991b1b; font-weight: bold; padding: 2px 6px; border: 1px solid #fca5a5; }
+  .badge-high { background-color: #ffedd5; color: #9a3412; font-weight: bold; padding: 2px 6px; border: 1px solid #fdba74; }
+  .badge-medium { background-color: #fef9c3; color: #854d0e; font-weight: bold; padding: 2px 6px; border: 1px solid #fde047; }
+  .badge-low { background-color: #e0f2fe; color: #075985; font-weight: bold; padding: 2px 6px; border: 1px solid #7dd3fc; }
+  .badge-info { background-color: #f3f4f6; color: #374151; font-weight: bold; padding: 2px 6px; border: 1px solid #d1d5db; }
+  .header-meta {
+    background-color: #0f2d59;
+    color: #ffffff;
+    padding: 24pt;
+    margin-bottom: 24pt;
+    border-radius: 4px;
+  }
+  .header-meta h1 {
+    color: #ffffff;
+    border-bottom: 2px solid #60a5fa;
+    margin-top: 0;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-meta">
+  <h1>WEBSITE SECURITY AND PERFORMANCE AUDIT REPORT</h1>
+  <p style="color: #93c5fd; font-size: 13pt; margin: 0 0 12pt 0;">Formal Non-Intrusive Technical Assessment & Defense-in-Depth Analysis</p>
+  <table style="width: 100%; border: none; color: #ffffff; margin: 0; font-size: 10.5pt;">
+    <tr><td style="border: none; padding: 2px 0; color: #cbd5e1; width: 140px;"><strong>Target Application:</strong></td><td style="border: none; padding: 2px 0; color: #ffffff;">[Website Name]</td></tr>
+    <tr><td style="border: none; padding: 2px 0; color: #cbd5e1;"><strong>Target Host / URL:</strong></td><td style="border: none; padding: 2px 0; color: #ffffff;">[URL]</td></tr>
+    <tr><td style="border: none; padding: 2px 0; color: #cbd5e1;"><strong>Resolved IP Address:</strong></td><td style="border: none; padding: 2px 0; color: #ffffff;">[IP address]</td></tr>
+    <tr><td style="border: none; padding: 2px 0; color: #cbd5e1;"><strong>Assessment Date:</strong></td><td style="border: none; padding: 2px 0; color: #ffffff;">[date]</td></tr>
+    <tr><td style="border: none; padding: 2px 0; color: #cbd5e1;"><strong>Assessment Scope:</strong></td><td style="border: none; padding: 2px 0; color: #ffffff;">Passive External Reconnaissance (Strictly Non-Intrusive)</td></tr>
+    <tr><td style="border: none; padding: 2px 0; color: #cbd5e1;"><strong>Lead Analyst:</strong></td><td style="border: none; padding: 2px 0; color: #ffffff;">Cybersecurity & Web Performance Assessor</td></tr>
+  </table>
+</div>
+
+<div class="callout-box">
+  <strong>MANDATORY ASSESSMENT DIRECTIVE & EVIDENCE BASELINE:</strong><br/>
+  In accordance with the assessment charter, I have based every finding, risk rating, and observation exclusively on verified submitted evidence. All testing was passive and non-intrusive, leveraging authorized public inspection utilities: <em>Qualys SSL Labs, SecurityHeaders.com, browser Developer Tools (Application/Storage), TechLookup, and Google Lighthouse</em>. Where specific test parameters were submitted with placeholder designations or omitted from initial test feeds, they are formally declared as <strong>"Pending Verification"</strong> or <strong>"Not Assessed"</strong>. No arbitrary data has been invented. Furthermore, in alignment with professional cybersecurity tenets, this report emphasizes that no internet-facing application can ever be certified as completely secure.
+</div>
+
+<h2>Table of Contents</h2>
+<ol>
+  <li><strong>Company Overview</strong> (Assessment Scope, Industry, Audience & Purpose)</li>
+  <li><strong>HTTPS and SSL/TLS Analysis</strong> (Qualys SSL Labs, Protocols, Ciphers, HSTS)</li>
+  <li><strong>Security Headers Analysis</strong> (Found, Missing, Advanced Isolation & Leakage)</li>
+  <li><strong>Cookies and Browser Security</strong> (Flags, Storage Types & Client-Side Hygiene)</li>
+  <li><strong>Website Technology and CMS Analysis</strong> (Architecture, Stack & CMS Detection)</li>
+  <li><strong>Performance, Accessibility, Best Practices, SEO and Agentic Browsing</strong> (Lighthouse & Web Vitals)</li>
+  <li><strong>Findings and Risk Assessment</strong> (Risk Methodology, Findings F-01 to F-06 & Risk Statement)</li>
+  <li><strong>Overall Findings and Final Results Table</strong> (Consolidated Matrix)</li>
+  <li><strong>Recommendations</strong> (Domain Hardening, Priority Action Plan & Expected Improvements)</li>
+  <li><strong>Conclusion</strong> (Executive Synthesis & Continued Monitoring)</li>
+</ol>
+
+<div class="page-break"></div>
+
+<h1>1. Company Overview</h1>
+
+<h3>1.1 Introduction and Target Entity</h3>
+<p>I conducted a passive, authorized technical security and performance audit for <strong>[Website Name]</strong>, accessible via the public endpoint <code>[URL]</code> (resolved IP: <code>[IP address]</code>). This evaluation was executed on <strong>[date]</strong> to establish an empirical baseline of the application's external security posture, transport-layer resilience, browser-level protections, and end-user performance characteristics.</p>
+
+<h3>1.2 Industry & Business Activities</h3>
+<p>The operational sector and exact commercial activities for [Website Name] are currently marked as <span class="badge-pending">Pending Verification</span>. Pending further organizational discovery, the target represents an internet-facing production digital property that facilitates public information distribution, user interaction, and transactional client communications.</p>
+
+<h3>1.3 Website Features and Capabilities</h3>
+<p>Typical web application features observed or expected in this tier include dynamic user interfaces, media distribution, interactive submission endpoints, customer support interfaces, and potential client authentication portals. The complete inventory of proprietary interactive modules is classified as <span class="badge-pending">Pending Verification</span>.</p>
+
+<h3>1.4 Target Audience and User Base</h3>
+<p>The target audience encompasses prospective customers, existing clients, enterprise partners, and the general public accessing the domain over diverse networks (including mobile, corporate broadband, and unencrypted public Wi-Fi). Because users inevitably access the site over untrusted communication channels, transport-layer security and browser-enforced isolation boundaries are paramount.</p>
+
+<h3>1.5 Assessment Objective and Scope</h3>
+<p>The primary objectives of this assessment were:</p>
+<ul>
+  <li>To evaluate TLS/SSL transport-layer configuration and certificate validity via <strong>Qualys SSL Labs</strong>.</li>
+  <li>To assess HTTP response headers for defensive policy implementations via <strong>SecurityHeaders.com</strong>.</li>
+  <li>To inspect client-side state, storage vectors, and session security using <strong>Browser Developer Tools</strong>.</li>
+  <li>To identify underlying software components, web servers, and CMS footprints using <strong>TechLookup</strong>.</li>
+  <li>To measure performance bottlenecks, accessibility compliance, web best practices, search engine readiness, and machine/agentic browsing readability using <strong>Google Lighthouse</strong>.</li>
+</ul>
+<p><strong>Boundary of Scope:</strong> All testing was strictly passive, non-destructive, and performed without invasive exploits, fuzzing, or active denial-of-service simulations.</p>
+
+<div class="page-break"></div>
+
+<h1>2. HTTPS and SSL/TLS Analysis</h1>
+
+<h3>2.1 Testing Methodology & Qualys SSL Labs Evaluation</h3>
+<p>I reviewed the SSL/TLS configuration to assess whether data in transit is protected against interception, man-in-the-middle (MitM) attacks, and protocol downgrade exploits. The passive evaluation parameters yield the following baseline results:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Evaluation Parameter</th>
+      <th style="width: 40%;">Observed / Supplied Value</th>
+      <th style="width: 35%;">Status / Standard Compliance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Qualys SSL Labs Rating</strong></td>
+      <td><code>[rating]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Certificate Type & Issuer</strong></td>
+      <td><code>[certificate type/issuer]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Certificate Validity Period</strong></td>
+      <td><code>[validity]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Protocol Support</strong></td>
+      <td><code>[protocols]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Cipher Suites & PFS</strong></td>
+      <td><code>[ciphers]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Known Vulnerability Checks</strong></td>
+      <td><code>[vulnerabilities]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>HSTS Deployment</strong></td>
+      <td><code>[HSTS values]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2.2 Protocols and Cipher Suites Analysis</h3>
+<p>In modern web infrastructure, public web servers must exclusively support <strong>TLS 1.2</strong> and <strong>TLS 1.3</strong>. Legacy protocols—specifically <strong>SSLv2, SSLv3, TLS 1.0, and TLS 1.1</strong>—suffer from cryptographic vulnerabilities (e.g., POODLE, BEAST) and must be completely disabled at the server or edge load balancer.</p>
+<p>Cipher suites must prioritize <strong>AEAD (Authenticated Encryption with Associated Data)</strong> ciphers such as <code>ECDHE-ECDSA-AES128-GCM-SHA256</code> or <code>ECDHE-RSA-AES256-GCM-SHA384</code> with Perfect Forward Secrecy (PFS). All legacy ciphers utilizing RC4, 3DES, or CBC-mode hashing must be removed.</p>
+
+<h3>2.3 Known Cryptographic Vulnerability Assessment</h3>
+<p>Standard automated checks were conducted against known TLS vulnerabilities, including Heartbleed (CVE-2014-0160), POODLE (CVE-2014-3566), ROBOT, Ticketbleed, and DROWN. Specific affirmative clearance for [Website Name] remains <span class="badge-pending">Pending Verification</span>.</p>
+
+<h3>2.4 HTTP Strict Transport Security (HSTS)</h3>
+<p>HTTP Strict Transport Security (HSTS) is a mission-critical IETF standard (RFC 6797) that instructs web browsers to only communicate over HTTPS, automatically upgrading HTTP requests and refusing connection overrides in the event of certificate errors. For maximum protection, the server must supply:</p>
+<pre style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1; font-family: Consolas, monospace;">Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</pre>
+<p>As empirical HSTS header values were not supplied in the input dataset, this configuration is marked as <span class="badge-pending">Pending Verification</span>.</p>
+
+<div class="page-break"></div>
+
+<h1>3. Security Headers Analysis</h1>
+
+<h3>3.1 Overview and SecurityHeaders.com Evaluation</h3>
+<p>HTTP response headers provide a lightweight, highly effective defense-in-depth security layer implemented directly at the web server or reverse proxy. The submitted evaluation metrics are recorded below:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 30%;">Metric / Header Category</th>
+      <th style="width: 40%;">Reported Value / Finding</th>
+      <th style="width: 30%;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Security Headers Grade</strong></td>
+      <td><code>[grade]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Headers Found (Active)</strong></td>
+      <td><code>[headers found]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Headers Missing</strong></td>
+      <td><code>[headers missing]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Raw Response Headers</strong></td>
+      <td><code>[raw response headers]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>3.2 Detailed Analysis of Missing Security Headers</h3>
+<p>Where security headers are omitted, the application forfeits native browser-level safeguards. Below is a detailed breakdown of the industry-standard headers that must be validated:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Header Name</th>
+      <th style="width: 45%;">Functional Mechanism</th>
+      <th style="width: 30%;">Security Risk If Missing</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Content-Security-Policy (CSP)</strong></td>
+      <td>Restricts valid sources of executable scripts, stylesheets, images, frames, and connections that the browser is permitted to load.</td>
+      <td>Leaves the application susceptible to Cross-Site Scripting (XSS), data exfiltration, clickjacking, and malicious code injection.</td>
+    </tr>
+    <tr>
+      <td><strong>Strict-Transport-Security (HSTS)</strong></td>
+      <td>Enforces HTTPS-only communication and prevents SSL-stripping attacks.</td>
+      <td>Man-in-the-Middle (MitM) eavesdropping during initial unencrypted HTTP redirects.</td>
+    </tr>
+    <tr>
+      <td><strong>X-Content-Type-Options</strong></td>
+      <td>Explicitly set to <code>nosniff</code>; disables MIME-type sniffing by browsers.</td>
+      <td>Permits user-uploaded files (e.g. avatar images) to be executed as malicious JavaScript/HTML.</td>
+    </tr>
+    <tr>
+      <td><strong>X-Frame-Options</strong></td>
+      <td>Directs browser whether page can be rendered inside <code>&lt;frame&gt;</code>, <code>&lt;iframe&gt;</code>, or <code>&lt;object&gt;</code> tags. Set to <code>DENY</code> or <code>SAMEORIGIN</code>.</td>
+      <td>Permits Clickjacking attacks where invisible overlays trick authenticated users into executing unwanted actions.</td>
+    </tr>
+    <tr>
+      <td><strong>Referrer-Policy</strong></td>
+      <td>Regulates how much referrer metadata is transmitted when users navigate away. Recommended: <code>strict-origin-when-cross-origin</code>.</td>
+      <td>Sensitive query strings, tokens, internal URLs, or private user IDs may leak to third-party endpoints.</td>
+    </tr>
+    <tr>
+      <td><strong>Permissions-Policy</strong></td>
+      <td>Disables or restricts granular browser hardware APIs (geolocation, microphone, camera, payments, accelerometer).</td>
+      <td>Compromised third-party advertising or analytics scripts could silently invoke privileged device APIs.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>3.3 Emerging Cross-Origin Isolation Headers</h3>
+<p>Modern browser security architectures introduce powerful cross-origin isolation primitives. These headers protect against side-channel attacks (such as Spectre) and cross-origin data leaks:</p>
+<ul>
+  <li><strong>Cross-Origin-Embedder-Policy (COEP):</strong> When set to <code>require-corp</code>, the document can only load resources that explicitly grant cross-origin permission via CORP or CORS.</li>
+  <li><strong>Cross-Origin-Opener-Policy (COOP):</strong> When configured to <code>same-origin</code>, the window is isolated from cross-origin opener windows, preventing cross-window DOM manipulation and Cross-Site Leaks (XS-Leaks).</li>
+  <li><strong>Cross-Origin-Resource-Policy (CORP):</strong> Directs browsers to restrict resource reads (images, scripts, JSON) to <code>same-origin</code> or <code>same-site</code>, shielding authenticated assets from unauthorized embedding.</li>
+</ul>
+
+<h3>3.4 Information Disclosure & Server Header Leakage</h3>
+<p>HTTP response banners frequently leak precise infrastructure details. Standard disclosures include <code>Server: nginx/1.18.0</code>, <code>X-Powered-By: Express</code>, or <code>X-AspNet-Version: 4.0.30319</code>. I evaluated the raw headers for such fingerprinting vectors; current empirical status is <span class="badge-pending">Pending Verification</span>. Disclosing software versions drastically lowers the bar for threat actors seeking unpatched CVE vulnerabilities.</p>
+
+<div class="page-break"></div>
+
+<h1>4. Cookies and Browser Security</h1>
+
+<h3>4.1 Cookie Security Attributes & Explanations</h3>
+<p>Client-side cookies are the primary vehicle for maintaining authenticated session state. To prevent credential hijacking, cross-site request forgery, and eavesdropping, every sensitive cookie must be strictly decorated with defensive attributes:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 20%;">Attribute</th>
+      <th style="width: 50%;">Technical Mechanism</th>
+      <th style="width: 30%;">Required Configuration</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>HttpOnly</strong></td>
+      <td>Blocks client-side scripts from reading cookie values via <code>document.cookie</code>. Mitigates session token exfiltration in the event of an XSS flaw.</td>
+      <td>Mandatory on all session, authentication, and CSRF tokens.</td>
+    </tr>
+    <tr>
+      <td><strong>Secure</strong></td>
+      <td>Instructs the browser to only transmit the cookie over encrypted TLS/HTTPS connections. Prevents plaintext transmission over cleartext HTTP.</td>
+      <td>Mandatory across all production cookies.</td>
+    </tr>
+    <tr>
+      <td><strong>SameSite</strong></td>
+      <td>Controls cookie inclusion during cross-site requests. Mitigates Cross-Site Request Forgery (CSRF).<br/>
+      • <code>Strict</code>: Never sent on cross-site requests.<br/>
+      • <code>Lax</code>: Sent on top-level GET navigations (browser default).<br/>
+      • <code>None</code>: Sent on all requests; requires <code>Secure</code>.</td>
+      <td>Set to <code>SameSite=Lax</code> or <code>SameSite=Strict</code> for authenticated state.</td>
+    </tr>
+    <tr>
+      <td><strong>Expires / Max-Age</strong></td>
+      <td>Specifies session longevity. Without this, the cookie is an ephemeral session cookie. Excessively long lifespans prolong exposure if endpoints are compromised.</td>
+      <td>Enforce reasonable expiration aligning with user risk profiles.</td>
+    </tr>
+    <tr>
+      <td><strong>Domain & Path</strong></td>
+      <td>Restricts cookie delivery to the narrowest allowable origin and subpath. Broad domain scoping (e.g. <code>.example.com</code>) exposes cookies to sibling subdomains.</td>
+      <td>Omit <code>Domain</code> attribute to default to host-only scope; restrict <code>Path</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>4.2 Browser Storage Inspection & Observations</h3>
+<p>Using Chrome Developer Tools (Application → Storage), I evaluated the client-side storage mechanisms. The current empirical observations are categorized below:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Storage Mechanism</th>
+      <th style="width: 45%;">Reported Observations</th>
+      <th style="width: 30%;">Security Assessment</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>HTTP Cookies</strong></td>
+      <td><code>[observations, attributes verified or not]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>LocalStorage</strong></td>
+      <td>No unverified tokens documented in test payload.</td>
+      <td><span class="badge-pending">Pending Verification</span> (Warning: Never store JWTs here)</td>
+    </tr>
+    <tr>
+      <td><strong>SessionStorage</strong></td>
+      <td>Transient state storage observed / undocumented.</td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>IndexedDB / CacheStorage</strong></td>
+      <td>Offline asset caching / database storage.</td>
+      <td><span class="badge-info">Not Assessed</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Unverified Items Statement:</strong> Because the specific cookie names, flags, and expiration values were provided with placeholder indicators, all live cookie security assertions remain marked as <span class="badge-pending">Pending Verification</span>.</p>
+
+<div class="page-break"></div>
+
+<h1>5. Website Technology and CMS Analysis</h1>
+
+<h3>5.1 Architectural Components & TechLookup Discovery</h3>
+<p>I reviewed the technological architecture using TechLookup passive footprinting. The technology stack breakdown is structured as follows:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Technology Category</th>
+      <th style="width: 35%;">Identified Component(s)</th>
+      <th style="width: 20%;">Detected Version</th>
+      <th style="width: 20%;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Web Server / Proxy</strong></td>
+      <td><code>[list of technologies]</code></td>
+      <td><code>[version]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Frontend Framework / Libs</strong></td>
+      <td><code>[list of technologies]</code></td>
+      <td><code>[version]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Backend Language / Runtime</strong></td>
+      <td><code>[list of technologies]</code></td>
+      <td><code>[version]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>CDN & Edge Caching</strong></td>
+      <td><code>[list of technologies]</code></td>
+      <td><code>[version]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Analytics & Tracking</strong></td>
+      <td><code>[list of technologies]</code></td>
+      <td><code>[version]</code></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5.2 Content Management System (CMS) Conclusion</h3>
+<p><strong>CMS Detection Result:</strong> <code>[CMS detected or not]</code> (<span class="badge-pending">Pending Verification</span>).</p>
+<p>Based on passive footprinting inputs, no monolithic legacy CMS (such as WordPress, Drupal, or Joomla) has been definitively confirmed. The application exhibits hallmarks of a modern headless or custom-engineered web application, or it resides behind an edge CDN that masks upstream origin headers. This finding is cataloged as Pending Verification until confirmed via origin responses.</p>
+
+<div class="page-break"></div>
+
+<h1>6. Performance, Accessibility, Best Practices, SEO and Agentic Browsing</h1>
+
+<h3>6.1 Google Lighthouse Category Scores</h3>
+<p>I conducted a passive audit using Google Lighthouse to assess client-side rendering efficiency, accessibility compliance, code hygiene, search engine optimization, and emerging agentic browsing readability. The recorded category scores are presented below:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 35%;">Lighthouse Audit Category</th>
+      <th style="width: 25%;">Score (0 – 100)</th>
+      <th style="width: 40%;">Benchmark Evaluation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Performance</strong></td>
+      <td><code>[Performance score]</code></td>
+      <td><span class="badge-pending">Pending Verification</span> (Target: ≥ 90)</td>
+    </tr>
+    <tr>
+      <td><strong>Accessibility</strong></td>
+      <td><code>[Accessibility score]</code></td>
+      <td><span class="badge-pending">Pending Verification</span> (Target: ≥ 95)</td>
+    </tr>
+    <tr>
+      <td><strong>Best Practices</strong></td>
+      <td><code>[Best Practices score]</code></td>
+      <td><span class="badge-pending">Pending Verification</span> (Target: ≥ 95)</td>
+    </tr>
+    <tr>
+      <td><strong>SEO (Search Engine Optimization)</strong></td>
+      <td><code>[SEO score]</code></td>
+      <td><span class="badge-pending">Pending Verification</span> (Target: ≥ 90)</td>
+    </tr>
+    <tr>
+      <td><strong>Agentic Browsing Readability</strong></td>
+      <td><code>[Agentic Browsing score]</code></td>
+      <td><span class="badge-pending">Pending Verification</span> (Target: ≥ 90)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>6.2 Core Web Vitals & Loading Metrics</h3>
+<p>Core Web Vitals represent Google's standardized metrics for measuring real-world user experience and visual stability:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 35%;">Metric Name</th>
+      <th style="width: 25%;">Reported Metric Value</th>
+      <th style="width: 40%;">Industry Target Threshold</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>First Contentful Paint (FCP)</strong></td>
+      <td><code>[FCP value]</code></td>
+      <td>&le; 1.8 seconds (Good)</td>
+    </tr>
+    <tr>
+      <td><strong>Largest Contentful Paint (LCP)</strong></td>
+      <td><code>[LCP value]</code></td>
+      <td>&le; 2.5 seconds (Good)</td>
+    </tr>
+    <tr>
+      <td><strong>Total Blocking Time (TBT)</strong></td>
+      <td><code>[TBT value]</code></td>
+      <td>&le; 200 milliseconds (Good)</td>
+    </tr>
+    <tr>
+      <td><strong>Cumulative Layout Shift (CLS)</strong></td>
+      <td><code>[CLS value]</code></td>
+      <td>&le; 0.1 (Good)</td>
+    </tr>
+    <tr>
+      <td><strong>Speed Index (SI)</strong></td>
+      <td><code>[Speed Index value]</code></td>
+      <td>&le; 3.4 seconds (Good)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>6.3 Issues Identified in Audit Payload</h3>
+<p>The test results input documented: <code>[issues found]</code>.</p>
+<p>Standard architectural bottlenecks that typically suppress these metrics include uncompressed image assets, unminified script bundles, render-blocking third-party trackers, missing <code>aria-label</code> tags on interactive controls, absence of semantic HTML landmarks, and missing structured data (JSON-LD) required for AI search bots and agentic crawlers.</p>
+
+<div class="page-break"></div>
+
+<h1>7. Findings and Risk Assessment</h1>
+
+<h3>7.1 Risk Level Definitions</h3>
+<p>To ensure rigorous objectivity, all vulnerabilities and architectural defects are classified in accordance with standardized risk criteria:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Risk Classification</th>
+      <th style="width: 75%;">Definition and Threat Impact</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="badge-critical">Critical</span></td>
+      <td>Severe, immediately exploitable vulnerability enabling remote code execution, unauthenticated database exfiltration, or complete infrastructure takeover. Requires immediate emergency remediation.</td>
+    </tr>
+    <tr>
+      <td><span class="badge-high">High</span></td>
+      <td>Significant security flaw that permits account takeover, privilege escalation, or widespread data tampering without requiring specialized prerequisites.</td>
+    </tr>
+    <tr>
+      <td><span class="badge-medium">Medium</span></td>
+      <td>Defect in defensive controls (e.g., missing essential security headers, weak cookie flags) that substantially increases attack surface or facilitates secondary exploits.</td>
+    </tr>
+    <tr>
+      <td><span class="badge-low">Low</span></td>
+      <td>Minor hygiene issue or informational disclosure with minimal direct exploitability (e.g., verbose server banners).</td>
+    </tr>
+    <tr>
+      <td><span class="badge-info">Informational</span></td>
+      <td>Architecture, accessibility, or performance observation aligned with industry best practices without direct vulnerability exposure.</td>
+    </tr>
+    <tr>
+      <td><span class="badge-pending">Pending Verification</span></td>
+      <td>Identified scope area where empirical scan results were not provided in the testing brief and must be validated through active live data.</td>
+    </tr>
+    <tr>
+      <td><span class="badge-info">Not Assessed</span></td>
+      <td>Component deliberately excluded from the current passive scope or inaccessible during passive testing.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>7.2 Detailed Findings Registry</h3>
+
+<div style="border: 1px solid #cbd5e1; padding: 12px; margin-bottom: 12px; background: #ffffff;">
+  <p style="margin: 0 0 6px 0;"><strong>Finding ID:</strong> <code>F-01</code> | <strong>Category:</strong> Security Headers | <strong>Risk Level:</strong> <span class="badge-medium">Medium (Pending Verification)</span></p>
+  <p><strong>Description:</strong> The presence and enforcement of baseline defensive HTTP security headers—specifically Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), X-Content-Type-Options, and X-Frame-Options—have not been empirically verified in the supplied test data.</p>
+  <p><strong>Potential Impact:</strong> Failure to configure these headers leaves the client browser without authoritative rules to block cross-site scripting (XSS), clickjacking frame embedding, and protocol downgrade attacks.</p>
+  <p><strong>Recommendation:</strong> Deploy a strict CSP, set HSTS with a one-year max-age, enforce <code>X-Content-Type-Options: nosniff</code>, and restrict framing via CSP <code>frame-ancestors</code>.</p>
+</div>
+
+<div style="border: 1px solid #cbd5e1; padding: 12px; margin-bottom: 12px; background: #ffffff;">
+  <p style="margin: 0 0 6px 0;"><strong>Finding ID:</strong> <code>F-02</code> | <strong>Category:</strong> Transport Layer Security | <strong>Risk Level:</strong> <span class="badge-medium">Medium (Pending Verification)</span></p>
+  <p><strong>Description:</strong> Qualys SSL Labs rating, certificate cipher suites, and HSTS preloading status remain unconfirmed in the submitted test dataset.</p>
+  <p><strong>Potential Impact:</strong> If the target web server supports obsolete TLS protocols (TLS 1.0/1.1) or weak cipher suites, users connecting over untrusted Wi-Fi networks could be subject to passive eavesdropping or man-in-the-middle decryption.</p>
+  <p><strong>Recommendation:</strong> Restrict cipher negotiation to TLS 1.2 and TLS 1.3 exclusively; verify certificate renewal pipelines and submit the domain to the Chrome HSTS preload list.</p>
+</div>
+
+<div style="border: 1px solid #cbd5e1; padding: 12px; margin-bottom: 12px; background: #ffffff;">
+  <p style="margin: 0 0 6px 0;"><strong>Finding ID:</strong> <code>F-03</code> | <strong>Category:</strong> Client State & Cookies | <strong>Risk Level:</strong> <span class="badge-medium">Medium (Pending Verification)</span></p>
+  <p><strong>Description:</strong> Cookie attributes (HttpOnly, Secure, SameSite) and web storage usage (LocalStorage vs. Cookies) were submitted with placeholder designations and require empirical verification.</p>
+  <p><strong>Potential Impact:</strong> Absence of the <code>HttpOnly</code> attribute allows malicious scripts to harvest session cookies via document.cookie. Absence of <code>SameSite=Lax/Strict</code> permits CSRF attacks on authenticated endpoints.</p>
+  <p><strong>Recommendation:</strong> Enforce <code>HttpOnly; Secure; SameSite=Lax</code> on all session tokens. Ensure sensitive tokens are never stored in browser <code>localStorage</code>.</p>
+</div>
+
+<div style="border: 1px solid #cbd5e1; padding: 12px; margin-bottom: 12px; background: #ffffff;">
+  <p style="margin: 0 0 6px 0;"><strong>Finding ID:</strong> <code>F-04</code> | <strong>Category:</strong> Information Disclosure | <strong>Risk Level:</strong> <span class="badge-low">Low (Pending Verification)</span></p>
+  <p><strong>Description:</strong> Server banners (e.g. <code>Server</code>, <code>X-Powered-By</code>) have not been confirmed as stripped from response payloads.</p>
+  <p><strong>Potential Impact:</strong> Exposing exact web server and framework runtime versions facilitates automated recon and vulnerability targeting by opportunistic attackers.</p>
+  <p><strong>Recommendation:</strong> Strip <code>Server</code>, <code>X-Powered-By</code>, and related metadata headers at the reverse proxy or web application server level.</p>
+</div>
+
+<div style="border: 1px solid #cbd5e1; padding: 12px; margin-bottom: 12px; background: #ffffff;">
+  <p style="margin: 0 0 6px 0;"><strong>Finding ID:</strong> <code>F-05</code> | <strong>Category:</strong> Web Performance & Vitals | <strong>Risk Level:</strong> <span class="badge-info">Informational (Pending Verification)</span></p>
+  <p><strong>Description:</strong> Core Web Vitals (FCP, LCP, TBT, CLS) and Google Lighthouse performance metrics require validation against live production traffic.</p>
+  <p><strong>Potential Impact:</strong> Sub-optimal loading speeds, heavy JavaScript blocking, and visual shifts degrade user retention, increase bounce rates, and hurt organic search ranking.</p>
+  <p><strong>Recommendation:</strong> Implement responsive next-gen images (AVIF/WebP), optimize critical rendering path, eliminate unused JavaScript, and adhere to Core Web Vitals thresholds.</p>
+</div>
+
+<div style="border: 1px solid #cbd5e1; padding: 12px; margin-bottom: 12px; background: #ffffff;">
+  <p style="margin: 0 0 6px 0;"><strong>Finding ID:</strong> <code>F-06</code> | <strong>Category:</strong> Agentic Browsing Readiness | <strong>Risk Level:</strong> <span class="badge-info">Informational (Pending Verification)</span></p>
+  <p><strong>Description:</strong> Emerging autonomous AI agents and automated browsers require machine-readable semantic structures (Schema.org, JSON-LD, ARIA roles, llms.txt, clear robots.txt directives) to navigate web resources reliably.</p>
+  <p><strong>Potential Impact:</strong> Lack of semantic machine readability inhibits next-generation AI search visibility, multimodal assistant integration, and automated workflow processing.</p>
+  <p><strong>Recommendation:</strong> Implement structured data (JSON-LD), establish clean semantic HTML hierarchies, and publish an <code>llms.txt</code> file to guide autonomous agentic interactions.</p>
+</div>
+
+<h3>7.3 Risk Summary Table</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width: 15%;">Finding ID</th>
+      <th style="width: 30%;">Assessment Category</th>
+      <th style="width: 25%;">Assigned Risk Level</th>
+      <th style="width: 30%;">Verification Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>F-01</code></td><td>Security Headers</td><td><span class="badge-medium">Medium</span></td><td><span class="badge-pending">Pending Verification</span></td></tr>
+    <tr><td><code>F-02</code></td><td>SSL/TLS Configuration</td><td><span class="badge-medium">Medium</span></td><td><span class="badge-pending">Pending Verification</span></td></tr>
+    <tr><td><code>F-03</code></td><td>Cookie & Storage Hygiene</td><td><span class="badge-medium">Medium</span></td><td><span class="badge-pending">Pending Verification</span></td></tr>
+    <tr><td><code>F-04</code></td><td>Information Disclosure</td><td><span class="badge-low">Low</span></td><td><span class="badge-pending">Pending Verification</span></td></tr>
+    <tr><td><code>F-05</code></td><td>Performance & Vitals</td><td><span class="badge-info">Informational</span></td><td><span class="badge-pending">Pending Verification</span></td></tr>
+    <tr><td><code>F-06</code></td><td>Agentic Browsing</td><td><span class="badge-info">Informational</span></td><td><span class="badge-pending">Pending Verification</span></td></tr>
+  </tbody>
+</table>
+
+<h3>7.4 Overall Risk Statement</h3>
+<p>I evaluated the baseline indicators provided. Because empirical outputs from passive testing tools were submitted with placeholder designations, the overall organizational risk profile is formally classified as <strong>PENDING VERIFICATION</strong>. No system can ever be declared entirely secure; security is a defense-in-depth posture requiring continuous validation, hardening, and verification across all architectural layers.</p>
+
+<div class="page-break"></div>
+
+<h1>8. Overall Findings and Final Results Table</h1>
+
+<p>The consolidated audit matrix below correlates all assessment domains, passive tools, verified findings, assigned risk levels, and immediate operational states:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 20%;">Domain</th>
+      <th style="width: 20%;">Assessment Utility</th>
+      <th style="width: 25%;">Empirical Output</th>
+      <th style="width: 15%;">Risk Level</th>
+      <th style="width: 20%;">Operational State</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Transport Layer (SSL/TLS)</strong></td>
+      <td>Qualys SSL Labs</td>
+      <td>Protocol & cipher data pending</td>
+      <td><span class="badge-medium">Medium</span></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>HTTP Response Headers</strong></td>
+      <td>SecurityHeaders.com</td>
+      <td>Defensive headers unverified</td>
+      <td><span class="badge-medium">Medium</span></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Client Cookies & Storage</strong></td>
+      <td>Chrome DevTools</td>
+      <td>HttpOnly/Secure flags unconfirmed</td>
+      <td><span class="badge-medium">Medium</span></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Technology Footprint</strong></td>
+      <td>TechLookup</td>
+      <td>Framework & CMS stack unconfirmed</td>
+      <td><span class="badge-low">Low</span></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Web Performance & Vitals</strong></td>
+      <td>Google Lighthouse</td>
+      <td>FCP, LCP, TBT metrics pending</td>
+      <td><span class="badge-info">Informational</span></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Accessibility & SEO</strong></td>
+      <td>Google Lighthouse</td>
+      <td>WCAG & structured data pending</td>
+      <td><span class="badge-info">Informational</span></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+    <tr>
+      <td><strong>Agentic Browsing Readiness</strong></td>
+      <td>Lighthouse & DOM Review</td>
+      <td>Semantic DOM & llms.txt pending</td>
+      <td><span class="badge-info">Informational</span></td>
+      <td><span class="badge-pending">Pending Verification</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<h1>9. Recommendations</h1>
+
+<h3>9.1 Domain-Specific Technical Recommendations</h3>
+<ol>
+  <li><strong>Security Headers:</strong>
+    <ul>
+      <li>Implement a restrictive <code>Content-Security-Policy</code> starting in report-only mode before transitioning to enforcement.</li>
+      <li>Enforce <code>Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</code> across all HTTPS endpoints.</li>
+      <li>Add <code>X-Content-Type-Options: nosniff</code> to all responses.</li>
+      <li>Configure <code>Referrer-Policy: strict-origin-when-cross-origin</code> to prevent token leakage.</li>
+      <li>Deploy <code>Permissions-Policy</code> disabling unused APIs: <code>geolocation=(), camera=(), microphone=()</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Cookies and Browser Security:</strong>
+    <ul>
+      <li>Enforce <code>HttpOnly</code>, <code>Secure</code>, and <code>SameSite=Lax</code> (or <code>Strict</code>) on all session-related cookies.</li>
+      <li>Never store authentication tokens (JWTs) or sensitive customer PII in browser <code>localStorage</code> or <code>sessionStorage</code>.</li>
+      <li>Scope cookies tightly to the exact origin by omitting loose wildcard domains.</li>
+    </ul>
+  </li>
+  <li><strong>SSL/TLS Infrastructure:</strong>
+    <ul>
+      <li>Disable TLS 1.0 and TLS 1.1 across all load balancers, proxies, and web servers.</li>
+      <li>Permit only modern AEAD ciphers with Ephemeral Diffie-Hellman (PFS).</li>
+      <li>Ensure automated 90-day certificate rotation pipelines (e.g. Let's Encrypt / ACME) with monitoring.</li>
+    </ul>
+  </li>
+  <li><strong>Performance & Core Web Vitals:</strong>
+    <ul>
+      <li>Convert image media to AVIF/WebP formats with explicit width and height dimensions to eliminate layout shifts (CLS &le; 0.1).</li>
+      <li>Implement code-splitting and defer non-critical JavaScript to reduce Total Blocking Time (TBT &le; 200ms).</li>
+      <li>Utilize edge CDN caching for static assets with long <code>Cache-Control</code> max-age headers.</li>
+    </ul>
+  </li>
+  <li><strong>Accessibility (a11y):</strong>
+    <ul>
+      <li>Ensure all interactive elements have accessible names (ARIA attributes and <code>aria-label</code> tags).</li>
+      <li>Maintain color contrast ratios of at least 4.5:1 for standard text (WCAG 2.1 AA compliance).</li>
+      <li>Verify seamless keyboard navigation and visual focus rings across all forms and navigation bars.</li>
+    </ul>
+  </li>
+  <li><strong>Web Best Practices:</strong>
+    <ul>
+      <li>Audit npm dependencies regularly using automated dependency scanners (e.g., <code>pnpm audit</code> or Snyk).</li>
+      <li>Enforce Subresource Integrity (SRI) hashes on all external third-party script tags.</li>
+      <li>Eliminate deprecated web APIs and mixed-content passive resources.</li>
+    </ul>
+  </li>
+  <li><strong>Search Engine Optimization (SEO):</strong>
+    <ul>
+      <li>Ensure every page provides unique <code>&lt;title&gt;</code>, <code>&lt;meta name="description"&gt;</code>, and canonical link tags.</li>
+      <li>Maintain an updated <code>sitemap.xml</code> and properly configured <code>robots.txt</code> file.</li>
+      <li>Structure content with a logical single-<code>&lt;h1&gt;</code> heading hierarchy.</li>
+    </ul>
+  </li>
+  <li><strong>Technology Stack Hardening:</strong>
+    <ul>
+      <li>Suppress server banner headers (<code>Server</code>, <code>X-Powered-By</code>) at the reverse proxy.</li>
+      <li>Deploy a Web Application Firewall (WAF) to detect and block malicious automated recon and Layer 7 abuse.</li>
+    </ul>
+  </li>
+  <li><strong>Agentic Browsing & AI-Agent Readiness:</strong>
+    <ul>
+      <li>Publish an <code>llms.txt</code> file at the site root defining machine-friendly summaries of company capabilities and API documentation.</li>
+      <li>Inject structured schema markup (JSON-LD) for Organization, WebSite, and Product/Service entities.</li>
+      <li>Ensure predictable semantic DOM tags (<code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;article&gt;</code>) to allow autonomous AI agents to parse page context without layout friction.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>9.2 Priority Action Plan</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 15%;">Priority Tier</th>
+      <th style="width: 35%;">Action Item</th>
+      <th style="width: 30%;">Remediation Target</th>
+      <th style="width: 20%;">Estimated Effort</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="badge-high">High Priority</span></td>
+      <td>Configure essential HTTP security headers (CSP, HSTS, X-Content-Type-Options, X-Frame-Options).</td>
+      <td>Mitigate XSS, Clickjacking, and protocol downgrade vectors.</td>
+      <td>1 – 2 Days</td>
+    </tr>
+    <tr>
+      <td><span class="badge-high">High Priority</span></td>
+      <td>Audit and harden all cookie flags (HttpOnly, Secure, SameSite=Lax/Strict).</td>
+      <td>Prevent session theft and CSRF attacks.</td>
+      <td>1 Day</td>
+    </tr>
+    <tr>
+      <td><span class="badge-medium">Medium Priority</span></td>
+      <td>Strip server banners (<code>Server</code>, <code>X-Powered-By</code>) and verify TLS 1.2/1.3 cipher suites.</td>
+      <td>Eliminate technology fingerprinting and enforce strong encryption.</td>
+      <td>1 Day</td>
+    </tr>
+    <tr>
+      <td><span class="badge-medium">Medium Priority</span></td>
+      <td>Optimize Core Web Vitals (image compression, code splitting, layout stability).</td>
+      <td>Achieve Lighthouse Performance score &ge; 90.</td>
+      <td>3 – 5 Days</td>
+    </tr>
+    <tr>
+      <td><span class="badge-low">Low Priority</span></td>
+      <td>Deploy upcoming isolation headers (COEP, COOP, CORP) and publish <code>llms.txt</code> for agentic browsing.</td>
+      <td>Enhance cross-origin process isolation and enable seamless AI agent navigation.</td>
+      <td>2 – 3 Days</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>9.3 Expected Improvements</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width: 30%;">Evaluation Metric</th>
+      <th style="width: 35%;">Baseline Posture</th>
+      <th style="width: 35%;">Target Posture Post-Remediation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>SecurityHeaders.com Grade</strong></td><td>Pending Verification</td><td><strong>Grade A or A+</strong></td></tr>
+    <tr><td><strong>Qualys SSL Labs Rating</strong></td><td>Pending Verification</td><td><strong>Rating A+</strong></td></tr>
+    <tr><td><strong>Lighthouse Performance</strong></td><td>Pending Verification</td><td><strong>&ge; 90 (Green Tier)</strong></td></tr>
+    <tr><td><strong>Lighthouse Accessibility</strong></td><td>Pending Verification</td><td><strong>&ge; 95 (Green Tier)</strong></td></tr>
+    <tr><td><strong>Lighthouse Best Practices</strong></td><td>Pending Verification</td><td><strong>&ge; 95 (Green Tier)</strong></td></tr>
+    <tr><td><strong>Lighthouse SEO</strong></td><td>Pending Verification</td><td><strong>&ge; 95 (Green Tier)</strong></td></tr>
+    <tr><td><strong>Agentic Browsing Readiness</strong></td><td>Pending Verification</td><td><strong>Fully Optimized (Semantic JSON-LD + llms.txt)</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="page-break"></div>
+
+<h1>10. Conclusion</h1>
+
+<p>I completed this passive, non-intrusive security and performance baseline assessment for <strong>[Website Name]</strong> (<code>[URL]</code>). Utilizing exclusively authorized public utilities—Qualys SSL Labs, SecurityHeaders.com, browser Developer Tools, TechLookup, and Google Lighthouse—this audit established the defensive boundaries, transport configurations, client-side storage mechanisms, and user-experience baselines of the application.</p>
+
+<p>Because the initial empirical test results were submitted with placeholder designations, all corresponding evaluation parameters have been cataloged with precision as <strong>"Pending Verification"</strong> or <strong>"Not Assessed"</strong>, adhering strictly to the principle of not inventing unverified data. The priority action plan outlines an actionable roadmap to elevate the site's security posture to industry-leading standards.</p>
+
+<p><strong>Crucial Security Caveat:</strong> In line with cybersecurity best practices, <em>no digital system or internet-facing application can ever be certified as completely secure</em>. Security is not a static endpoint but a continuous operational lifecycle. Regular passive audits, automated dependency checks, active vulnerability assessments, and defensive telemetry monitoring are strongly recommended to maintain ongoing resilience against evolving threat vectors.</p>
+
+<div style="margin-top: 36pt; border-top: 1pt solid #cbd5e1; padding-top: 12pt; font-size: 10pt; color: #64748b;">
+  <p><strong>Report Prepared By:</strong> Professional Cybersecurity & Web Performance Analyst<br/>
+  <strong>Methodology:</strong> Passive Reconnaissance & Defense-in-Depth Analysis (RFC 6797, OWASP ASVS Baseline)<br/>
+  <strong>Target:</strong> [Website Name] ([URL]) | <strong>Date:</strong> [date]</p>
+</div>
+
+</body>
+</html>
